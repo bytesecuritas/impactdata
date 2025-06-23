@@ -1,0 +1,4 @@
+Doit contenir les templates.
+
+Pour chaque composant, il faut créer un dossier 
+avec le nom du composant et y mettre ces templates.

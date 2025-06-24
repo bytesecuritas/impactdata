@@ -1,0 +1,204 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Tableau de bord Superviseur - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-user-tie"></i> Tableau de bord Superviseur
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-user-plus"></i> Nouvel adhérent
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>{{ total_adherents }}</h3>
+                        <p>Adhérents</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>{{ total_interactions }}</h3>
+                        <p>Interactions</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-comments fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>{{ expired_badges }}</h3>
+                        <p>Badges expirés</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="row">
+        <!-- Adhérents récents -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> Adhérents récents
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_adherents %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Organisation</th>
+                                        <th>Badge</th>
+                                        <th>Date d'adhésion</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for adherent in recent_adherents %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ adherent.full_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ adherent.identifiant }}</small>
+                                        </td>
+                                        <td>{{ adherent.organisation.name }}</td>
+                                        <td>
+                                            {% if adherent.is_badge_valid %}
+                                                <span class="badge bg-success">Valide</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Expiré</span>
+                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">{{ adherent.badge_validity|date:"d/m/Y" }}</small>
+                                        </td>
+                                        <td>{{ adherent.join_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'core:adherent_detail' adherent.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'core:adherent_list' %}" class="btn btn-primary">
+                                Voir tous les adhérents
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Aucun adhérent enregistré.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactions récentes -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments"></i> Interactions récentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_interactions %}
+                        <div class="list-group list-group-flush">
+                            {% for interaction in recent_interactions %}
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ interaction.adherent.full_name }}</h6>
+                                    <small class="text-muted">{{ interaction.created_at|date:"d/m" }}</small>
+                                </div>
+                                <p class="mb-1 text-truncate">{{ interaction.report|truncatechars:50 }}</p>
+                                <small class="text-muted">
+                                    <span class="badge bg-{% if interaction.status == 'completed' %}success{% elif interaction.status == 'in_progress' %}warning{% else %}secondary{% endif %}">
+                                        {{ interaction.get_status_display }}
+                                    </span>
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'core:interaction_list' %}" class="btn btn-outline-primary">
+                                Voir toutes les interactions
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Aucune interaction enregistrée.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt"></i> Actions rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-user-plus"></i><br>
+                                Ajouter un adhérent
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'admin:core_interaction_add' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-comment-plus"></i><br>
+                                Nouvelle interaction
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'core:adherent_list' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-search"></i><br>
+                                Rechercher adhérents
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

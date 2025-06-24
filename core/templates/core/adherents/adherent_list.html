@@ -1,0 +1,182 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Liste des Adhérents - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-users"></i> Liste des Adhérents
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-user-plus"></i> Nouvel adhérent
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="text-center">
+                    <h3>{{ total_adherents }}</h3>
+                    <p>Total adhérents</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                <div class="text-center">
+                    <h3>{{ adherents|length }}</h3>
+                    <p>Adhérents affichés</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Recherche</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ request.GET.search }}" placeholder="Nom, prénom, identifiant...">
+                </div>
+                <div class="col-md-3">
+                    <label for="type" class="form-label">Type</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">Tous les types</option>
+                        <option value="physical" {% if request.GET.type == 'physical' %}selected{% endif %}>Personne Physique</option>
+                        <option value="legal" {% if request.GET.type == 'legal' %}selected{% endif %}>Personne Morale</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="badge_status" class="form-label">Statut badge</label>
+                    <select class="form-select" id="badge_status" name="badge_status">
+                        <option value="">Tous les statuts</option>
+                        <option value="valid" {% if request.GET.badge_status == 'valid' %}selected{% endif %}>Valide</option>
+                        <option value="expired" {% if request.GET.badge_status == 'expired' %}selected{% endif %}>Expiré</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Filtrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des adhérents -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i> Adhérents ({{ adherents|length }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if adherents %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Identifiant</th>
+                                <th>Nom complet</th>
+                                <th>Type</th>
+                                <th>Organisation</th>
+                                <th>Badge</th>
+                                <th>Date d'adhésion</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for adherent in adherents %}
+                            <tr>
+                                <td>
+                                    <strong>{{ adherent.identifiant }}</strong>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if adherent.profile_picture %}
+                                            <img src="{{ adherent.profile_picture.url }}" 
+                                                 class="rounded-circle me-2" 
+                                                 width="40" height="40" 
+                                                 alt="{{ adherent.full_name }}">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ adherent.full_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ adherent.phone1 }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if adherent.type_adherent == 'physical' %}primary{% else %}info{% endif %}">
+                                        {{ adherent.get_type_adherent_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ adherent.organisation.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ adherent.organisation.category.name }}</small>
+                                </td>
+                                <td>
+                                    {% if adherent.is_badge_valid %}
+                                        <span class="badge bg-success">Valide</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Expiré</span>
+                                    {% endif %}
+                                    <br>
+                                    <small class="text-muted">{{ adherent.badge_validity|date:"d/m/Y" }}</small>
+                                </td>
+                                <td>
+                                    {{ adherent.join_date|date:"d/m/Y" }}
+                                    <br>
+                                    <small class="text-muted">{{ adherent.get_age_membership }} an(s)</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'core:adherent_detail' adherent.id %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'admin:core_adherent_change' adherent.id %}" 
+                                           class="btn btn-sm btn-outline-warning" 
+                                           title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun adhérent trouvé</h5>
+                    <p class="text-muted">Aucun adhérent ne correspond aux critères de recherche.</p>
+                    <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Ajouter un adhérent
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,228 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Tableau de bord Administrateur - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-tachometer-alt"></i> Tableau de bord Administrateur
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'admin:index' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-cog"></i> Administration
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>{{ total_users }}</h3>
+                        <p>Utilisateurs</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>{{ total_adherents }}</h3>
+                        <p>Adhérents</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-friends fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>{{ total_organizations }}</h3>
+                        <p>Organisations</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-building fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h3>{{ total_categories }}</h3>
+                        <p>Catégories</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tags fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="row">
+        <!-- Adhérents récents -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> Adhérents récents
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_adherents %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Organisation</th>
+                                        <th>Date d'adhésion</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for adherent in recent_adherents %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ adherent.full_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ adherent.identifiant }}</small>
+                                        </td>
+                                        <td>{{ adherent.organisation.name }}</td>
+                                        <td>{{ adherent.join_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'core:adherent_detail' adherent.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'core:adherent_list' %}" class="btn btn-primary">
+                                Voir tous les adhérents
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Aucun adhérent enregistré.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Organisations récentes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-building"></i> Organisations récentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_organizations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Catégorie</th>
+                                        <th>Date de création</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for organization in recent_organizations %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ organization.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ organization.identifiant }}</small>
+                                        </td>
+                                        <td>{{ organization.category.name }}</td>
+                                        <td>{{ organization.created_at|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'core:organization_detail' organization.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="{% url 'core:organization_list' %}" class="btn btn-primary">
+                                Voir toutes les organisations
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Aucune organisation enregistrée.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt"></i> Actions rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-user-plus"></i><br>
+                                Ajouter un adhérent
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'admin:core_organization_add' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-building"></i><br>
+                                Ajouter une organisation
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'admin:core_category_add' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-tag"></i><br>
+                                Ajouter une catégorie
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'admin:core_user_add' %}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-user-cog"></i><br>
+                                Ajouter un utilisateur
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

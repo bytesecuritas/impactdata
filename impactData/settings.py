@@ -106,13 +106,6 @@ DATABASES = {
     }
 }
 
-# Security Settings
-SECURE_SSL_REDIRECT =  False  # Set to True in production
-CSRF_COOKIE_SECURE =  False  # Set to True in production
-SESSION_COOKIE_SECURE =  False  # Set to True in production
-SECURE_BROWSER_XSS_FILTER =  False  # Set to True in production
-SECURE_CONTENT_TYPE_NOSNIFF =  False  # Set to True in production
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -156,6 +149,13 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "core/static"]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Cookie settings
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_COOKIE_SECURE = False     # Set to True in production with HTTPS
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000']
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

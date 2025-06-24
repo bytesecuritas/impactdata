@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.utils.crypto import get_random_string
 
 
 # Custom User Manager
@@ -13,6 +14,7 @@ class UserManager(BaseUserManager):
     def create_user(self, email, matricule, name, password=None, **extra_fields):
         """
         Crée et sauvegarde un utilisateur avec email, matricule et mot de passe donnés.
+        Si aucun mot de passe n'est fourni, un mot de passe aléatoire est généré.
         """
         if not email:
             raise ValueError('L\'email est obligatoire')
@@ -28,8 +30,20 @@ class UserManager(BaseUserManager):
             name=name,
             **extra_fields
         )
+        
+        generated_password = None
+        # Générer un mot de passe aléatoire si aucun n'est fourni
+        if not password:
+            generated_password = get_random_string(12)
+            password = generated_password
+        
         user.set_password(password)
         user.save(using=self._db)
+        
+        # Stocker temporairement le mot de passe généré en clair pour l'affichage
+        if generated_password:
+            user._password_generated = generated_password
+        
         return user
 
     def create_superuser(self, email, matricule, name, password=None, **extra_fields):
@@ -67,7 +81,8 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('admin', 'Administrateur'),
-        ('user', 'Utilisateur Simple'),
+        ('superviseur', 'Gestionnaire des adhérents'),
+        ('agent', 'Agent de collecte'),
     )
     
     # Validators
@@ -82,7 +97,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     
     # Fields
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='agent')
     matricule = models.CharField(
         max_length=20, 
         unique=True, 
@@ -370,9 +385,12 @@ class UserActionLog(models.Model):
         
         if self.role == 'admin':
             return True
-        elif self.role == 'user':
-            # Utilisateur simple : lecture et saisie seulement
+        elif self.role == 'superviseur':
+            # Gestionnaire des adhérents : lecture et saisie seulement
             return data_type in ['read', 'create', 'update_own']
+        elif self.role == 'agent':
+            # Agent de collecte : lecture seulement
+            return data_type in ['read']
         
         return False
     
@@ -408,6 +426,12 @@ class Category(models.Model):
 
 # Organization Model
 class Organization(models.Model):
+    identifiant = models.CharField(
+        max_length=10, 
+        unique=True, 
+        verbose_name="Identifiant de l'organisation",
+        default="ORG0000001"
+    )
     name = models.CharField(max_length=150, verbose_name="Nom de l'organisation")
     monthly_revenue = models.DecimalField(
         max_digits=15, 
@@ -443,7 +467,7 @@ class Organization(models.Model):
         ordering = ['name']
     
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.identifiant})"
     
     def get_adherents_count(self):
         """Retourne le nombre d'adhérents de cette organisation"""
@@ -520,7 +544,7 @@ class Adherent(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = 'Adhérent'
         verbose_name_plural = 'Adhérents'
@@ -530,10 +554,10 @@ class Adherent(models.Model):
             models.Index(fields=['badge_validity']),
             models.Index(fields=['join_date']),
         ]
-    
+
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.identifiant})"  # Corrigé
-    
+        return f"{self.full_name} ({self.identifiant})"
+
     def clean(self):
         """Validation personnalisée"""
         super().clean()
@@ -542,17 +566,17 @@ class Adherent(models.Model):
                 raise ValidationError({
                     'badge_validity': 'La validité du badge ne peut pas être antérieure à la date d\'adhésion.'
                 })
-    
+
     def save(self, *args, **kwargs):
         """Override save pour appeler clean()"""
         self.clean()
         super().save(*args, **kwargs)
-    
+
     @property
     def full_name(self):
         """Retourne le nom complet"""
         return f"{self.first_name} {self.last_name}"
-    
+
     @property
     def is_badge_valid(self):
         """Vérifie si le badge est encore valide"""
@@ -563,4 +587,61 @@ class Adherent(models.Model):
         from datetime import date
         today = date.today()
         return today.year - self.join_date.year - ((today.month, today.day) < (self.join_date.month, self.join_date.day))
-    
+
+
+# Updated Interaction Model
+class Interaction(models.Model):
+    STATUS_CHOICES = (
+        ('in_progress', 'En cours'),
+        ('completed', 'Terminé'),
+        ('cancelled', 'Annulé'),
+    )
+    identifiant = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name="Identifiant"
+    )
+    personnel = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='interactions',
+        verbose_name="Personnel"
+    )
+    adherent = models.ForeignKey(
+        'Adherent',
+        on_delete=models.CASCADE,
+        related_name='interactions',
+        verbose_name="Adhérent"
+    )
+    report = models.TextField(verbose_name="Rapport")
+    due_date = models.DateTimeField(verbose_name="Date d'échéance")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='in_progress',
+        verbose_name="Statut"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Mis à jour le")
+
+    class Meta:
+        verbose_name = 'Interaction'
+        verbose_name_plural = 'Interactions'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['identifiant']),
+            models.Index(fields=['status']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"Interaction {self.identifiant} - {self.adherent.full_name}"
+
+    def clean(self):
+        """Validation personnalisée"""
+        super().clean()
+        if self.due_date and self.due_date < timezone.now():
+            raise ValidationError({
+                'due_date': 'La date d\'échéance ne peut pas être dans le passé.'
+            })
+

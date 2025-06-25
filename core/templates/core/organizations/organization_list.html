@@ -1,0 +1,128 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Liste des Organisations - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-building"></i> Liste des Organisations
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'core:organization_create' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Nouvelle organisation
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="text-center">
+                    <h3>{{ total_organizations }}</h3>
+                    <p>Total organisations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                <div class="text-center">
+                    <h3>{{ organizations|length }}</h3>
+                    <p>Organisations affichées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des organisations -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i> Organisations ({{ organizations|length }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if organizations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Identifiant</th>
+                                <th>Nom</th>
+                                <th>Catégorie</th>
+                                <th>Téléphone</th>
+                                <th>Chiffre d'affaires</th>
+                                <th>Adhérents</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for organization in organizations %}
+                            <tr>
+                                <td>
+                                    <strong>{{ organization.identifiant }}</strong>
+                                </td>
+                                <td>
+                                    <strong>{{ organization.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ organization.address|truncatechars:50 }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ organization.category.name }}</span>
+                                </td>
+                                <td>
+                                    {{ organization.phone }}
+                                </td>
+                                <td>
+                                    {% if organization.monthly_revenue %}
+                                        {{ organization.monthly_revenue|floatformat:0 }} FCFA
+                                    {% else %}
+                                        <span class="text-muted">Non spécifié</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ organization.get_adherents_count }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'core:organization_detail' organization.id %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'core:organization_update' organization.id %}" 
+                                           class="btn btn-sm btn-outline-warning" 
+                                           title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'core:organization_delete' organization.id %}" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           title="Supprimer"
+                                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette organisation ?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucune organisation trouvée</h5>
+                    <p class="text-muted">Aucune organisation n'est enregistrée pour le moment.</p>
+                    <a href="{% url 'core:organization_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Ajouter une organisation
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

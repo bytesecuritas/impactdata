@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -8,7 +8,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from .models import User, Adherent, Organization, Category, Interaction
 from django.utils import timezone
-from .forms import UserProfileForm, CustomPasswordChangeForm
+from .forms import UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, CategoryForm, InteractionForm
 
 # Create your views here.
 def is_admin(user):
@@ -91,7 +91,11 @@ def admin_dashboard(request):
 @login_required
 def profile(request):
     """Vue pour afficher le profil de l'utilisateur"""
-    return render(request, 'core/profile/profile.html')
+    user = request.user
+    context = {
+        'user': user,
+    }
+    return render(request, 'core/profile/profile.html', context)
 
 @login_required
 def edit_profile(request):
@@ -250,6 +254,7 @@ def interaction_list(request):
     context = {
         'interactions': interactions,
         'total_interactions': interactions.count(),
+        'now': timezone.now(),
     }
     return render(request, 'core/interactions/interaction_list.html', context)
 
@@ -272,13 +277,281 @@ def interaction_detail(request, interaction_id):
     return render(request, 'core/interactions/interaction_detail.html', context)
 
 
-# Vue de profil utilisateur
+# ==================== CRUD ADHÉRENTS ====================
+
 @login_required
-def profile(request):
-    """Profil de l'utilisateur connecté"""
-    user = request.user
+def adherent_create(request):
+    """Créer un nouvel adhérent"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = AdherentForm(request.POST, request.FILES)
+        if form.is_valid():
+            adherent = form.save()
+            messages.success(request, f'Adhérent "{adherent.full_name}" créé avec succès.')
+            return redirect('core:adherent_list')
+    else:
+        form = AdherentForm()
+    
     context = {
-        'user': user,
+        'form': form,
+        'title': 'Créer un nouvel adhérent',
+        'submit_text': 'Créer l\'adhérent'
     }
-    return render(request, 'core/profile/profile.html', context)
+    return render(request, 'core/adherents/adherent_form.html', context)
+
+@login_required
+def adherent_update(request, adherent_id):
+    """Modifier un adhérent"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    adherent = get_object_or_404(Adherent, id=adherent_id)
+    
+    if request.method == 'POST':
+        form = AdherentForm(request.POST, request.FILES, instance=adherent)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Adhérent "{adherent.full_name}" modifié avec succès.')
+            return redirect('core:adherent_list')
+    else:
+        form = AdherentForm(instance=adherent)
+    
+    context = {
+        'form': form,
+        'adherent': adherent,
+        'title': f'Modifier l\'adhérent {adherent.full_name}',
+        'submit_text': 'Mettre à jour'
+    }
+    return render(request, 'core/adherents/adherent_form.html', context)
+
+@login_required
+def adherent_delete(request, adherent_id):
+    """Supprimer un adhérent"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    adherent = get_object_or_404(Adherent, id=adherent_id)
+    
+    if request.method == 'POST':
+        adherent_name = adherent.full_name
+        adherent.delete()
+        messages.success(request, f'Adhérent "{adherent_name}" supprimé avec succès.')
+        return redirect('core:adherent_list')
+    
+    context = {
+        'adherent': adherent,
+        'title': f'Supprimer l\'adhérent {adherent.full_name}'
+    }
+    return render(request, 'core/adherents/adherent_confirm_delete.html', context)
+
+# ==================== CRUD ORGANISATIONS ====================
+
+@login_required
+def organization_create(request):
+    """Créer une nouvelle organisation"""
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = OrganizationForm(request.POST)
+        if form.is_valid():
+            organization = form.save()
+            messages.success(request, f'Organisation "{organization.name}" créée avec succès.')
+            return redirect('core:organization_list')
+    else:
+        form = OrganizationForm()
+    
+    context = {
+        'form': form,
+        'title': 'Créer une nouvelle organisation',
+        'submit_text': 'Créer l\'organisation'
+    }
+    return render(request, 'core/organizations/organization_form.html', context)
+
+@login_required
+def organization_update(request, organization_id):
+    """Modifier une organisation"""
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    organization = get_object_or_404(Organization, id=organization_id)
+    
+    if request.method == 'POST':
+        form = OrganizationForm(request.POST, instance=organization)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Organisation "{organization.name}" modifiée avec succès.')
+            return redirect('core:organization_list')
+    else:
+        form = OrganizationForm(instance=organization)
+    
+    context = {
+        'form': form,
+        'organization': organization,
+        'title': f'Modifier l\'organisation {organization.name}',
+        'submit_text': 'Mettre à jour'
+    }
+    return render(request, 'core/organizations/organization_form.html', context)
+
+@login_required
+def organization_delete(request, organization_id):
+    """Supprimer une organisation"""
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    organization = get_object_or_404(Organization, id=organization_id)
+    
+    if request.method == 'POST':
+        organization_name = organization.name
+        organization.delete()
+        messages.success(request, f'Organisation "{organization_name}" supprimée avec succès.')
+        return redirect('core:organization_list')
+    
+    context = {
+        'organization': organization,
+        'title': f'Supprimer l\'organisation {organization.name}'
+    }
+    return render(request, 'core/organizations/organization_confirm_delete.html', context)
+
+# ==================== CRUD CATÉGORIES ====================
+
+@login_required
+def category_create(request):
+    """Créer une nouvelle catégorie"""
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save()
+            messages.success(request, f'Catégorie "{category.name}" créée avec succès.')
+            return redirect('core:category_list')
+    else:
+        form = CategoryForm()
+    
+    context = {
+        'form': form,
+        'title': 'Créer une nouvelle catégorie',
+        'submit_text': 'Créer la catégorie'
+    }
+    return render(request, 'core/categories/category_form.html', context)
+
+@login_required
+def category_update(request, category_id):
+    """Modifier une catégorie"""
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    category = get_object_or_404(Category, id=category_id)
+    
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Catégorie "{category.name}" modifiée avec succès.')
+            return redirect('core:category_list')
+    else:
+        form = CategoryForm(instance=category)
+    
+    context = {
+        'form': form,
+        'category': category,
+        'title': f'Modifier la catégorie {category.name}',
+        'submit_text': 'Mettre à jour'
+    }
+    return render(request, 'core/categories/category_form.html', context)
+
+@login_required
+def category_delete(request, category_id):
+    """Supprimer une catégorie"""
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    category = get_object_or_404(Category, id=category_id)
+    
+    if request.method == 'POST':
+        category_name = category.name
+        category.delete()
+        messages.success(request, f'Catégorie "{category_name}" supprimée avec succès.')
+        return redirect('core:category_list')
+    
+    context = {
+        'category': category,
+        'title': f'Supprimer la catégorie {category.name}'
+    }
+    return render(request, 'core/categories/category_confirm_delete.html', context)
+
+# ==================== CRUD INTERACTIONS ====================
+
+@login_required
+def interaction_create(request):
+    """Créer une nouvelle interaction"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = InteractionForm(request.POST)
+        if form.is_valid():
+            interaction = form.save()
+            messages.success(request, f'Interaction "{interaction.identifiant}" créée avec succès.')
+            return redirect('core:interaction_list')
+    else:
+        form = InteractionForm()
+        # Pré-remplir le personnel avec l'utilisateur connecté
+        form.fields['personnel'].initial = request.user
+    
+    context = {
+        'form': form,
+        'title': 'Créer une nouvelle interaction',
+        'submit_text': 'Créer l\'interaction'
+    }
+    return render(request, 'core/interactions/interaction_form.html', context)
+
+@login_required
+def interaction_update(request, interaction_id):
+    """Modifier une interaction"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    interaction = get_object_or_404(Interaction, id=interaction_id)
+    
+    if request.method == 'POST':
+        form = InteractionForm(request.POST, instance=interaction)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Interaction "{interaction.identifiant}" modifiée avec succès.')
+            return redirect('core:interaction_list')
+    else:
+        form = InteractionForm(instance=interaction)
+    
+    context = {
+        'form': form,
+        'interaction': interaction,
+        'title': f'Modifier l\'interaction {interaction.identifiant}',
+        'submit_text': 'Mettre à jour'
+    }
+    return render(request, 'core/interactions/interaction_form.html', context)
+
+@login_required
+def interaction_delete(request, interaction_id):
+    """Supprimer une interaction"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    interaction = get_object_or_404(Interaction, id=interaction_id)
+    
+    if request.method == 'POST':
+        interaction_id_str = interaction.identifiant
+        interaction.delete()
+        messages.success(request, f'Interaction "{interaction_id_str}" supprimée avec succès.')
+        return redirect('core:interaction_list')
+    
+    context = {
+        'interaction': interaction,
+        'title': f'Supprimer l\'interaction {interaction.identifiant}'
+    }
+    return render(request, 'core/interactions/interaction_confirm_delete.html', context)
     

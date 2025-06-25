@@ -1,0 +1,66 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmation de suppression
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle"></i> Attention !
+                        </h5>
+                        <p class="mb-0">
+                            Vous êtes sur le point de supprimer définitivement l'adhérent 
+                            <strong>"{{ adherent.full_name }}"</strong>.
+                        </p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Informations de l'adhérent :</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Identifiant :</strong> {{ adherent.identifiant }}</li>
+                                <li><strong>Nom complet :</strong> {{ adherent.full_name }}</li>
+                                <li><strong>Type :</strong> {{ adherent.get_type_adherent_display }}</li>
+                                <li><strong>Organisation :</strong> {{ adherent.organisation.name }}</li>
+                                <li><strong>Date d'adhésion :</strong> {{ adherent.join_date }}</li>
+                                <li><strong>Validité badge :</strong> {{ adherent.badge_validity }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Impact de la suppression :</h6>
+                            <ul class="list-unstyled text-danger">
+                                <li><i class="fas fa-times-circle"></i> Toutes les interactions associées seront supprimées</li>
+                                <li><i class="fas fa-times-circle"></i> Les photos de profil et d'activité seront supprimées</li>
+                                <li><i class="fas fa-times-circle"></i> Cette action est irréversible</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'core:adherent_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Annuler
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Confirmer la suppression
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

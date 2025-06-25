@@ -2,13 +2,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.urls import reverse
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from .models import User, Adherent, Organization, Category, Interaction
 from django.utils import timezone
-from .forms import UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, CategoryForm, InteractionForm
+from .forms import UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, CategoryForm, InteractionForm, UserForm
+from django.db.models import Count
+from datetime import datetime, timedelta
+import calendar
+import json
 
 # Create your views here.
 def is_admin(user):
@@ -77,13 +81,63 @@ def admin_dashboard(request):
     if not (request.user.is_superuser or request.user.role == 'admin'):
         return HttpResponseForbidden("Accès refusé")
     
+    # Données de base
+    total_users = User.objects.count()
+    total_adherents = Adherent.objects.count()
+    total_organizations = Organization.objects.count()
+    total_categories = Category.objects.count()
+    
+    # Données pour les graphiques
+    # 1. Répartition par catégorie
+    category_stats = Category.objects.annotate(
+        org_count=Count('organizations')
+    ).values('name', 'org_count').order_by('-org_count')[:5]
+    
+    # 2. Évolution des adhérents (6 derniers mois)
+    adherents_evolution = []
+    months_labels = []
+    
+    for i in range(6):
+        date = datetime.now() - timedelta(days=30*i)
+        month_start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_end = month_start.replace(day=calendar.monthrange(date.year, date.month)[1], hour=23, minute=59, second=59)
+        
+        count = Adherent.objects.filter(
+            created_at__gte=month_start,
+            created_at__lte=month_end
+        ).count()
+        
+        adherents_evolution.insert(0, count)
+        months_labels.insert(0, date.strftime('%b'))
+    
+    # 3. Répartition des rôles utilisateurs
+    roles_stats = User.objects.values('role').annotate(
+        count=Count('id')
+    ).values('role', 'count')
+    
+    # 4. Top 5 des organisations par nombre d'adhérents
+    top_organizations = Organization.objects.annotate(
+        adherent_count=Count('adherents')
+    ).order_by('-adherent_count')[:5]
+    
     context = {
-        'total_users': User.objects.count(),
-        'total_adherents': Adherent.objects.count(),
-        'total_organizations': Organization.objects.count(),
-        'total_categories': Category.objects.count(),
+        'total_users': total_users,
+        'total_adherents': total_adherents,
+        'total_organizations': total_organizations,
+        'total_categories': total_categories,
         'recent_adherents': Adherent.objects.order_by('-created_at')[:5],
         'recent_organizations': Organization.objects.order_by('-created_at')[:5],
+        'now': timezone.now(),
+        
+        # Données pour les graphiques (sérialisées en JSON)
+        'category_stats': json.dumps([cat['name'] for cat in category_stats]),
+        'category_data': json.dumps([cat['org_count'] for cat in category_stats]),
+        'adherents_evolution': json.dumps(adherents_evolution),
+        'months_labels': json.dumps(months_labels),
+        'roles_labels': json.dumps([role['role'].title() for role in roles_stats]),
+        'roles_data': json.dumps([role['count'] for role in roles_stats]),
+        'top_organizations_labels': json.dumps([org['name'][:15] for org in top_organizations.values('name', 'adherent_count')]),
+        'top_organizations_data': json.dumps([org['adherent_count'] for org in top_organizations.values('name', 'adherent_count')]),
     }
     return render(request, 'core/dashboard/admin_dashboard.html', context)
 
@@ -554,4 +608,104 @@ def interaction_delete(request, interaction_id):
         'title': f'Supprimer l\'interaction {interaction.identifiant}'
     }
     return render(request, 'core/interactions/interaction_confirm_delete.html', context)
+
+# User Management Views (Admin only)
+@login_required
+def user_list(request):
+    """Liste des utilisateurs (Admin uniquement)"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    users = User.objects.all().order_by('-date_joined')
+    context = {
+        'users': users,
+        'total_users': users.count(),
+    }
+    return render(request, 'core/users/user_list.html', context)
+
+@login_required
+def user_create(request):
+    """Créer un nouvel utilisateur (Admin uniquement)"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = UserForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password'])
+            user.save()
+            messages.success(request, f"L'utilisateur {user.name} a été créé avec succès.")
+            return redirect('core:user_list')
+    else:
+        form = UserForm()
+    
+    context = {
+        'form': form,
+        'title': 'Créer un Utilisateur',
+    }
+    return render(request, 'core/users/user_form.html', context)
+
+@login_required
+def user_update(request, pk):
+    """Modifier un utilisateur (Admin uniquement)"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    user = get_object_or_404(User, pk=pk)
+    
+    if request.method == 'POST':
+        form = UserForm(request.POST, instance=user)
+        if form.is_valid():
+            user = form.save(commit=False)
+            if form.cleaned_data.get('password'):
+                user.set_password(form.cleaned_data['password'])
+            user.save()
+            messages.success(request, f"L'utilisateur {user.name} a été modifié avec succès.")
+            return redirect('core:user_list')
+    else:
+        form = UserForm(instance=user)
+    
+    context = {
+        'form': form,
+        'user': user,
+        'title': 'Modifier l\'Utilisateur',
+    }
+    return render(request, 'core/users/user_form.html', context)
+
+@login_required
+def user_delete(request, pk):
+    """Supprimer un utilisateur (Admin uniquement)"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    user = get_object_or_404(User, pk=pk)
+    
+    if request.method == 'POST':
+        if user == request.user:
+            messages.error(request, "Vous ne pouvez pas supprimer votre propre compte.")
+            return redirect('core:user_list')
+        
+        user_name = user.name
+        user.delete()
+        messages.success(request, f"L'utilisateur {user_name} a été supprimé avec succès.")
+        return redirect('core:user_list')
+    
+    context = {
+        'user': user,
+    }
+    return render(request, 'core/users/user_confirm_delete.html', context)
+
+@login_required
+def user_detail(request, pk):
+    """Détails d'un utilisateur (Admin uniquement)"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    user = get_object_or_404(User, pk=pk)
+    
+    context = {
+        'user_detail': user,
+    }
+    return render(request, 'core/users/user_detail.html', context)
     

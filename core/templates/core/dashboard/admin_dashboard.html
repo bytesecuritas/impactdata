@@ -1,48 +1,36 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Tableau de bord Administrateur - Impact Data{% endblock %}
+{% block title %}Tableau de Bord Administrateur - Impact Data{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- En-tête -->
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">
-            <i class="fas fa-tachometer-alt"></i> Tableau de bord Administrateur
+            <i class="fas fa-tachometer-alt"></i> Tableau de Bord Administrateur
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="{% url 'admin:index' %}" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-cog"></i> Administration
-                </a>
+                <span class="text-muted">
+                    <i class="fas fa-clock"></i> {{ now|date:"d/m/Y H:i" }}
+                </span>
             </div>
         </div>
     </div>
 
-    <!-- Statistiques -->
+    <!-- Statistiques principales -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="stats-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3>{{ total_users }}</h3>
-                        <p>Utilisateurs</p>
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary rounded-circle p-3 me-3">
+                            <i class="fas fa-users text-white"></i>
+                        </div>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-users fa-3x opacity-75"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="stats-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3>{{ total_adherents }}</h3>
-                        <p>Adhérents</p>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-user-friends fa-3x opacity-75"></i>
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ total_adherents }}</h3>
+                        <p class="mb-0">Adhérents</p>
                     </div>
                 </div>
             </div>
@@ -50,13 +38,15 @@
         
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="stats-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3>{{ total_organizations }}</h3>
-                        <p>Organisations</p>
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success rounded-circle p-3 me-3">
+                            <i class="fas fa-building text-white"></i>
+                        </div>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-building fa-3x opacity-75"></i>
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ total_organizations }}</h3>
+                        <p class="mb-0">Organisations</p>
                     </div>
                 </div>
             </div>
@@ -64,68 +54,143 @@
         
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="stats-card">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h3>{{ total_categories }}</h3>
-                        <p>Catégories</p>
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning rounded-circle p-3 me-3">
+                            <i class="fas fa-user-tie text-white"></i>
+                        </div>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-tags fa-3x opacity-75"></i>
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ total_users }}</h3>
+                        <p class="mb-0">Utilisateurs</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-info rounded-circle p-3 me-3">
+                            <i class="fas fa-tags text-white"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3 class="mb-0">{{ total_categories }}</h3>
+                        <p class="mb-0">Catégories</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Contenu principal -->
-    <div class="row">
-        <!-- Adhérents récents -->
+    <!-- Diagrammes -->
+    <div class="row mb-4">
+        <!-- Répartition par catégorie -->
         <div class="col-lg-6 mb-4">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-users"></i> Adhérents récents
+                        <i class="fas fa-chart-pie"></i> Répartition des Organisations par Catégorie
                     </h5>
                 </div>
                 <div class="card-body">
+                    <canvas id="categoryChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Évolution des adhérents -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Évolution des Adhérents (6 derniers mois)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="adherentsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition des rôles utilisateurs -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> Répartition des Utilisateurs par Rôle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="rolesChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top 5 des organisations -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy"></i> Top 5 des Organisations (Nombre d'adhérents)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="topOrganizationsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Adhérents récents -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users"></i> Adhérents Récents
+                    </h5>
+                    <a href="{% url 'core:adherent_list' %}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body">
                     {% if recent_adherents %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Nom</th>
-                                        <th>Organisation</th>
-                                        <th>Date d'adhésion</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for adherent in recent_adherents %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ adherent.full_name }}</strong>
-                                            <br>
-                                            <small class="text-muted">{{ adherent.identifiant }}</small>
-                                        </td>
-                                        <td>{{ adherent.organisation.name }}</td>
-                                        <td>{{ adherent.join_date|date:"d/m/Y" }}</td>
-                                        <td>
-                                            <a href="{% url 'core:adherent_detail' adherent.id %}" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="text-center mt-3">
-                            <a href="{% url 'core:adherent_list' %}" class="btn btn-primary">
-                                Voir tous les adhérents
-                            </a>
+                        <div class="list-group list-group-flush">
+                            {% for adherent in recent_adherents %}
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                    {% if adherent.profile_picture %}
+                                        <img src="{{ adherent.profile_picture.url }}" 
+                                             class="rounded-circle me-3" 
+                                             width="40" height="40" 
+                                             alt="{{ adherent.full_name }}">
+                                    {% else %}
+                                        <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ adherent.full_name }}</h6>
+                                        <small class="text-muted">{{ adherent.organisation.name }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">{{ adherent.created_at|date:"d/m/Y" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted text-center">Aucun adhérent enregistré.</p>
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Aucun adhérent récent</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -134,50 +199,40 @@
         <!-- Organisations récentes -->
         <div class="col-lg-6 mb-4">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-building"></i> Organisations récentes
+                        <i class="fas fa-building"></i> Organisations Récentes
                     </h5>
+                    <a href="{% url 'core:organization_list' %}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
                 </div>
                 <div class="card-body">
                     {% if recent_organizations %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Nom</th>
-                                        <th>Catégorie</th>
-                                        <th>Date de création</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for organization in recent_organizations %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ organization.name }}</strong>
-                                            <br>
-                                            <small class="text-muted">{{ organization.identifiant }}</small>
-                                        </td>
-                                        <td>{{ organization.category.name }}</td>
-                                        <td>{{ organization.created_at|date:"d/m/Y" }}</td>
-                                        <td>
-                                            <a href="{% url 'core:organization_detail' organization.id %}" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="text-center mt-3">
-                            <a href="{% url 'core:organization_list' %}" class="btn btn-primary">
-                                Voir toutes les organisations
-                            </a>
+                        <div class="list-group list-group-flush">
+                            {% for organization in recent_organizations %}
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-building text-white"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ organization.name }}</h6>
+                                        <small class="text-muted">{{ organization.category.name }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">{{ organization.created_at|date:"d/m/Y" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted text-center">Aucune organisation enregistrée.</p>
+                        <div class="text-center py-4">
+                            <i class="fas fa-building fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Aucune organisation récente</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -190,33 +245,29 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-bolt"></i> Actions rapides
+                        <i class="fas fa-bolt"></i> Actions Rapides
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-user-plus"></i><br>
-                                Ajouter un adhérent
+                            <a href="{% url 'core:adherent_create' %}" class="btn btn-primary w-100">
+                                <i class="fas fa-user-plus"></i> Nouvel Adhérent
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="{% url 'admin:core_organization_add' %}" class="btn btn-outline-success w-100">
-                                <i class="fas fa-building"></i><br>
-                                Ajouter une organisation
+                            <a href="{% url 'core:organization_create' %}" class="btn btn-success w-100">
+                                <i class="fas fa-plus"></i> Nouvelle Organisation
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="{% url 'admin:core_category_add' %}" class="btn btn-outline-info w-100">
-                                <i class="fas fa-tag"></i><br>
-                                Ajouter une catégorie
+                            <a href="{% url 'core:category_create' %}" class="btn btn-info w-100">
+                                <i class="fas fa-tags"></i> Nouvelle Catégorie
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="{% url 'admin:core_user_add' %}" class="btn btn-outline-warning w-100">
-                                <i class="fas fa-user-cog"></i><br>
-                                Ajouter un utilisateur
+                            <a href="{% url 'core:interaction_create' %}" class="btn btn-warning w-100">
+                                <i class="fas fa-comments"></i> Nouvelle Interaction
                             </a>
                         </div>
                     </div>
@@ -225,4 +276,160 @@
         </div>
     </div>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Données dynamiques depuis le backend
+const categoryData = {
+    labels: JSON.parse('{{ category_stats|escapejs }}'),
+    datasets: [{
+        data: JSON.parse('{{ category_data|escapejs }}'),
+        backgroundColor: [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF',
+            '#FF9F40',
+            '#FF6384'
+        ],
+        borderWidth: 2,
+        borderColor: '#fff'
+    }]
+};
+
+const adherentsData = {
+    labels: JSON.parse('{{ months_labels|escapejs }}'),
+    datasets: [{
+        label: 'Nouveaux Adhérents',
+        data: JSON.parse('{{ adherents_evolution|escapejs }}'),
+        borderColor: '#36A2EB',
+        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+        tension: 0.4,
+        fill: true
+    }]
+};
+
+const rolesData = {
+    labels: JSON.parse('{{ roles_labels|escapejs }}'),
+    datasets: [{
+        label: 'Nombre d\'utilisateurs',
+        data: JSON.parse('{{ roles_data|escapejs }}'),
+        backgroundColor: [
+            '#FF6384',
+            '#FFCE56',
+            '#36A2EB',
+            '#4BC0C0'
+        ],
+        borderWidth: 1,
+        borderColor: '#fff'
+    }]
+};
+
+const topOrganizationsData = {
+    labels: JSON.parse('{{ top_organizations_labels|escapejs }}'),
+    datasets: [{
+        label: 'Nombre d\'adhérents',
+        data: JSON.parse('{{ top_organizations_data|escapejs }}'),
+        backgroundColor: 'rgba(75, 192, 192, 0.8)',
+        borderColor: '#4BC0C0',
+        borderWidth: 2
+    }]
+};
+
+// Configuration commune
+const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'bottom',
+            labels: {
+                padding: 20,
+                usePointStyle: true
+            }
+        }
+    }
+};
+
+// Initialisation des graphiques
+document.addEventListener('DOMContentLoaded', function() {
+    // Graphique circulaire - Catégories
+    if (document.getElementById('categoryChart')) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: categoryData,
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    legend: {
+                        ...commonOptions.plugins.legend,
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique linéaire - Évolution des adhérents
+    if (document.getElementById('adherentsChart')) {
+        new Chart(document.getElementById('adherentsChart'), {
+            type: 'line',
+            data: adherentsData,
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique en barres - Rôles utilisateurs
+    if (document.getElementById('rolesChart')) {
+        new Chart(document.getElementById('rolesChart'), {
+            type: 'bar',
+            data: rolesData,
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique en barres - Top organisations
+    if (document.getElementById('topOrganizationsChart')) {
+        new Chart(document.getElementById('topOrganizationsChart'), {
+            type: 'bar',
+            data: topOrganizationsData,
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %} 

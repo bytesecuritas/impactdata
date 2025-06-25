@@ -1,0 +1,221 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Résultat du Scan{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-qrcode"></i> Résultat du Scan
+        </h1>
+        <div>
+            <a href="{% url 'core:badge_qr_scan' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Nouveau Scan
+            </a>
+            <a href="{% url 'core:badge_list' %}" class="btn btn-primary">
+                <i class="fas fa-list"></i> Liste des Badges
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Statut du badge -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Statut du Badge</h6>
+                </div>
+                <div class="card-body text-center">
+                    {% if is_valid %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <h4>Badge Valide</h4>
+                            <p class="mb-0">Ce badge est actif et valide</p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle fa-3x mb-3"></i>
+                            <h4>Badge Invalide</h4>
+                            <p class="mb-0">Ce badge n'est plus valide ou a été révoqué</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Informations du badge -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Informations du Badge</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Numéro de badge:</strong></td>
+                                    <td>{{ badge.badge_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        {% if badge.status == 'active' %}
+                                            <span class="badge bg-success">Actif</span>
+                                        {% elif badge.status == 'expired' %}
+                                            <span class="badge bg-warning">Expiré</span>
+                                        {% elif badge.status == 'revoked' %}
+                                            <span class="badge bg-danger">Révoqué</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date d'émission:</strong></td>
+                                    <td>{{ badge.issued_date|date:"d/m/Y à H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Émis par:</strong></td>
+                                    <td>{{ badge.issued_by.name|default:"Non spécifié" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Validité:</strong></td>
+                                    <td>
+                                        {% if badge.adherent.badge_validity %}
+                                            {{ badge.adherent.badge_validity|date:"d/m/Y" }}
+                                        {% else %}
+                                            Non définie
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Badge valide:</strong></td>
+                                    <td>
+                                        {% if badge.is_valid %}
+                                            <span class="text-success"><i class="fas fa-check"></i> Oui</span>
+                                        {% else %}
+                                            <span class="text-danger"><i class="fas fa-times"></i> Non</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations de l'adhérent -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Informations de l'Adhérent</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Nom complet:</strong></td>
+                                    <td>{{ adherent.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Identifiant:</strong></td>
+                                    <td>{{ adherent.identifiant }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>{{ adherent.get_type_adherent_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Organisation:</strong></td>
+                                    <td>{{ adherent.organisation.name }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Activité:</strong></td>
+                                    <td>{{ adherent.activity_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date d'adhésion:</strong></td>
+                                    <td>{{ adherent.join_date|date:"d/m/Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Téléphone:</strong></td>
+                                    <td>{{ adherent.phone1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Adresse:</strong></td>
+                                    <td>{{ adherent.address }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Données scannées et actions -->
+        <div class="col-lg-4">
+            <!-- Données scannées -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Données Scannées</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>QR Code lu:</strong><br>
+                        <code class="small">{{ scanned_data }}</code>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Détails:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Adhérent:</strong> {{ adherent.identifiant }}</li>
+                            <li><strong>Badge:</strong> {{ badge.badge_number }}</li>
+                            <li><strong>Validité:</strong> {{ adherent.badge_validity|date:"d/m/Y" }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-primary btn-block mb-2">
+                        <i class="fas fa-eye"></i> Voir les détails du badge
+                    </a>
+                    <a href="{% url 'core:adherent_detail' adherent.id %}" class="btn btn-info btn-block mb-2">
+                        <i class="fas fa-user"></i> Voir le profil de l'adhérent
+                    </a>
+                    <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-success btn-block">
+                        <i class="fas fa-download"></i> Télécharger PDF
+                    </a>
+                </div>
+            </div>
+
+            <!-- Historique des scans -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Scan Effectué</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        <i class="fas fa-clock"></i> 
+                        Scan effectué le {{ now|date:"d/m/Y à H:i" }}
+                    </p>
+                    <p class="text-muted small">
+                        <i class="fas fa-user"></i> 
+                        Par: {{ user.name }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

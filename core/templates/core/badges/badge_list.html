@@ -1,0 +1,144 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Liste des Badges{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-id-card"></i> Gestion des Badges
+        </h1>
+        <div>
+            <a href="{% url 'core:badge_qr_scan' %}" class="btn btn-info">
+                <i class="fas fa-qrcode"></i> Scanner QR Code
+            </a>
+        </div>
+    </div>
+
+    {% if badges %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Badges ({{ badges.count }})</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="badgeTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Numéro</th>
+                            <th>Adhérent</th>
+                            <th>Organisation</th>
+                            <th>Statut</th>
+                            <th>Date d'émission</th>
+                            <th>Validité</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for badge in badges %}
+                        <tr>
+                            <td>
+                                <strong>{{ badge.badge_number }}</strong>
+                            </td>
+                            <td>
+                                <a href="{% url 'core:adherent_detail' badge.adherent.id %}">
+                                    {{ badge.adherent.full_name }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ badge.adherent.identifiant }}</small>
+                            </td>
+                            <td>{{ badge.adherent.organisation.name }}</td>
+                            <td>
+                                {% if badge.status == 'active' %}
+                                    <span class="badge bg-success">Actif</span>
+                                {% elif badge.status == 'expired' %}
+                                    <span class="badge bg-warning">Expiré</span>
+                                {% elif badge.status == 'revoked' %}
+                                    <span class="badge bg-danger">Révoqué</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ badge.issued_date|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if badge.is_valid %}
+                                    <span class="text-success">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                {% else %}
+                                    <span class="text-danger">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    {% if badge.status == 'active' %}
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#revokeModal{{ badge.id }}">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    {% elif badge.status == 'revoked' %}
+                                        <a href="{% url 'core:reactivate_badge' badge.id %}" class="btn btn-sm btn-success" 
+                                           onclick="return confirm('Êtes-vous sûr de vouloir réactiver ce badge ?')">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Modal pour révoquer le badge -->
+                        {% if badge.status == 'active' %}
+                        <div class="modal fade" id="revokeModal{{ badge.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Révoquer le badge</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post" action="{% url 'core:revoke_badge' badge.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body">
+                                            <p>Êtes-vous sûr de vouloir révoquer le badge <strong>{{ badge.badge_number }}</strong> ?</p>
+                                            <div class="mb-3">
+                                                <label for="reason" class="form-label">Raison (optionnel)</label>
+                                                <textarea class="form-control" id="reason" name="reason" rows="3"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-warning">Révoquer</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card shadow mb-4">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-id-card fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Aucun badge trouvé</h5>
+            <p class="text-muted">Les badges générés apparaîtront ici.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#badgeTable').DataTable({
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
+        },
+        "order": [[4, "desc"]]
+    });
+});
+</script>
+{% endblock %} 

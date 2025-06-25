@@ -50,4 +50,15 @@ urlpatterns = [
     path('users/<int:pk>/', views.user_detail, name='user_detail'),
     path('users/<int:pk>/update/', views.user_update, name='user_update'),
     path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
+    
+    # Badge Management URLs
+    path('badges/', views.badge_list, name='badge_list'),
+    path('badges/<int:badge_id>/', views.badge_detail, name='badge_detail'),
+    path('badges/<int:badge_id>/revoke/', views.revoke_badge, name='revoke_badge'),
+    path('badges/<int:badge_id>/reactivate/', views.reactivate_badge, name='reactivate_badge'),
+    path('badges/<int:badge_id>/download/', views.download_badge_pdf, name='download_badge_pdf'),
+    path('badges/scan/', views.badge_qr_scan, name='badge_qr_scan'),
+    
+    # Badge Generation for Adherents
+    path('adherents/<int:adherent_id>/generate-badge/', views.generate_badge, name='generate_badge'),
 ]

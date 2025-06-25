@@ -645,3 +645,108 @@ class Interaction(models.Model):
                 'due_date': 'La date d\'échéance ne peut pas être dans le passé.'
             })
 
+
+# Badge Model
+class Badge(models.Model):
+    STATUS_CHOICES = (
+        ('active', 'Actif'),
+        ('expired', 'Expiré'),
+        ('revoked', 'Révoqué'),
+    )
+    
+    adherent = models.ForeignKey(
+        Adherent,
+        on_delete=models.CASCADE,
+        related_name='badges',
+        verbose_name="Adhérent"
+    )
+    badge_number = models.CharField(
+        max_length=20,
+        unique=True,
+        verbose_name="Numéro de badge"
+    )
+    qr_code = models.ImageField(
+        upload_to='badge_qr_codes/',
+        null=True,
+        blank=True,
+        verbose_name="QR Code"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name="Statut"
+    )
+    issued_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date d'émission"
+    )
+    issued_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='issued_badges',
+        verbose_name="Émis par"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Notes"
+    )
+    
+    class Meta:
+        verbose_name = 'Badge'
+        verbose_name_plural = 'Badges'
+        ordering = ['-issued_date']
+        indexes = [
+            models.Index(fields=['badge_number']),
+            models.Index(fields=['status']),
+            models.Index(fields=['issued_date']),
+        ]
+    
+    def __str__(self):
+        return f"Badge {self.badge_number} - {self.adherent.full_name}"
+    
+    def save(self, *args, **kwargs):
+        """Override save pour générer automatiquement le numéro de badge si nécessaire"""
+        if not self.badge_number:
+            self.badge_number = self.generate_badge_number()
+        super().save(*args, **kwargs)
+    
+    def generate_badge_number(self):
+        """Génère un numéro de badge unique"""
+        import random
+        import string
+        
+        while True:
+            # Format: BADGE-YYYY-XXXXX (ex: BADGE-2024-12345)
+            year = timezone.now().year
+            random_part = ''.join(random.choices(string.digits, k=5))
+            badge_number = f"BADGE-{year}-{random_part}"
+            
+            # Vérifier si le numéro existe déjà
+            if not Badge.objects.filter(badge_number=badge_number).exists():
+                return badge_number
+    
+    @property
+    def is_valid(self):
+        """Vérifie si le badge est valide"""
+        return (
+            self.status == 'active' and 
+            self.adherent.badge_validity >= timezone.now().date()
+        )
+    
+    def revoke(self, reason="", revoked_by=None):
+        """Révoque le badge"""
+        self.status = 'revoked'
+        if reason:
+            self.notes = f"Révoqué le {timezone.now().strftime('%d/%m/%Y')} par {revoked_by}: {reason}"
+        self.save()
+    
+    def reactivate(self, reactivated_by=None):
+        """Réactive le badge"""
+        self.status = 'active'
+        if reactivated_by:
+            self.notes = f"Réactivé le {timezone.now().strftime('%d/%m/%Y')} par {reactivated_by}"
+        self.save()
+

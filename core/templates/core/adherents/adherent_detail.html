@@ -1,0 +1,257 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Détails de l'Adhérent - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-user"></i> Détails de l'Adhérent
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'core:adherent_update' adherent.pk %}" class="btn btn-warning me-2">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <a href="{% url 'core:adherent_delete' adherent.pk %}" class="btn btn-danger me-2">
+                <i class="fas fa-trash"></i> Supprimer
+            </a>
+            <a href="{% url 'core:adherent_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Informations principales -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle"></i> Informations Personnelles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Identifiant :</label>
+                            <p class="mb-0">{{ adherent.identifiant }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Type d'adhérent :</label>
+                            <p class="mb-0">
+                                {% if adherent.type_adherent == 'physical' %}
+                                    <span class="badge bg-primary">Personne Physique</span>
+                                {% else %}
+                                    <span class="badge bg-info">Personne Morale</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Prénom :</label>
+                            <p class="mb-0">{{ adherent.first_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Nom :</label>
+                            <p class="mb-0">{{ adherent.last_name }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Nom complet :</label>
+                            <p class="mb-0">{{ adherent.full_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Activité :</label>
+                            <p class="mb-0">{{ adherent.activity_name }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations de contact -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-address-book"></i> Informations de Contact
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Téléphone principal :</label>
+                            <p class="mb-0">{{ adherent.phone1 }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Téléphone secondaire :</label>
+                            <p class="mb-0">
+                                {% if adherent.phone2 %}
+                                    {{ adherent.phone2 }}
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Adresse :</label>
+                        <p class="mb-0">{{ adherent.address }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations d'adhésion -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt"></i> Informations d'Adhésion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Date d'adhésion :</label>
+                            <p class="mb-0">{{ adherent.join_date|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Validité du badge :</label>
+                            <p class="mb-0">
+                                {{ adherent.badge_validity|date:"d/m/Y" }}
+                                {% if adherent.is_badge_valid %}
+                                    <span class="badge bg-success ms-2">Valide</span>
+                                {% else %}
+                                    <span class="badge bg-danger ms-2">Expiré</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Organisation :</label>
+                            <p class="mb-0">
+                                <a href="{% url 'core:organization_detail' adherent.organisation.pk %}" class="text-decoration-none">
+                                    {{ adherent.organisation.name }}
+                                </a>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Ancienneté :</label>
+                            <p class="mb-0">{{ adherent.get_age_membership }} jours</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Photo de profil -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-camera"></i> Photo de Profil
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if adherent.profile_picture %}
+                        <img src="{{ adherent.profile_picture.url }}" 
+                             class="img-fluid rounded" 
+                             alt="{{ adherent.full_name }}"
+                             style="max-width: 200px;">
+                    {% else %}
+                        <div class="bg-secondary rounded d-flex align-items-center justify-content-center mx-auto" 
+                             style="width: 200px; height: 200px;">
+                            <i class="fas fa-user fa-4x text-white"></i>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Image de l'activité -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-image"></i> Image de l'Activité
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if adherent.activity_image %}
+                        <img src="{{ adherent.activity_image.url }}" 
+                             class="img-fluid rounded" 
+                             alt="Activité de {{ adherent.full_name }}"
+                             style="max-width: 200px;">
+                    {% else %}
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center mx-auto" 
+                             style="width: 200px; height: 150px;">
+                            <i class="fas fa-image fa-3x text-muted"></i>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Informations système -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i> Informations Système
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Code-barres :</label>
+                        <p class="mb-0">
+                            {% if adherent.barcode %}
+                                <code>{{ adherent.barcode }}</code>
+                            {% else %}
+                                <span class="text-muted">Non généré</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Créé le :</label>
+                        <p class="mb-0">{{ adherent.created_at|date:"d/m/Y à H:i" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Dernière modification :</label>
+                        <p class="mb-0">{{ adherent.updated_at|date:"d/m/Y à H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt"></i> Actions Rapides
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'core:adherent_update' adherent.pk %}" class="btn btn-outline-warning">
+                            <i class="fas fa-edit"></i> Modifier l'adhérent
+                        </a>
+                        <a href="{% url 'core:interaction_create' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-comments"></i> Nouvelle Interaction
+                        </a>
+                        {% if user.role in 'superviseur,admin' or user.is_superuser %}
+                            <a href="{% url 'core:generate_badge' adherent.pk %}" class="btn btn-outline-success">
+                                <i class="fas fa-id-card"></i> Générer un Badge
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'core:adherent_delete' adherent.pk %}" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> Supprimer l'adhérent
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

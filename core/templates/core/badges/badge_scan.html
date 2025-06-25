@@ -1,0 +1,82 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Scanner QR Code{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-qrcode"></i> Scanner QR Code
+        </h1>
+        <div>
+            <a href="{% url 'core:badge_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Scanner un Badge</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-qrcode fa-3x text-primary mb-3"></i>
+                        <h5>Scanner le QR Code d'un badge</h5>
+                        <p class="text-muted">Utilisez votre appareil photo ou entrez manuellement les données du QR code</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="qr_data" class="form-label">Données du QR Code</label>
+                            <textarea class="form-control" id="qr_data" name="qr_data" rows="3" 
+                                      placeholder="Collez ici les données du QR code ou entrez manuellement le format: ADHERENT:ID|BADGE:NUMBER|VALID:DATE"></textarea>
+                            <div class="form-text">
+                                Format attendu: <code>ADHERENT:ID|BADGE:NUMBER|VALID:DATE</code>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Vérifier le Badge
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Instructions pour le scan -->
+                    <div class="mt-4">
+                        <h6>Instructions :</h6>
+                        <ul class="text-muted">
+                            <li>Utilisez l'appareil photo de votre téléphone pour scanner le QR code</li>
+                            <li>Copiez les données affichées et collez-les dans le champ ci-dessus</li>
+                            <li>Ou entrez manuellement les informations du badge</li>
+                            <li>Cliquez sur "Vérifier le Badge" pour obtenir les détails</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exemple de format -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Exemple de Format</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Format QR Code :</strong><br>
+                        <code>ADHERENT:ADH001|BADGE:BADGE-2024-12345|VALID:2024-12-31</code>
+                    </div>
+                    <p class="text-muted small">
+                        <strong>ADHERENT:</strong> Identifiant de l'adhérent<br>
+                        <strong>BADGE:</strong> Numéro du badge<br>
+                        <strong>VALID:</strong> Date de validité (YYYY-MM-DD)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

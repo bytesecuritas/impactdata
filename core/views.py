@@ -6,13 +6,25 @@ from django.http import HttpResponseForbidden, HttpResponse
 from django.urls import reverse
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from .models import User, Adherent, Organization, Category, Interaction
+from .models import User, Adherent, Organization, Category, Interaction, Badge
 from django.utils import timezone
 from .forms import UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, CategoryForm, InteractionForm, UserForm
 from django.db.models import Count
 from datetime import datetime, timedelta
 import calendar
 import json
+import qrcode
+from io import BytesIO
+from django.core.files import File
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from django.http import FileResponse
+import os
 
 # Create your views here.
 def is_admin(user):
@@ -708,4 +720,233 @@ def user_detail(request, pk):
         'user_detail': user,
     }
     return render(request, 'core/users/user_detail.html', context)
+
+@login_required
+def badge_list(request):
+    """Liste des badges"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    badges = Badge.objects.select_related('adherent', 'issued_by').all()
+    
+    # Filtres
+    status_filter = request.GET.get('status')
+    if status_filter:
+        badges = badges.filter(status=status_filter)
+    
+    context = {
+        'badges': badges,
+        'status_choices': Badge.STATUS_CHOICES,
+    }
+    return render(request, 'core/badges/badge_list.html', context)
+
+
+@login_required
+def badge_detail(request, badge_id):
+    """Détails d'un badge"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    badge = get_object_or_404(Badge, id=badge_id)
+    context = {
+        'badge': badge,
+    }
+    return render(request, 'core/badges/badge_detail.html', context)
+
+
+@login_required
+def generate_badge(request, adherent_id):
+    """Générer un badge pour un adhérent"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    adherent = get_object_or_404(Adherent, id=adherent_id)
+    
+    # Vérifier si l'adhérent a déjà un badge actif
+    existing_badge = Badge.objects.filter(adherent=adherent, status='active').first()
+    if existing_badge and existing_badge.is_valid:
+        messages.warning(request, f"{adherent.full_name} a déjà un badge actif valide jusqu'au {adherent.badge_validity}.")
+        return redirect('core:adherent_detail', adherent_id=adherent_id)
+    
+    try:
+        # Créer un nouveau badge
+        badge = Badge.objects.create(
+            adherent=adherent,
+            issued_by=request.user,
+            notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+        )
+        
+        # Générer le QR code
+        qr_data = f"ADHERENT:{adherent.identifiant}|BADGE:{badge.badge_number}|VALID:{adherent.badge_validity}"
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        
+        # Créer l'image du QR code
+        img = qr.make_image(fill='black', back_color='white')
+        img_io = BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        # Sauvegarder le QR code
+        filename = f"qr_badge_{badge.badge_number}.png"
+        badge.qr_code.save(filename, File(img_io), save=True)
+        
+        messages.success(request, f"Badge {badge.badge_number} généré avec succès pour {adherent.full_name}.")
+        return redirect('core:badge_detail', badge_id=badge.id)
+        
+    except Exception as e:
+        messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
+        return redirect('core:adherent_detail', adherent_id=adherent_id)
+
+
+@login_required
+def revoke_badge(request, badge_id):
+    """Révoquer un badge"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    badge = get_object_or_404(Badge, id=badge_id)
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '')
+        badge.revoke(reason=reason, revoked_by=request.user.name)
+        messages.success(request, f"Badge {badge.badge_number} révoqué avec succès.")
+        return redirect('core:badge_list')
+    
+    context = {
+        'badge': badge,
+    }
+    return render(request, 'core/badges/badge_revoke.html', context)
+
+
+@login_required
+def reactivate_badge(request, badge_id):
+    """Réactiver un badge"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    badge = get_object_or_404(Badge, id=badge_id)
+    badge.reactivate(reactivated_by=request.user.name)
+    messages.success(request, f"Badge {badge.badge_number} réactivé avec succès.")
+    return redirect('core:badge_list')
+
+
+@login_required
+def download_badge_pdf(request, badge_id):
+    """Télécharger le badge en PDF"""
+    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    badge = get_object_or_404(Badge, id=badge_id)
+    
+    # Créer le PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="badge_{badge.badge_number}.pdf"'
+    
+    # Créer le document PDF
+    doc = SimpleDocTemplate(response, pagesize=A4)
+    elements = []
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=30,
+        alignment=TA_CENTER,
+        textColor=colors.darkblue
+    )
+    
+    # Titre
+    elements.append(Paragraph("BADGE D'ADHÉRENT", title_style))
+    elements.append(Spacer(1, 20))
+    
+    # Informations du badge
+    badge_data = [
+        ['Numéro de badge:', badge.badge_number],
+        ['Nom complet:', badge.adherent.full_name],
+        ['Identifiant:', badge.adherent.identifiant],
+        ['Organisation:', badge.adherent.organisation.name],
+        ['Activité:', badge.adherent.activity_name],
+        ['Date d\'émission:', badge.issued_date.strftime('%d/%m/%Y')],
+        ['Validité jusqu\'au:', badge.adherent.badge_validity.strftime('%d/%m/%Y')],
+        ['Statut:', badge.get_status_display()],
+    ]
+    
+    # Créer le tableau
+    badge_table = Table(badge_data, colWidths=[4*cm, 8*cm])
+    badge_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    
+    elements.append(badge_table)
+    elements.append(Spacer(1, 30))
+    
+    # Notes si présentes
+    if badge.notes:
+        elements.append(Paragraph("Notes:", styles['Heading3']))
+        elements.append(Paragraph(badge.notes, styles['Normal']))
+        elements.append(Spacer(1, 20))
+    
+    # Construire le PDF
+    doc.build(elements)
+    return response
+
+
+@login_required
+def badge_qr_scan(request):
+    """Scanner un QR code de badge"""
+    if request.user.role not in ['superviseur', 'admin', 'agent'] and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        qr_data = request.POST.get('qr_data', '')
+        
+        try:
+            # Parser les données du QR code
+            # Format: ADHERENT:ID|BADGE:NUMBER|VALID:DATE
+            parts = qr_data.split('|')
+            adherent_id = None
+            badge_number = None
+            
+            for part in parts:
+                if part.startswith('ADHERENT:'):
+                    adherent_id = part.split(':')[1]
+                elif part.startswith('BADGE:'):
+                    badge_number = part.split(':')[1]
+            
+            if adherent_id and badge_number:
+                adherent = Adherent.objects.get(identifiant=adherent_id)
+                badge = Badge.objects.get(badge_number=badge_number)
+                
+                context = {
+                    'adherent': adherent,
+                    'badge': badge,
+                    'is_valid': badge.is_valid,
+                    'scanned_data': qr_data,
+                    'now': timezone.now(),
+                }
+                return render(request, 'core/badges/badge_scan_result.html', context)
+            else:
+                messages.error(request, "Données QR code invalides.")
+                
+        except (Adherent.DoesNotExist, Badge.DoesNotExist):
+            messages.error(request, "Badge ou adhérent non trouvé.")
+        except Exception as e:
+            messages.error(request, f"Erreur lors du scan: {str(e)}")
+    
+    return render(request, 'core/badges/badge_scan.html')
     

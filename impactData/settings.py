@@ -18,8 +18,8 @@ from decouple import Config, RepositoryEnv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Chemin explicite vers .env
-# env_path = BASE_DIR / '.env'
-# config = Config(RepositoryEnv(env_path))
+env_path = BASE_DIR / '.env'
+config = Config(RepositoryEnv(env_path))
 
 
 # Quick-start development settings - unsuitable for production
@@ -80,29 +80,29 @@ WSGI_APPLICATION = 'impactData.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-# Configuration MySQL (commentée pour le développement avec SQLite)
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': config('DB_NAME'), 
-#         'USER': config('DB_USER'),
-#         'PASSWORD': config('DB_PASSWORD'), 
-#         'HOST': config('DB_HOST'), 
-#         'PORT': config('DB_PORT', cast=int),  
-#         'OPTIONS': {
-#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#             'charset': 'utf8mb4',
-#             'use_unicode': True,
-#         },
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+
+# Configuration MySQL (commentée pour le développement avec SQLite)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config('DB_NAME'), 
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'), 
+        'HOST': config('DB_HOST'), 
+        'PORT': config('DB_PORT', cast=int),  
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+        },
+    }
+}
 
 AUTH_USER_MODEL = 'core.User'
 

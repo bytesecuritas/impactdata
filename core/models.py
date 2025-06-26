@@ -454,7 +454,7 @@ class Organization(models.Model):
     )
     category = models.ForeignKey(
         Category, 
-        on_delete=models.PROTECT,  # Changé de CASCADE à PROTECT pour éviter les suppressions accidentelles
+        on_delete=models.CASCADE,  # Changé de CASCADE à PROTECT pour éviter les suppressions accidentelles
         related_name='organizations',
         verbose_name="Catégorie"
     )

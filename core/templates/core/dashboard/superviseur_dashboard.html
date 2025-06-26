@@ -11,7 +11,7 @@
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-sm btn-outline-primary">
+                <a href="{% url 'core:adherent_create' %}" class="btn btn-sm btn-outline-primary">
                     <i class="fas fa-user-plus"></i> Nouvel adhérent
                 </a>
             </div>
@@ -178,13 +178,13 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <a href="{% url 'admin:core_adherent_add' %}" class="btn btn-outline-primary w-100">
+                            <a href="{% url 'core:adherent_create' %}" class="btn btn-outline-primary w-100">
                                 <i class="fas fa-user-plus"></i><br>
                                 Ajouter un adhérent
                             </a>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <a href="{% url 'admin:core_interaction_add' %}" class="btn btn-outline-success w-100">
+                            <a href="{% url 'core:interaction_create' %}" class="btn btn-outline-success w-100">
                                 <i class="fas fa-comment-plus"></i><br>
                                 Nouvelle interaction
                             </a>

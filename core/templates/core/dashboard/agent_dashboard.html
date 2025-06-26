@@ -11,7 +11,7 @@
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="{% url 'admin:core_organization_add' %}" class="btn btn-sm btn-outline-primary">
+                <a href="{% url 'core:category_create' %}" class="btn btn-sm btn-outline-primary">
                     <i class="fas fa-building"></i> Nouvelle organisation
                 </a>
             </div>
@@ -159,13 +159,13 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <a href="{% url 'admin:core_organization_add' %}" class="btn btn-outline-primary w-100">
+                            <a href="{% url 'core:organization_create' %}" class="btn btn-outline-primary w-100">
                                 <i class="fas fa-building"></i><br>
                                 Ajouter une organisation
                             </a>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <a href="{% url 'admin:core_category_add' %}" class="btn btn-outline-success w-100">
+                            <a href="{% url 'core:category_create' %}" class="btn btn-outline-success w-100">
                                 <i class="fas fa-tag"></i><br>
                                 Ajouter une catégorie
                             </a>

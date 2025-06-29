@@ -2,17 +2,27 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponseForbidden, HttpResponse
-from django.urls import reverse
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
-from .models import User, Adherent, Organization, Category, Interaction, Badge
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, FileResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.db.models import Q, Count, Sum
 from django.utils import timezone
-from .forms import UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, CategoryForm, InteractionForm, UserForm
-from django.db.models import Count
-from datetime import datetime, timedelta
-import calendar
+from django.core.paginator import Paginator
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.http import FileResponse
+import os
 import json
+from datetime import datetime, timedelta
+from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, SupervisorStats
+from .forms import (
+    UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, 
+    CategoryForm, InteractionForm, UserForm, UserRegistrationForm, UserEditForm,
+    BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm
+)
+import calendar
 import qrcode
 from io import BytesIO
 from django.core.files import File
@@ -23,13 +33,35 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
-from django.http import FileResponse
-import os
 
 # Create your views here.
 def is_admin(user):
-    return user.is_authenticated and user.can_manage_users()
-    
+    return user.is_authenticated and user.role == 'admin'
+
+def is_supervisor(user):
+    return user.is_authenticated and user.role == 'superviseur'
+
+def is_agent(user):
+    return user.is_authenticated and user.role == 'agent'
+
+def can_manage_users(user):
+    """Vérifie si l'utilisateur peut gérer les utilisateurs"""
+    return user.is_authenticated and (user.role == 'admin' or user.role == 'superviseur')
+
+def can_access_user_data(user, target_user):
+    """Vérifie si l'utilisateur peut accéder aux données d'un autre utilisateur"""
+    if user.role == 'admin':
+        return True
+    elif user.role == 'superviseur':
+        # Les superviseurs peuvent voir les agents qu'ils ont créés ou qui leur sont assignés
+        return target_user.role == 'agent' and (
+            target_user.created_by == user or 
+            target_user in user.created_users.filter(role='agent')
+        )
+    elif user.role == 'agent':
+        # Les agents ne peuvent voir que leur propre profil
+        return user == target_user
+    return False
 
 def login_view(request):
     """Vue de connexion personnalisée"""
@@ -45,7 +77,7 @@ def login_view(request):
             if user is not None:
                 if user.is_active:
                     login(request, user)
-                    messages.success(request, f'Bienvenue {user.name}!')
+                    messages.success(request, f'Bienvenue {user.get_full_name()}!')
                     
                     # Redirection selon le rôle
                     if user.is_superuser or user.role == 'admin':
@@ -65,14 +97,12 @@ def login_view(request):
     
     return render(request, 'core/auth/login.html', {})
 
-
 @login_required
 def logout_view(request):
     """Vue de déconnexion"""
     logout(request)
     messages.success(request, 'Vous avez été déconnecté avec succès.')
     return redirect('core:login')
-
 
 @login_required
 def dashboard(request):
@@ -85,7 +115,6 @@ def dashboard(request):
         return redirect('core:agent_dashboard')
     else:
         return redirect('core:login')
-
 
 @login_required
 def admin_dashboard(request):
@@ -153,6 +182,82 @@ def admin_dashboard(request):
     }
     return render(request, 'core/dashboard/admin_dashboard.html', context)
 
+@login_required
+def superviseur_dashboard(request):
+    """Tableau de bord superviseur"""
+    if not is_supervisor(request.user) and not request.user.is_superuser:
+        return HttpResponseForbidden("Accès refusé")
+    
+    # Obtenir les agents assignés au superviseur
+    assigned_agents = User.objects.filter(
+        Q(created_by=request.user) | Q(role='agent')
+    ).filter(role='agent')
+    
+    # Statistiques des agents
+    agents_stats = []
+    for agent in assigned_agents:
+        stats, created = SupervisorStats.objects.get_or_create(
+            supervisor=request.user,
+            agent=agent
+        )
+        stats.update_stats()
+        agents_stats.append(stats)
+    
+    # Objectifs assignés
+    objectives = UserObjective.objects.filter(
+        assigned_by=request.user
+    ).order_by('-created_at')[:10]
+    
+    # Statistiques globales
+    total_organizations = sum(stats.organizations_count for stats in agents_stats)
+    total_adherents = sum(stats.adherents_count for stats in agents_stats)
+    total_interactions = sum(stats.interactions_count for stats in agents_stats)
+    
+    context = {
+        'assigned_agents': assigned_agents,
+        'agents_stats': agents_stats,
+        'objectives': objectives,
+        'total_organizations': total_organizations,
+        'total_adherents': total_adherents,
+        'total_interactions': total_interactions,
+        'now': timezone.now(),
+    }
+    return render(request, 'core/dashboard/superviseur_dashboard.html', context)
+
+@login_required
+def agent_dashboard(request):
+    """Tableau de bord agent"""
+    if not is_agent(request.user):
+        return HttpResponseForbidden("Accès refusé")
+    
+    # Statistiques de l'agent
+    organizations_count = Organization.objects.filter(created_by=request.user).count()
+    adherents_count = Adherent.objects.filter(
+        organisation__in=Organization.objects.filter(created_by=request.user)
+    ).count()
+    interactions_count = Interaction.objects.filter(personnel=request.user).count()
+    
+    # Objectifs assignés
+    objectives = UserObjective.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Dernières activités
+    recent_organizations = Organization.objects.filter(created_by=request.user).order_by('-created_at')[:5]
+    recent_adherents = Adherent.objects.filter(
+        organisation__in=Organization.objects.filter(created_by=request.user)
+    ).order_by('-created_at')[:5]
+    recent_interactions = Interaction.objects.filter(personnel=request.user).order_by('-created_at')[:5]
+    
+    context = {
+        'organizations_count': organizations_count,
+        'adherents_count': adherents_count,
+        'interactions_count': interactions_count,
+        'objectives': objectives,
+        'recent_organizations': recent_organizations,
+        'recent_adherents': recent_adherents,
+        'recent_interactions': recent_interactions,
+        'now': timezone.now(),
+    }
+    return render(request, 'core/dashboard/agent_dashboard.html', context)
 
 @login_required
 def profile(request):
@@ -167,13 +272,13 @@ def profile(request):
 def edit_profile(request):
     """Vue pour modifier son profil"""
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, instance=request.user)
+        form = ProfileEditForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Votre profil a été mis à jour avec succès.')
             return redirect('core:profile')
     else:
-        form = UserProfileForm(instance=request.user)
+        form = ProfileEditForm(instance=request.user)
     
     return render(request, 'core/profile/edit_profile.html', {'form': form})
 
@@ -193,42 +298,11 @@ def change_password(request):
     
     return render(request, 'core/profile/change_password.html', {'form': form})
 
-@login_required
-def superviseur_dashboard(request):
-    """Tableau de bord superviseur"""
-    if request.user.role != 'superviseur' and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
-    
-    context = {
-        'total_adherents': Adherent.objects.count(),
-        'total_interactions': Interaction.objects.count(),
-        'recent_adherents': Adherent.objects.order_by('-created_at')[:10],
-        'recent_interactions': Interaction.objects.order_by('-created_at')[:10],
-        'expired_badges': Adherent.objects.filter(badge_validity__lt=timezone.now().date()).count(),
-    }
-    return render(request, 'core/dashboard/superviseur_dashboard.html', context)
-
-
-@login_required
-def agent_dashboard(request):
-    """Tableau de bord agent"""
-    if request.user.role != 'agent' and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
-    
-    context = {
-        'total_organizations': Organization.objects.count(),
-        'total_categories': Category.objects.count(),
-        'recent_organizations': Organization.objects.order_by('-created_at')[:10],
-        'recent_categories': Category.objects.order_by('-created_at')[:10],
-    }
-    return render(request, 'core/dashboard/agent_dashboard.html', context)
-
-
 # Vues pour les adhérents (superviseurs et admins)
 @login_required
 def adherent_list(request):
     """Liste des adhérents"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent','superviseur', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     adherents = Adherent.objects.all().order_by('last_name', 'first_name')
@@ -238,11 +312,10 @@ def adherent_list(request):
     }
     return render(request, 'core/adherents/adherent_list.html', context)
 
-
 @login_required
 def adherent_detail(request, adherent_id):
     """Détail d'un adhérent"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     try:
@@ -258,7 +331,6 @@ def adherent_detail(request, adherent_id):
     }
     return render(request, 'core/adherents/adherent_detail.html', context)
 
-
 # Vues pour les organisations (agents et admins)
 @login_required
 def organization_list(request):
@@ -272,7 +344,6 @@ def organization_list(request):
         'total_organizations': organizations.count(),
     }
     return render(request, 'core/organizations/organization_list.html', context)
-
 
 @login_required
 def organization_detail(request, organization_id):
@@ -293,7 +364,6 @@ def organization_detail(request, organization_id):
     }
     return render(request, 'core/organizations/organization_detail.html', context)
 
-
 # Vues pour les catégories (agents et admins)
 @login_required
 def category_list(request):
@@ -308,12 +378,11 @@ def category_list(request):
     }
     return render(request, 'core/categories/category_list.html', context)
 
-
 # Vues pour les interactions (superviseurs et admins)
 @login_required
 def interaction_list(request):
     """Liste des interactions"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     interactions = Interaction.objects.all().order_by('-created_at')
@@ -324,11 +393,10 @@ def interaction_list(request):
     }
     return render(request, 'core/interactions/interaction_list.html', context)
 
-
 @login_required
 def interaction_detail(request, interaction_id):
     """Détail d'une interaction"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     try:
@@ -342,144 +410,122 @@ def interaction_detail(request, interaction_id):
     }
     return render(request, 'core/interactions/interaction_detail.html', context)
 
-
 # ==================== CRUD ADHÉRENTS ====================
 
 @login_required
 def adherent_create(request):
     """Créer un nouvel adhérent"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
-        form = AdherentForm(request.POST, request.FILES)
+        form = AdherentForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            adherent = form.save()
-            messages.success(request, f'Adhérent "{adherent.full_name}" créé avec succès.')
-            return redirect('core:adherent_list')
+            adherent = form.save(commit=False)
+            adherent.save()
+            messages.success(request, 'Adhérent créé avec succès.')
+            return redirect('core:adherent_detail', adherent_id=adherent.id)
     else:
-        form = AdherentForm()
+        form = AdherentForm(user=request.user)
     
-    context = {
-        'form': form,
-        'title': 'Créer un nouvel adhérent',
-        'submit_text': 'Créer l\'adhérent'
-    }
-    return render(request, 'core/adherents/adherent_form.html', context)
+    return render(request, 'core/adherents/adherent_form.html', {'form': form, 'title': 'Créer un adhérent'})
 
 @login_required
 def adherent_update(request, adherent_id):
     """Modifier un adhérent"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
     if request.method == 'POST':
-        form = AdherentForm(request.POST, request.FILES, instance=adherent)
+        form = AdherentForm(request.POST, request.FILES, instance=adherent, user=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Adhérent "{adherent.full_name}" modifié avec succès.')
-            return redirect('core:adherent_list')
+            messages.success(request, 'Adhérent mis à jour avec succès.')
+            return redirect('core:adherent_detail', adherent_id=adherent.id)
     else:
-        form = AdherentForm(instance=adherent)
+        form = AdherentForm(instance=adherent, user=request.user)
     
-    context = {
-        'form': form,
-        'adherent': adherent,
-        'title': f'Modifier l\'adhérent {adherent.full_name}',
-        'submit_text': 'Mettre à jour'
-    }
-    return render(request, 'core/adherents/adherent_form.html', context)
+    return render(request, 'core/adherents/adherent_form.html', {'form': form, 'title': 'Modifier l\'adhérent'})
 
 @login_required
 def adherent_delete(request, adherent_id):
     """Supprimer un adhérent"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
     if request.method == 'POST':
-        adherent_name = adherent.full_name
         adherent.delete()
-        messages.success(request, f'Adhérent "{adherent_name}" supprimé avec succès.')
+        messages.success(request, 'Adhérent supprimé avec succès.')
         return redirect('core:adherent_list')
     
-    context = {
-        'adherent': adherent,
-        'title': f'Supprimer l\'adhérent {adherent.full_name}'
-    }
-    return render(request, 'core/adherents/adherent_confirm_delete.html', context)
+    return render(request, 'core/adherents/adherent_confirm_delete.html', {'adherent': adherent})
 
 # ==================== CRUD ORGANISATIONS ====================
 
 @login_required
 def organization_create(request):
     """Créer une nouvelle organisation"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
         form = OrganizationForm(request.POST)
         if form.is_valid():
-            organization = form.save()
-            messages.success(request, f'Organisation "{organization.name}" créée avec succès.')
-            return redirect('core:organization_list')
+            organization = form.save(commit=False)
+            organization.created_by = request.user
+            organization.save()
+            messages.success(request, 'Organisation créée avec succès.')
+            return redirect('core:organization_detail', organization_id=organization.id)
     else:
         form = OrganizationForm()
     
-    context = {
-        'form': form,
-        'title': 'Créer une nouvelle organisation',
-        'submit_text': 'Créer l\'organisation'
-    }
-    return render(request, 'core/organizations/organization_form.html', context)
+    return render(request, 'core/organizations/organization_form.html', {'form': form, 'title': 'Créer une organisation'})
 
 @login_required
 def organization_update(request, organization_id):
     """Modifier une organisation"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     organization = get_object_or_404(Organization, id=organization_id)
+    
+    # Vérifier que l'agent ne peut modifier que ses propres organisations
+    if is_agent(request.user) and organization.created_by != request.user:
+        return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
         form = OrganizationForm(request.POST, instance=organization)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Organisation "{organization.name}" modifiée avec succès.')
-            return redirect('core:organization_list')
+            messages.success(request, 'Organisation mise à jour avec succès.')
+            return redirect('core:organization_detail', organization_id=organization.id)
     else:
         form = OrganizationForm(instance=organization)
     
-    context = {
-        'form': form,
-        'organization': organization,
-        'title': f'Modifier l\'organisation {organization.name}',
-        'submit_text': 'Mettre à jour'
-    }
-    return render(request, 'core/organizations/organization_form.html', context)
+    return render(request, 'core/organizations/organization_form.html', {'form': form, 'title': 'Modifier l\'organisation'})
 
 @login_required
 def organization_delete(request, organization_id):
     """Supprimer une organisation"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     organization = get_object_or_404(Organization, id=organization_id)
     
+    # Vérifier que l'agent ne peut supprimer que ses propres organisations
+    if is_agent(request.user) and organization.created_by != request.user:
+        return HttpResponseForbidden("Accès refusé")
+    
     if request.method == 'POST':
-        organization_name = organization.name
         organization.delete()
-        messages.success(request, f'Organisation "{organization_name}" supprimée avec succès.')
+        messages.success(request, 'Organisation supprimée avec succès.')
         return redirect('core:organization_list')
     
-    context = {
-        'organization': organization,
-        'title': f'Supprimer l\'organisation {organization.name}'
-    }
-    return render(request, 'core/organizations/organization_confirm_delete.html', context)
+    return render(request, 'core/organizations/organization_confirm_delete.html', {'organization': organization})
 
 # ==================== CRUD CATÉGORIES ====================
 
@@ -555,176 +601,232 @@ def category_delete(request, category_id):
 @login_required
 def interaction_create(request):
     """Créer une nouvelle interaction"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
-        form = InteractionForm(request.POST)
+        form = InteractionForm(request.POST, user=request.user)
         if form.is_valid():
-            interaction = form.save()
-            messages.success(request, f'Interaction "{interaction.identifiant}" créée avec succès.')
-            return redirect('core:interaction_list')
+            interaction = form.save(commit=False)
+            interaction.personnel = request.user
+            interaction.save()
+            messages.success(request, 'Interaction créée avec succès.')
+            return redirect('core:interaction_detail', interaction_id=interaction.id)
     else:
-        form = InteractionForm()
-        # Pré-remplir le personnel avec l'utilisateur connecté
-        form.fields['personnel'].initial = request.user
+        form = InteractionForm(user=request.user)
     
-    context = {
-        'form': form,
-        'title': 'Créer une nouvelle interaction',
-        'submit_text': 'Créer l\'interaction'
-    }
-    return render(request, 'core/interactions/interaction_form.html', context)
+    return render(request, 'core/interactions/interaction_form.html', {'form': form, 'title': 'Créer une interaction'})
 
 @login_required
 def interaction_update(request, interaction_id):
     """Modifier une interaction"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
+    # Vérifier que le superviseur ne peut modifier que ses propres interactions
+    if is_agent(request.user) and interaction.personnel != request.user:
+        return HttpResponseForbidden("Accès refusé")
+    
     if request.method == 'POST':
-        form = InteractionForm(request.POST, instance=interaction)
+        form = InteractionForm(request.POST, instance=interaction, user=request.user)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Interaction "{interaction.identifiant}" modifiée avec succès.')
-            return redirect('core:interaction_list')
+            messages.success(request, 'Interaction mise à jour avec succès.')
+            return redirect('core:interaction_detail', interaction_id=interaction.id)
     else:
-        form = InteractionForm(instance=interaction)
+        form = InteractionForm(instance=interaction, user=request.user)
     
-    context = {
-        'form': form,
-        'interaction': interaction,
-        'title': f'Modifier l\'interaction {interaction.identifiant}',
-        'submit_text': 'Mettre à jour'
-    }
-    return render(request, 'core/interactions/interaction_form.html', context)
+    return render(request, 'core/interactions/interaction_form.html', {'form': form, 'title': 'Modifier l\'interaction'})
 
 @login_required
 def interaction_delete(request, interaction_id):
     """Supprimer une interaction"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if not (is_admin(request.user) or is_agent(request.user)):
         return HttpResponseForbidden("Accès refusé")
     
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
+    # Vérifier que le superviseur ne peut supprimer que ses propres interactions
+    if is_agent(request.user) and interaction.personnel != request.user:
+        return HttpResponseForbidden("Accès refusé")
+    
     if request.method == 'POST':
-        interaction_id_str = interaction.identifiant
         interaction.delete()
-        messages.success(request, f'Interaction "{interaction_id_str}" supprimée avec succès.')
+        messages.success(request, 'Interaction supprimée avec succès.')
         return redirect('core:interaction_list')
     
-    context = {
-        'interaction': interaction,
-        'title': f'Supprimer l\'interaction {interaction.identifiant}'
-    }
-    return render(request, 'core/interactions/interaction_confirm_delete.html', context)
+    return render(request, 'core/interactions/interaction_confirm_delete.html', {'interaction': interaction})
 
 # User Management Views (Admin only)
-@login_required
-def user_list(request):
-    """Liste des utilisateurs (Admin uniquement)"""
-    if not (request.user.is_superuser or request.user.role == 'admin'):
-        return HttpResponseForbidden("Accès refusé")
+class UserListView(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'core/users/user_list.html'
+    context_object_name = 'users'
+    paginate_by = 20
     
-    users = User.objects.all().order_by('-date_joined')
-    context = {
-        'users': users,
-        'total_users': users.count(),
-    }
-    return render(request, 'core/users/user_list.html', context)
-
-@login_required
-def user_create(request):
-    """Créer un nouvel utilisateur (Admin uniquement)"""
-    if not (request.user.is_superuser or request.user.role == 'admin'):
-        return HttpResponseForbidden("Accès refusé")
-    
-    if request.method == 'POST':
-        form = UserForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data['password'])
-            user.save()
-            messages.success(request, f"L'utilisateur {user.name} a été créé avec succès.")
-            return redirect('core:user_list')
-    else:
-        form = UserForm()
-    
-    context = {
-        'form': form,
-        'title': 'Créer un Utilisateur',
-    }
-    return render(request, 'core/users/user_form.html', context)
-
-@login_required
-def user_update(request, pk):
-    """Modifier un utilisateur (Admin uniquement)"""
-    if not (request.user.is_superuser or request.user.role == 'admin'):
-        return HttpResponseForbidden("Accès refusé")
-    
-    user = get_object_or_404(User, pk=pk)
-    
-    if request.method == 'POST':
-        form = UserForm(request.POST, instance=user)
-        if form.is_valid():
-            user = form.save(commit=False)
-            if form.cleaned_data.get('password'):
-                user.set_password(form.cleaned_data['password'])
-            user.save()
-            messages.success(request, f"L'utilisateur {user.name} a été modifié avec succès.")
-            return redirect('core:user_list')
-    else:
-        form = UserForm(instance=user)
-    
-    context = {
-        'form': form,
-        'user': user,
-        'title': 'Modifier l\'Utilisateur',
-    }
-    return render(request, 'core/users/user_form.html', context)
-
-@login_required
-def user_delete(request, pk):
-    """Supprimer un utilisateur (Admin uniquement)"""
-    if not (request.user.is_superuser or request.user.role == 'admin'):
-        return HttpResponseForbidden("Accès refusé")
-    
-    user = get_object_or_404(User, pk=pk)
-    
-    if request.method == 'POST':
-        if user == request.user:
-            messages.error(request, "Vous ne pouvez pas supprimer votre propre compte.")
-            return redirect('core:user_list')
+    def get_queryset(self):
+        queryset = User.objects.all()
         
-        user_name = user.name
-        user.delete()
-        messages.success(request, f"L'utilisateur {user_name} a été supprimé avec succès.")
-        return redirect('core:user_list')
+        # Filtrage selon le rôle de l'utilisateur connecté
+        if self.request.user.role == 'admin':
+            # Les admins voient tous les utilisateurs
+            pass
+        elif self.request.user.role == 'superviseur':
+            # Les superviseurs voient seulement les agents qui sont créés par eux ou qui leur sont assignés
+            queryset = queryset.filter(
+                Q(role='agent') & Q(created_by=self.request.user)
+            )
+        elif self.request.user.role == 'agent':
+            # Les agents ne voient que leur propre profil
+            queryset = queryset.filter(pk=self.request.user.pk)
+        
+        # Filtres de recherche
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(matricule__icontains=search) |
+                Q(email__icontains=search)
+            )
+        
+        role_filter = self.request.GET.get('role')
+        if role_filter:
+            queryset = queryset.filter(role=role_filter)
+        
+        status_filter = self.request.GET.get('status')
+        if status_filter == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset.order_by('first_name', 'last_name')
     
-    context = {
-        'user': user,
-    }
-    return render(request, 'core/users/user_confirm_delete.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['can_create_users'] = can_manage_users(self.request.user)
+        return context
 
-@login_required
-def user_detail(request, pk):
-    """Détails d'un utilisateur (Admin uniquement)"""
-    if not (request.user.is_superuser or request.user.role == 'admin'):
-        return HttpResponseForbidden("Accès refusé")
+class UserDetailView(LoginRequiredMixin, DetailView):
+    model = User
+    template_name = 'core/users/user_detail.html'
+    context_object_name = 'user_obj'
     
-    user = get_object_or_404(User, pk=pk)
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if not can_access_user_data(self.request.user, obj):
+            raise PermissionDenied("Vous n'avez pas la permission d'accéder à ces données.")
+        return obj
     
-    context = {
-        'user_detail': user,
-    }
-    return render(request, 'core/users/user_detail.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_obj = self.get_object()
+        
+        # Calculer les statistiques de l'utilisateur
+        if user_obj.role == 'agent':
+            context['stats'] = {
+                'organizations_count': Organization.objects.filter(created_by=user_obj).count(),
+                'adherents_count': Adherent.objects.filter(
+                    organisation__in=Organization.objects.filter(created_by=user_obj)
+                ).count(),
+                'interactions_count': Interaction.objects.filter(personnel=user_obj).count(),
+                'categories_count': Category.objects.filter(
+                    organizations__created_by=user_obj
+                ).distinct().count(),
+            }
+        else:
+            context['stats'] = {
+                'organizations_count': 0,
+                'adherents_count': 0,
+                'interactions_count': 0,
+                'categories_count': 0,
+            }
+        
+        return context
+
+class UserCreateView(LoginRequiredMixin, CreateView):
+    model = User
+    template_name = 'core/users/user_form.html'
+    form_class = UserRegistrationForm
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not can_manage_users(request.user):
+            raise PermissionDenied("Vous n'avez pas la permission de créer des utilisateurs.")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Limiter les choix de rôle selon l'utilisateur connecté
+        if self.request.user.role == 'superviseur':
+            form.fields['role'].choices = [('agent', 'Agent')]
+            form.fields['role'].initial = 'agent'
+        # Si c'est un admin qui créer un agent voir seulement les superviseurs
+        if self.request.user.is_superuser or self.request.user.role == 'admin':
+            form.fields['created_by'].queryset = User.objects.filter(role='superviseur')
+        return form
+    
+    def form_valid(self, form):
+        user = form.save(commit=False)
+        if not user.created_by:
+            user.created_by = self.request.user
+        user.save()
+        
+        # Afficher le mot de passe généré si applicable
+        if hasattr(user, '_password_generated'):
+            messages.success(
+                self.request,
+                f"Utilisateur créé avec succès. Mot de passe généré : {user._password_generated}"
+            )
+        else:
+            messages.success(self.request, "Utilisateur créé avec succès.")
+        
+        return redirect('core:user_detail', pk=user.pk)
+
+class UserUpdateView(LoginRequiredMixin, UpdateView):
+    model = User
+    template_name = 'core/users/user_form.html'
+    form_class = UserEditForm
+    
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if not can_access_user_data(request.user, obj):
+            raise PermissionDenied("Vous n'avez pas la permission de modifier cet utilisateur.")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_form_class(self):
+        if self.request.user.role == 'admin':
+            return UserEditForm
+        else:
+            return UserForm
+    
+    def form_valid(self, form):
+        user = form.save(commit=False)
+        user.last_modified_by = self.request.user
+        user.save()
+        messages.success(self.request, "Utilisateur mis à jour avec succès.")
+        return redirect('core:user_detail', pk=user.pk)
+
+class UserDeleteView(LoginRequiredMixin, DeleteView):
+    model = User
+    template_name = 'core/users/user_confirm_delete.html'
+    context_object_name = 'user_obj'
+    success_url = reverse_lazy('core:user_list')
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not is_admin(request.user):
+            raise PermissionDenied("Seuls les administrateurs peuvent supprimer des utilisateurs.")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, "Utilisateur supprimé avec succès.")
+        return super().delete(request, *args, **kwargs)
 
 @login_required
 def badge_list(request):
     """Liste des badges"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     badges = Badge.objects.select_related('adherent', 'issued_by').all()
@@ -740,11 +842,10 @@ def badge_list(request):
     }
     return render(request, 'core/badges/badge_list.html', context)
 
-
 @login_required
 def badge_detail(request, badge_id):
     """Détails d'un badge"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
@@ -753,11 +854,10 @@ def badge_detail(request, badge_id):
     }
     return render(request, 'core/badges/badge_detail.html', context)
 
-
 @login_required
 def generate_badge(request, adherent_id):
     """Générer un badge pour un adhérent"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     adherent = get_object_or_404(Adherent, id=adherent_id)
@@ -804,11 +904,10 @@ def generate_badge(request, adherent_id):
         messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
         return redirect('core:adherent_detail', adherent_id=adherent_id)
 
-
 @login_required
 def revoke_badge(request, badge_id):
     """Révoquer un badge"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
@@ -824,11 +923,10 @@ def revoke_badge(request, badge_id):
     }
     return render(request, 'core/badges/badge_revoke.html', context)
 
-
 @login_required
 def reactivate_badge(request, badge_id):
     """Réactiver un badge"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
@@ -836,11 +934,10 @@ def reactivate_badge(request, badge_id):
     messages.success(request, f"Badge {badge.badge_number} réactivé avec succès.")
     return redirect('core:badge_list')
 
-
 @login_required
 def download_badge_pdf(request, badge_id):
     """Télécharger le badge en PDF"""
-    if request.user.role not in ['superviseur', 'admin'] and not request.user.is_superuser:
+    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
         return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
@@ -905,7 +1002,6 @@ def download_badge_pdf(request, badge_id):
     doc.build(elements)
     return response
 
-
 @login_required
 def badge_qr_scan(request):
     """Scanner un QR code de badge"""
@@ -949,4 +1045,106 @@ def badge_qr_scan(request):
             messages.error(request, f"Erreur lors du scan: {str(e)}")
     
     return render(request, 'core/badges/badge_scan.html')
+
+# Objective Management Views (Supervisor only)
+class ObjectiveListView(LoginRequiredMixin, ListView):
+    model = UserObjective
+    template_name = 'core/objectives/objective_list.html'
+    context_object_name = 'objectives'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        if self.request.user.role == 'admin':
+            return UserObjective.objects.all()
+        elif self.request.user.role == 'superviseur':
+            return UserObjective.objects.filter(assigned_by=self.request.user)
+        else:
+            return UserObjective.objects.filter(user=self.request.user)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['can_create_objectives'] = self.request.user.role in ['admin', 'superviseur']
+        return context
+
+class ObjectiveDetailView(LoginRequiredMixin, DetailView):
+    model = UserObjective
+    template_name = 'core/objectives/objective_detail.html'
+    context_object_name = 'objective'
+    
+    def get_queryset(self):
+        if self.request.user.role == 'admin':
+            return UserObjective.objects.all()
+        elif self.request.user.role == 'superviseur':
+            return UserObjective.objects.filter(assigned_by=self.request.user)
+        else:
+            return UserObjective.objects.filter(user=self.request.user)
+
+class ObjectiveCreateView(LoginRequiredMixin, CreateView):
+    model = UserObjective
+    template_name = 'core/objectives/objective_form.html'
+    form_class = UserObjectiveForm
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.role in ['admin', 'superviseur']:
+            raise PermissionDenied("Seuls les administrateurs et superviseurs peuvent créer des objectifs.")
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.request.user.role == 'superviseur':
+            # Les superviseurs ne peuvent assigner des objectifs qu'aux agents qu'ils ont créés
+            form.fields['user'].queryset = User.objects.filter(
+                role='agent',
+                created_by=self.request.user
+            )
+        return form
+    
+    def form_valid(self, form):
+        objective = form.save(commit=False)
+        objective.assigned_by = self.request.user
+        objective.save()
+        messages.success(self.request, "Objectif créé avec succès.")
+        return redirect('core:objective_detail', pk=objective.pk)
+    
+    def form_invalid(self, form):
+        print("❌ Formulaire invalide :", form.errors)
+        return super().form_invalid(form)
+
+class ObjectiveUpdateView(LoginRequiredMixin, UpdateView):
+    model = UserObjective
+    template_name = 'core/objectives/objective_form.html'
+    form_class = UserObjectiveForm
+    
+    def get_queryset(self):
+        if self.request.user.role == 'admin':
+            return UserObjective.objects.all()
+        elif self.request.user.role == 'superviseur':
+            return UserObjective.objects.filter(assigned_by=self.request.user)
+        else:
+            return UserObjective.objects.filter(user=self.request.user)
+    
+    def form_valid(self, form):
+        messages.success(self.request, "Objectif mis à jour avec succès.")
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('core:objective_detail', kwargs={'pk': self.object.pk})
+
+class ObjectiveDeleteView(LoginRequiredMixin, DeleteView):
+    model = UserObjective
+    template_name = 'core/objectives/objective_confirm_delete.html'
+    context_object_name = 'objective'
+    success_url = reverse_lazy('core:objective_list')
+    
+    def get_queryset(self):
+        if self.request.user.role == 'admin':
+            return UserObjective.objects.all()
+        elif self.request.user.role == 'superviseur':
+            return UserObjective.objects.filter(assigned_by=self.request.user)
+        else:
+            return UserObjective.objects.filter(user=self.request.user)
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, "Objectif supprimé avec succès.")
+        return super().delete(request, *args, **kwargs)
     

@@ -54,6 +54,16 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label for="{{ form.number_personnel.id_for_label }}" class="form-label">
+                                        Nombre de personnel <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.number_personnel }}
+                                    {% if form.number_personnel.errors %}
+                                        <div class="text-danger">{{ form.number_personnel.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
                                     <label for="{{ form.monthly_revenue.id_for_label }}" class="form-label">
                                         Chiffre d'affaires mensuel
                                     </label>
@@ -81,6 +91,16 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label for="{{ form.whatsapp.id_for_label }}" class="form-label">
+                                        WhatsApp
+                                    </label>
+                                    {{ form.whatsapp }}
+                                    {% if form.whatsapp.errors %}
+                                        <div class="text-danger">{{ form.whatsapp.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
                                     <label for="{{ form.address.id_for_label }}" class="form-label">
                                         Adresse <span class="text-danger">*</span>
                                     </label>
@@ -97,6 +117,37 @@
                                     {{ form.creation_date }}
                                     {% if form.creation_date.errors %}
                                         <div class="text-danger">{{ form.creation_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informations supplémentaires -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-plus-circle"></i> Informations supplémentaires
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.infos_annexes.id_for_label }}" class="form-label">
+                                        Informations annexes
+                                    </label>
+                                    {{ form.infos_annexes }}
+                                    {% if form.infos_annexes.errors %}
+                                        <div class="text-danger">{{ form.infos_annexes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.hobies.id_for_label }}" class="form-label">
+                                        Hobbies
+                                    </label>
+                                    {{ form.hobies }}
+                                    {% if form.hobies.errors %}
+                                        <div class="text-danger">{{ form.hobies.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>

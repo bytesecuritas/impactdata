@@ -37,14 +37,21 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.name.id_for_label }}" class="form-label">Nom complet</label>
-                                {{ form.name }}
-                                {% if form.name.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Email</label> 
                                 {{ form.email }}
                                 {% if form.email.errors %}
                                     <div class="invalid-feedback d-block">{{ form.email.errors }}</div>

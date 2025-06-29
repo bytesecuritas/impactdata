@@ -44,12 +44,19 @@ urlpatterns = [
     path('interactions/<int:interaction_id>/edit/', views.interaction_update, name='interaction_update'),
     path('interactions/<int:interaction_id>/delete/', views.interaction_delete, name='interaction_delete'),
     
-    # User Management URLs (Admin only)
-    path('users/', views.user_list, name='user_list'),
-    path('users/create/', views.user_create, name='user_create'),
-    path('users/<int:pk>/', views.user_detail, name='user_detail'),
-    path('users/<int:pk>/update/', views.user_update, name='user_update'),
-    path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
+    # User Management URLs
+    path('users/', views.UserListView.as_view(), name='user_list'),
+    path('users/create/', views.UserCreateView.as_view(), name='user_create'),
+    path('users/<int:pk>/', views.UserDetailView.as_view(), name='user_detail'),
+    path('users/<int:pk>/update/', views.UserUpdateView.as_view(), name='user_update'),
+    path('users/<int:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
+    
+    # Objective Management URLs (Superviseur)
+    path('objectives/', views.ObjectiveListView.as_view(), name='objective_list'),
+    path('objectives/create/', views.ObjectiveCreateView.as_view(), name='objective_create'),
+    path('objectives/<int:pk>/', views.ObjectiveDetailView.as_view(), name='objective_detail'),
+    path('objectives/<int:pk>/update/', views.ObjectiveUpdateView.as_view(), name='objective_update'),
+    path('objectives/<int:pk>/delete/', views.ObjectiveDeleteView.as_view(), name='objective_delete'),
     
     # Badge Management URLs
     path('badges/', views.badge_list, name='badge_list'),

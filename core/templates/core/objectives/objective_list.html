@@ -1,0 +1,223 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Gestion des Objectifs - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-bullseye"></i> Gestion des Objectifs
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'core:objective_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouvel Objectif
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Statut</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">Tous les statuts</option>
+                                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>En attente</option>
+                                <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>En cours</option>
+                                <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Terminé</option>
+                                <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Échoué</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="type" class="form-label">Type d'objectif</label>
+                            <select name="type" id="type" class="form-select">
+                                <option value="">Tous les types</option>
+                                <option value="organizations" {% if request.GET.type == 'organizations' %}selected{% endif %}>Organisations</option>
+                                <option value="adherents" {% if request.GET.type == 'adherents' %}selected{% endif %}>Adhérents</option>
+                                <option value="interactions" {% if request.GET.type == 'interactions' %}selected{% endif %}>Interactions</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="agent" class="form-label">Agent</label>
+                            <select name="agent" id="agent" class="form-select">
+                                <option value="">Tous les agents</option>
+                                {% for agent in assigned_agents %}
+                                <option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ agent.get_full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i> Filtrer
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des objectifs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Objectifs Assignés
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if objectives %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Agent</th>
+                                        <th>Type d'objectif</th>
+                                        <th>Progression</th>
+                                        <th>Échéance</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for objective in objectives %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" 
+                                                     style="width: 32px; height: 32px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ objective.user.get_full_name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ objective.user.matricule }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ objective.get_objective_type_display }}</strong>
+                                                {% if objective.description %}
+                                                    <br>
+                                                    <small class="text-muted">{{ objective.description|truncatechars:50 }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="flex-grow-1 me-2">
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div class="progress-bar {% if objective.status == 'completed' %}bg-success{% elif objective.status == 'failed' %}bg-danger{% elif objective.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ objective.progress_percentage }}%">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ objective.current_value }}/{{ objective.target_value }}
+                                                </small>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ objective.progress_percentage|floatformat:1 }}%
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ objective.deadline|date:"d/m/Y" }}</strong>
+                                                {% if objective.is_overdue %}
+                                                    <br>
+                                                    <small class="text-danger">
+                                                        <i class="fas fa-exclamation-triangle"></i> En retard
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if objective.status == 'completed' %}bg-success{% elif objective.status == 'failed' %}bg-danger{% elif objective.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                {{ objective.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'core:objective_detail' objective.pk %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'core:objective_update' objective.pk %}" class="btn btn-sm btn-outline-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'core:objective_delete' objective.pk %}" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <nav aria-label="Pagination des objectifs">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.agent %}&agent={{ request.GET.agent }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.agent %}&agent={{ request.GET.agent }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.agent %}&agent={{ request.GET.agent }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.agent %}&agent={{ request.GET.agent }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-bullseye fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucun objectif assigné</h5>
+                            <p class="text-muted">Commencez par assigner des objectifs à vos agents.</p>
+                            <a href="{% url 'core:objective_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Assigner un objectif
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

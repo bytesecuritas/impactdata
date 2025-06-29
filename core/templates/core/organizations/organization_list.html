@@ -36,6 +36,22 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <div class="text-center">
+                    <h3>{{ total_personnel|default:0 }}</h3>
+                    <p>Total personnel</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                <div class="text-center">
+                    <h3>{{ total_revenue|default:0|floatformat:0 }}</h3>
+                    <p>Chiffre d'affaires (GNF)</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Liste des organisations -->
@@ -51,61 +67,89 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>Actions</th>
                                 <th>Identifiant</th>
                                 <th>Nom</th>
+                                <th>Adresse</th>
                                 <th>Catégorie</th>
-                                <th>Téléphone</th>
+                                <th>Contact</th>
+                                <th>Personnel</th>
                                 <th>Chiffre d'affaires</th>
                                 <th>Adhérents</th>
-                                <th>Actions</th>
+                                <th>Créé par</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for organization in organizations %}
                             <tr>
-                                <td>
-                                    <strong>{{ organization.identifiant }}</strong>
-                                </td>
-                                <td>
-                                    <strong>{{ organization.name }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ organization.address|truncatechars:50 }}</small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">{{ organization.category.name }}</span>
-                                </td>
-                                <td>
-                                    {{ organization.phone }}
-                                </td>
-                                <td>
-                                    {% if organization.monthly_revenue %}
-                                        {{ organization.monthly_revenue|floatformat:0 }} FCFA
-                                    {% else %}
-                                        <span class="text-muted">Non spécifié</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ organization.get_adherents_count }}</span>
-                                </td>
+                                <!-- Actions -->
                                 <td>
                                     <div class="btn-group" role="group">
                                         <a href="{% url 'core:organization_detail' organization.id %}" 
-                                           class="btn btn-sm btn-outline-primary" 
-                                           title="Voir détails">
+                                           class="btn btn-sm btn-outline-primary" title="Voir détails">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{% url 'core:organization_update' organization.id %}" 
-                                           class="btn btn-sm btn-outline-warning" 
-                                           title="Modifier">
+                                           class="btn btn-sm btn-outline-warning" title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a href="{% url 'core:organization_delete' organization.id %}" 
-                                           class="btn btn-sm btn-outline-danger" 
-                                           title="Supprimer"
+                                           class="btn btn-sm btn-outline-danger" title="Supprimer"
                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette organisation ?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
+                                </td>
+
+                                <!-- Identifiant -->
+                                <td><strong>{{ organization.identifiant }}</strong></td>
+
+                                <!-- Nom -->
+                                <td><strong>{{ organization.name }}</strong></td>
+
+                                <!-- Adresse -->
+                                <td><small class="text-muted">{{ organization.address|truncatechars:20 }}</small></td>
+
+                                <!-- Catégorie -->
+                                <td>
+                                    <span class="badge bg-info">{{ organization.category.name }}</span>
+                                </td>
+
+                                <!-- Contact -->
+                                <td>
+                                    {{ organization.phone }}
+                                    {% if organization.whatsapp %}
+                                        <br><small class="text-muted">WhatsApp: {{ organization.whatsapp }}</small>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Personnel -->
+                                <td>
+                                    <span class="badge bg-warning">{{ organization.number_personnel }} personnes</span>
+                                </td>
+
+                                <!-- Chiffre d'affaires -->
+                                <td>
+                                    {% if organization.monthly_revenue %}
+                                        {{ organization.monthly_revenue|floatformat:0 }} GNF
+                                    {% else %}
+                                        <span class="text-muted">Non spécifié</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Adhérents -->
+                                <td>
+                                    <span class="badge bg-secondary">{{ organization.get_adherents_count }}</span>
+                                </td>
+
+                                <!-- Créé par -->
+                                <td>
+                                    {% if organization.created_by %}
+                                        <small>{{ organization.created_by.get_full_name }}</small>
+                                        <br><small class="text-muted">{{ organization.created_at|date:"d/m/Y" }}</small>
+                                    {% else %}
+                                        <span class="text-muted">Système</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -125,4 +169,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

@@ -1,16 +1,24 @@
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
-from .models import User, Adherent, Organization, Category, Interaction
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.utils.crypto import get_random_string
+from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective
+
+User = get_user_model()
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['name', 'email', 'telephone', 'profession']
+        fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'fonction': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class CustomPasswordChangeForm(PasswordChangeForm):
@@ -25,25 +33,41 @@ class AdherentForm(forms.ModelForm):
     class Meta:
         model = Adherent
         fields = [
-            'identifiant', 'first_name', 'last_name', 'type_adherent',
-            'address', 'phone1', 'phone2', 'join_date', 'organisation',
-            'activity_name', 'badge_validity', 'profile_picture', 'activity_image'
+            'first_name', 'last_name', 'birth_date', 'type_adherent',
+            'commune', 'quartier', 'secteur', 'phone1', 'phone2', 
+            'num_urgence1', 'num_urgence2', 'email', 'medical_info',
+            'formation_pro', 'distinction', 'langues', 'join_date', 
+            'organisation', 'profile_picture'
         ]
         widgets = {
-            'identifiant': forms.TextInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'type_adherent': forms.Select(attrs={'class': 'form-control'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'commune': forms.TextInput(attrs={'class': 'form-control'}),
+            'quartier': forms.TextInput(attrs={'class': 'form-control'}),
+            'secteur': forms.TextInput(attrs={'class': 'form-control'}),
             'phone1': forms.TextInput(attrs={'class': 'form-control'}),
             'phone2': forms.TextInput(attrs={'class': 'form-control'}),
+            'num_urgence1': forms.TextInput(attrs={'class': 'form-control'}),
+            'num_urgence2': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'medical_info': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'langues': forms.TextInput(attrs={'class': 'form-control'}),
             'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'organisation': forms.Select(attrs={'class': 'form-control'}),
-            'activity_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'badge_validity': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
-            'activity_image': forms.FileInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtrer les organisations selon le rôle de l'utilisateur
+        # if user and user.role == 'agent':
+        #     self.fields['organisation'].queryset = Organization.objects.filter(created_by=user)
 
 # Formulaires pour Organisation
 class OrganizationForm(forms.ModelForm):
@@ -51,16 +75,21 @@ class OrganizationForm(forms.ModelForm):
         model = Organization
         fields = [
             'identifiant', 'name', 'monthly_revenue', 'address',
-            'creation_date', 'phone', 'category'
+            'creation_date', 'phone', 'whatsapp', 'category',
+            'number_personnel', 'infos_annexes', 'hobies'
         ]
         widgets = {
-            'identifiant': forms.TextInput(attrs={'class': 'form-control'}),
+            'identifiant': forms.NumberInput(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'monthly_revenue': forms.NumberInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'creation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
+            'number_personnel': forms.NumberInput(attrs={'class': 'form-control'}),
+            'infos_annexes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'hobies': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
 # Formulaires pour Catégorie
@@ -90,28 +119,40 @@ class InteractionForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtrer les adhérents selon le rôle de l'utilisateur
+        # if user and user.role == 'agent':
+        #     self.fields['adherent'].queryset = Adherent.objects.filter(
+        #         organisation__in=Organization.objects.filter(created_by=user)
+        #     )
+
 class UserForm(forms.ModelForm):
     """Formulaire pour créer/modifier un utilisateur"""
     password = forms.CharField(
-        widget=forms.PasswordInput(),
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
         required=False,
         help_text="Laissez vide pour conserver le mot de passe actuel"
     )
     confirm_password = forms.CharField(
-        widget=forms.PasswordInput(),
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
         required=False,
         help_text="Confirmez le mot de passe"
     )
     
     class Meta:
         model = User
-        fields = ['matricule', 'name', 'email', 'telephone', 'profession', 'role', 'is_active']
+        fields = ['matricule', 'first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 'role', 'is_active']
         widgets = {
             'matricule': forms.TextInput(attrs={'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'fonction': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -133,3 +174,213 @@ class UserForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+class UserRegistrationForm(UserCreationForm):
+    """Formulaire de création d'utilisateur par l'administrateur"""
+    password1 = forms.CharField(
+        label='Mot de passe',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False,
+        help_text='Laissez vide pour générer un mot de passe automatique'
+    )
+    password2 = forms.CharField(
+        label='Confirmation du mot de passe',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False
+    )
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'matricule', 'email', 'telephone', 
+                 'profession', 'fonction', 'role', 'created_by', 'is_active']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'matricule': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telephone': forms.TextInput(attrs={'class': 'form-control'}),
+            'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'fonction': forms.TextInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+            'created_by': forms.Select(attrs={'class': 'form-select'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        # Supprimer le paramètre user s'il est passé
+        kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Limiter les choix de rôle selon l'utilisateur connecté
+        # Cette logique sera gérée dans la vue
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Les mots de passe ne correspondent pas.")
+        
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        
+        # Si aucun mot de passe n'est fourni, en générer un automatiquement
+        if not self.cleaned_data.get('password1'):
+            password = get_random_string(12)
+            user.set_password(password)
+            user._password_generated = password  # Pour l'affichage
+        else:
+            user.set_password(self.cleaned_data['password1'])
+        
+        if commit:
+            user.save()
+        return user
+
+class UserEditForm(forms.ModelForm):
+    """Formulaire de modification d'utilisateur"""
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'telephone', 
+                 'profession', 'fonction', 'role', 'is_active', 'notes']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telephone': forms.TextInput(attrs={'class': 'form-control'}),
+            'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'fonction': forms.TextInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+class BadgeForm(forms.ModelForm):
+    """Formulaire pour les badges"""
+    class Meta:
+        model = Badge
+        fields = ['adherent', 'activity_name', 'badge_validity', 'activity_image', 'notes']
+        widgets = {
+            'adherent': forms.Select(attrs={'class': 'form-select'}),
+            'activity_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'badge_validity': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'activity_image': forms.FileInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtrer les adhérents selon le rôle de l'utilisateur
+        if user and user.role == 'agent':
+            self.fields['adherent'].queryset = Adherent.objects.filter(
+                organisation__in=Organization.objects.filter(created_by=user)
+            )
+
+class ProfileEditForm(forms.ModelForm):
+    """Formulaire de modification du profil utilisateur"""
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telephone': forms.TextInput(attrs={'class': 'form-control'}),
+            'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'fonction': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class AdherentSearchForm(forms.Form):
+    """Formulaire de recherche d'adhérents"""
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nom, prénom, identifiant...'
+        })
+    )
+    type_adherent = forms.ChoiceField(
+        choices=[('', 'Tous les types')] + list(Adherent.TYPE_CHOICES),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    organisation = forms.ModelChoiceField(
+        queryset=Organization.objects.all(),
+        required=False,
+        empty_label="Toutes les organisations",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    join_date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    join_date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+
+class OrganizationSearchForm(forms.Form):
+    """Formulaire de recherche d'organisations"""
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nom, identifiant...'
+        })
+    )
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        empty_label="Toutes les catégories",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    created_date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    created_date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+
+class UserObjectiveForm(forms.ModelForm):
+    """Formulaire pour assigner des objectifs aux utilisateurs"""
+    class Meta:
+        model = UserObjective
+        fields = ['user',  'objective_type', 'target_value', 
+                 'deadline', 'description'
+                ]  
+
+    user = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='agent'),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Agent"
+    )
+    objective_type = forms.ChoiceField(
+        choices=[
+            ('organizations', 'Nombre d\'organisations'),
+            ('adherents', 'Nombre d\'adhérents'),
+            ('interactions', 'Nombre d\'interactions'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Type d'objectif"
+    )
+    target_value = forms.IntegerField(
+        min_value=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        label="Valeur cible"
+    )
+    deadline = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label="Date limite"
+    )
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        required=False,
+        label="Description"
+    )
+

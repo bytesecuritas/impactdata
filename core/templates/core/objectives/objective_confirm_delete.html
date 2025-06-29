@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Supprimer l'Objectif - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-trash"></i> Supprimer l'Objectif
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'core:objective_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmation de suppression
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle"></i> Attention !
+                        </h6>
+                        <p class="mb-0">
+                            Vous êtes sur le point de supprimer définitivement cet objectif. 
+                            Cette action est irréversible.
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Détails de l'objectif à supprimer :</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Agent :</strong><br>
+                                        {{ objective.user.get_full_name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Type :</strong><br>
+                                        {{ objective.get_objective_type_display }}
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Valeur cible :</strong><br>
+                                        {{ objective.target_value }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Progression :</strong><br>
+                                        {{ objective.current_value }} / {{ objective.target_value }}
+                                        ({{ objective.progress_percentage|floatformat:1 }}%)
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Statut :</strong><br>
+                                        <span class="badge {% if objective.status == 'completed' %}bg-success{% elif objective.status == 'failed' %}bg-danger{% elif objective.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                            {{ objective.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Date limite :</strong><br>
+                                        {{ objective.deadline|date:"d/m/Y" }}
+                                    </div>
+                                </div>
+                                {% if objective.description %}
+                                <hr>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <strong>Description :</strong><br>
+                                        {{ objective.description }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:objective_detail' objective.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Confirmer la suppression
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

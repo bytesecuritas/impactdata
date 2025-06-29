@@ -1,168 +1,97 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
-{% block title %}Détails de l'Utilisateur - Impact Data{% endblock %}
+{% block title %}Détails de l'utilisateur - {{ user_obj.get_full_name }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- En-tête -->
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">
-            <i class="fas fa-user"></i> Détails de l'Utilisateur
-        </h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="{% url 'core:user_update' user_detail.pk %}" class="btn btn-warning me-2">
-                <i class="fas fa-edit"></i> Modifier
-            </a>
-            {% if user_detail != request.user %}
-            <a href="{% url 'core:user_delete' user_detail.pk %}" class="btn btn-danger me-2">
-                <i class="fas fa-trash"></i> Supprimer
-            </a>
-            {% endif %}
-            <a href="{% url 'core:user_list' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Retour à la liste
-            </a>
-        </div>
-    </div>
-
     <div class="row">
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-user-circle"></i> Informations Personnelles
-                    </h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-user"></i> {{ user_obj.get_full_name }}
+                    </h3>
+                    <div class="btn-group">
+                        {% if user.role == 'admin' or user.role == 'superviseur' %}
+                        <a href="{% url 'core:user_update' user_obj.pk %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        {% endif %}
+                        {% if user.role == 'admin' %}
+                        <a href="{% url 'core:user_delete' user_obj.pk %}" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'core:user_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Nom complet :</label>
-                            <p class="mb-0">{{ user_detail.name }}</p>
+                        <div class="col-md-6">
+                            <h5 class="mb-3"><i class="fas fa-user-circle"></i> Informations personnelles</h5>
+                            <table class="table table-borderless">
+                                <tr><td><strong>Matricule:</strong></td><td><span class="badge bg-primary">{{ user_obj.matricule }}</span></td></tr>
+                                <tr><td><strong>Nom complet:</strong></td><td>{{ user_obj.get_full_name }}</td></tr>
+                                <tr><td><strong>Profession:</strong></td><td>{{ user_obj.profession }}</td></tr>
+                                <tr><td><strong>Fonction:</strong></td><td>{{ user_obj.fonction|default:"Non spécifiée" }}</td></tr>
+                                <tr><td><strong>Rôle:</strong></td><td>
+                                    <span class="badge {% if user_obj.role == 'admin' %}bg-danger{% elif user_obj.role == 'superviseur' %}bg-warning{% else %}bg-info{% endif %}">
+                                        {{ user_obj.get_role_display }}
+                                    </span>
+                                </td></tr>
+                            </table>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Matricule :</label>
-                            <p class="mb-0">{{ user_detail.matricule }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Email :</label>
-                            <p class="mb-0">{{ user_detail.email }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Téléphone :</label>
-                            <p class="mb-0">{{ user_detail.telephone }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Profession :</label>
-                            <p class="mb-0">{{ user_detail.profession }}</p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Rôle :</label>
-                            <p class="mb-0">
-                                {% if user_detail.role == 'admin' %}
-                                    <span class="badge bg-danger">Admin</span>
-                                {% elif user_detail.role == 'superviseur' %}
-                                    <span class="badge bg-warning">Superviseur</span>
-                                {% elif user_detail.role == 'agent' %}
-                                    <span class="badge bg-info">Agent</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ user_detail.role|title }}</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Statut :</label>
-                            <p class="mb-0">
-                                {% if user_detail.is_active %}
-                                    <span class="badge bg-success">Actif</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Inactif</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Date d'inscription :</label>
-                            <p class="mb-0">{{ user_detail.date_joined|date:"d/m/Y à H:i" }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Dernière connexion :</label>
-                            <p class="mb-0">
-                                {% if user_detail.last_login %}
-                                    {{ user_detail.last_login|date:"d/m/Y à H:i" }}
-                                {% else %}
-                                    <span class="text-muted">Jamais connecté</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Super utilisateur :</label>
-                            <p class="mb-0">
-                                {% if user_detail.is_superuser %}
-                                    <span class="badge bg-danger">Oui</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Non</span>
-                                {% endif %}
-                            </p>
+                        <div class="col-md-6">
+                            <h5 class="mb-3"><i class="fas fa-address-book"></i> Contact</h5>
+                            <table class="table table-borderless">
+                                <tr><td><strong>Email:</strong></td><td><a href="mailto:{{ user_obj.email }}">{{ user_obj.email }}</a></td></tr>
+                                <tr><td><strong>Téléphone:</strong></td><td><a href="tel:{{ user_obj.telephone }}">{{ user_obj.telephone }}</a></td></tr>
+                                <tr><td><strong>Statut:</strong></td><td>
+                                    {% if user_obj.is_active %}<span class="badge bg-success">Actif</span>{% else %}<span class="badge bg-secondary">Inactif</span>{% endif %}
+                                </td></tr>
+                                <tr><td><strong>Dernière connexion:</strong></td><td>
+                                    {% if user_obj.last_login %}{{ user_obj.last_login|date:"d/m/Y H:i" }}{% else %}<span class="text-muted">Jamais connecté</span>{% endif %}
+                                </td></tr>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-chart-bar"></i> Statistiques
-                    </h5>
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> Statistiques</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <h6>Actions rapides :</h6>
-                        <div class="d-grid gap-2">
-                            <a href="{% url 'core:user_update' user_detail.pk %}" class="btn btn-outline-warning btn-sm">
-                                <i class="fas fa-edit"></i> Modifier l'utilisateur
-                            </a>
-                            {% if user_detail != request.user %}
-                            <a href="{% url 'core:user_delete' user_detail.pk %}" class="btn btn-outline-danger btn-sm">
-                                <i class="fas fa-trash"></i> Supprimer l'utilisateur
-                            </a>
-                            {% endif %}
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-primary mb-1">{{ stats.organizations_count|default:0 }}</h4>
+                                <small class="text-muted">Organisations</small>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <h6>Informations :</h6>
-                        <ul class="list-unstyled small">
-                            <li><i class="fas fa-info-circle text-info"></i> ID: {{ user_detail.id }}</li>
-                            <li><i class="fas fa-calendar text-success"></i> Créé le: {{ user_detail.date_joined|date:"d/m/Y" }}</li>
-                            {% if user_detail.last_login %}
-                            <li><i class="fas fa-clock text-warning"></i> Dernière connexion: {{ user_detail.last_login|date:"d/m/Y" }}</li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                    
-                    <div>
-                        <h6>Permissions :</h6>
-                        <p class="small text-muted">
-                            {% if user_detail.role == 'admin' %}
-                                Accès complet à toutes les fonctionnalités
-                            {% elif user_detail.role == 'superviseur' %}
-                                Gestion des équipes et supervision
-                            {% elif user_detail.role == 'agent' %}
-                                Accès limité aux fonctionnalités de base
-                            {% endif %}
-                        </p>
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-success mb-1">{{ stats.adherents_count|default:0 }}</h4>
+                                <small class="text-muted">Adhérents</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-warning mb-1">{{ stats.interactions_count|default:0 }}</h4>
+                                <small class="text-muted">Interactions</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-info mb-1">{{ stats.categories_count|default:0 }}</h4>
+                                <small class="text-muted">Catégories</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -11,7 +11,7 @@ from django.utils.crypto import get_random_string
 
 # Custom User Manager
 class UserManager(BaseUserManager):
-    def create_user(self, email, matricule, name, password=None, **extra_fields):
+    def create_user(self, email, matricule, first_name, last_name, password=None, **extra_fields):
         """
         Crée et sauvegarde un utilisateur avec email, matricule et mot de passe donnés.
         Si aucun mot de passe n'est fourni, un mot de passe aléatoire est généré.
@@ -20,14 +20,15 @@ class UserManager(BaseUserManager):
             raise ValueError('L\'email est obligatoire')
         if not matricule:
             raise ValueError('Le matricule est obligatoire')
-        if not name:
-            raise ValueError('Le nom est obligatoire')
+        if not first_name or not last_name:
+            raise ValueError('Le nom et le prénom sont obligatoires')
 
         email = self.normalize_email(email)
         user = self.model(
             email=email,
             matricule=matricule,
-            name=name,
+            first_name=first_name,
+            last_name=last_name,
             **extra_fields
         )
         
@@ -46,7 +47,7 @@ class UserManager(BaseUserManager):
         
         return user
 
-    def create_superuser(self, email, matricule, name, password=None, **extra_fields):
+    def create_superuser(self, email, matricule, first_name, last_name, password=None, **extra_fields):
         """
         Crée et sauvegarde un superutilisateur avec email, matricule et mot de passe donnés.
         """
@@ -59,12 +60,12 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Le superutilisateur doit avoir is_superuser=True.')
 
-        user = self.create_user(email, matricule, name, password, **extra_fields)
+        user = self.create_user(email, matricule, first_name, last_name, password, **extra_fields)
         user.password_last_changed = timezone.now()
         user.save(using=self._db)
         return user
     
-    def create_user_by_admin(self, admin_user, email, matricule, name, password=None, **extra_fields):
+    def create_user_by_admin(self, admin_user, email, matricule, first_name, last_name, password=None, **extra_fields):
         """
         Crée un utilisateur par un administrateur avec traçabilité
         """
@@ -74,15 +75,15 @@ class UserManager(BaseUserManager):
         extra_fields['created_by'] = admin_user
         extra_fields['password_change_required'] = True  # Force le changement à la première connexion
         
-        return self.create_user(email, matricule, name, password, **extra_fields)
+        return self.create_user(email, matricule, first_name, last_name, password, **extra_fields)
 
 
 # Custom User Model for Personnel Management
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('admin', 'Administrateur'),
-        ('superviseur', 'Gestionnaire des adhérents'),
-        ('agent', 'Agent de collecte'),
+        ('superviseur', 'Superviseur'),
+        ('agent', 'Agent'),
     )
     
     # Validators
@@ -104,8 +105,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         validators=[matricule_validator],
         help_text="Code unique d'identification du personnel"
     )
-    name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
     profession = models.CharField(max_length=50)
+    fonction = models.CharField(max_length=50, blank=True, null=True)
     telephone = models.CharField(
         max_length=15, 
         unique=True, 
@@ -185,17 +188,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     # Configuration for AbstractBaseUser
     USERNAME_FIELD = 'email'  # Utilise l'email pour l'authentification
-    REQUIRED_FIELDS = ['matricule', 'name', 'telephone', 'profession']
+    REQUIRED_FIELDS = ['matricule', 'first_name', 'last_name', 'telephone', 'profession']
     
     objects = UserManager()
     
     class Meta:
         verbose_name = 'Utilisateur'
         verbose_name_plural = 'Utilisateurs'
-        ordering = ['name']
+        ordering = ['first_name', 'last_name']
     
     def __str__(self):
-        return f"Personnel: {self.name} ({self.matricule})"
+        return f"{self.role}: {self.first_name} {self.last_name} - {self.matricule}"
     
     def has_perm(self, perm, obj=None):
         """L'utilisateur a-t-il une permission spécifique?"""
@@ -214,10 +217,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.is_superuser or self.role == 'admin'
     
     def get_full_name(self):
-        return self.name
+        return f'{self.first_name} {self.last_name}'
     
     def get_short_name(self):
-        return self.name
+        return self.last_name
     
     def is_account_locked(self):
         """Vérifie si le compte est temporairement verrouillé"""
@@ -286,7 +289,7 @@ class UserSession(models.Model):
         ordering = ['-login_time']
     
     def __str__(self):
-        return f"Session de {self.user.name} - {self.login_time}"
+        return f"Session de {self.user.first_name} {self.last_name} - {self.login_time}"
 
 
 # Modèle pour l'historique des actions utilisateurs (audit trail)
@@ -346,7 +349,7 @@ class UserActionLog(models.Model):
     
     def __str__(self):
         status = "✓" if self.success else "✗"
-        return f"{status} {self.user.name} - {self.get_action_display()} - {self.timestamp}"
+        return f"{status} {self.user.first_name} {self.user.last_name} - {self.get_action_display()} - {self.timestamp}"
 
     def lock_account(self, duration_hours=24):
         """Verrouille le compte pour une durée spécifiée"""
@@ -376,7 +379,7 @@ class UserActionLog(models.Model):
     
     def can_manage_users(self):
         """Vérifie si l'utilisateur peut gérer d'autres utilisateurs"""
-        return self.is_active and self.role == 'admin' and not self.is_account_locked()
+        return self.is_active and self.role == 'admin' or self.role == 'superviseur' and not self.is_account_locked()
     
     def can_access_data(self, data_type='read'):
         """Vérifie les permissions d'accès aux données selon le rôle"""
@@ -426,11 +429,9 @@ class Category(models.Model):
 
 # Organization Model
 class Organization(models.Model):
-    identifiant = models.CharField(
-        max_length=10, 
+    identifiant = models.IntegerField(
         unique=True, 
-        verbose_name="Identifiant de l'organisation",
-        default="ORG0000001"
+        verbose_name="Identifiant de l'organisation"
     )
     name = models.CharField(max_length=150, verbose_name="Nom de l'organisation")
     monthly_revenue = models.DecimalField(
@@ -452,11 +453,40 @@ class Organization(models.Model):
         validators=[User.phone_validator],
         verbose_name="Téléphone"
     )
+    whatsapp = models.CharField(
+        max_length=20, 
+        blank=True,
+        validators=[User.phone_validator],
+        verbose_name="WhatsApp"
+    )
     category = models.ForeignKey(
         Category, 
-        on_delete=models.CASCADE,  # Changé de CASCADE à PROTECT pour éviter les suppressions accidentelles
+        on_delete=models.CASCADE,
         related_name='organizations',
         verbose_name="Catégorie"
+    )
+    number_personnel = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Nombre de personne",
+        help_text="Nombre total de personne dans l'organisation"
+    )
+    infos_annexes = models.TextField(
+        blank=True,
+        verbose_name="Informations annexes",
+        help_text="Informations supplémentaires sur l'organisation"
+    )
+    hobies = models.TextField(
+        blank=True,
+        verbose_name="Hobbies",
+        help_text="Hobbies ou centres d'intérêt de l'organisation"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_organizations',
+        verbose_name="Créé par"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -487,8 +517,13 @@ class Adherent(models.Model):
         unique=True,
         verbose_name="Identifiant unique"
     )
-    first_name = models.CharField(max_length=200, verbose_name="Prénom")  # Corrigé
-    last_name = models.CharField(max_length=200, verbose_name="Nom")     # Corrigé
+    first_name = models.CharField(max_length=100, verbose_name="Prénom")
+    last_name = models.CharField(max_length=100, verbose_name="Nom")
+    birth_date = models.DateField(
+        null=True, 
+        blank=True,
+        verbose_name="Date de naissance"
+    )
     type_adherent = models.CharField(
         max_length=20, 
         choices=TYPE_CHOICES,
@@ -496,17 +531,62 @@ class Adherent(models.Model):
     )
     
     # Contact Information
-    address = models.TextField(verbose_name="Adresse")
+    commune = models.TextField(verbose_name="Commune")
+    quartier = models.TextField(verbose_name="Quartier")
+    secteur = models.TextField(verbose_name="Secteur")
+
     phone1 = models.CharField(
-        max_length=20,
+        max_length=15,
         validators=[User.phone_validator],
         verbose_name="Téléphone principal"
     )
     phone2 = models.CharField(
-        max_length=20, 
+        max_length=15, 
         blank=True,
         validators=[User.phone_validator],
         verbose_name="Téléphone secondaire"
+    )
+
+    num_urgence1 = models.CharField(
+        max_length=15, 
+        blank=True,
+        validators=[User.phone_validator],
+        verbose_name="Numéro d'urgence"
+    )
+    num_urgence2 = models.CharField(
+        max_length=15, 
+        blank=True,
+        validators=[User.phone_validator],
+        verbose_name="Numéro d'urgence 2"
+    )
+    
+    email = models.EmailField(
+        max_length=100, 
+        blank=True,
+        verbose_name="Email"
+    )
+
+    medical_info = models.TextField(
+        blank=True,
+        verbose_name="Informations médicales",
+        help_text="Informations médicales importantes pour l'adhérent"
+    )
+
+    formation_pro = models.TextField(
+        blank=True,
+        verbose_name="Formation professionnelle",
+        help_text="Détails sur la formation professionnelle de l'adhérent"
+    )
+
+    distinction = models.TextField(
+        blank=True,
+        verbose_name="Distinction",
+        help_text="Distinctions ou récompenses reçues par l'adhérent"
+    )
+    langues = models.TextField(
+        blank=True,
+        verbose_name="Langues parlées",
+        help_text="Langues que l'adhérent parle"
     )
     
     # Membership Information
@@ -517,9 +597,7 @@ class Adherent(models.Model):
         related_name='adherents',
         verbose_name="Organisation"
     )
-    activity_name = models.CharField(max_length=200, verbose_name="Nom de l'activité")
-    badge_validity = models.DateField(verbose_name="Validité du badge")
-    
+
     # Media Files
     profile_picture = models.ImageField(
         upload_to='profile_pics/', 
@@ -527,21 +605,7 @@ class Adherent(models.Model):
         blank=True,
         verbose_name="Photo de profil"
     )
-    activity_image = models.ImageField(
-        upload_to='activity_images/', 
-        null=True, 
-        blank=True,
-        verbose_name="Image de l'activité"
-    )
-    
-    # System Fields
-    barcode = models.CharField(
-        max_length=50, 
-        null=True, 
-        blank=True,
-        unique=True,
-        verbose_name="Code-barres"
-    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -551,7 +615,6 @@ class Adherent(models.Model):
         ordering = ['last_name', 'first_name']
         indexes = [
             models.Index(fields=['identifiant']),
-            models.Index(fields=['badge_validity']),
             models.Index(fields=['join_date']),
         ]
 
@@ -561,32 +624,41 @@ class Adherent(models.Model):
     def clean(self):
         """Validation personnalisée"""
         super().clean()
-        if self.badge_validity and self.join_date:
-            if self.badge_validity < self.join_date:
-                raise ValidationError({
-                    'badge_validity': 'La validité du badge ne peut pas être antérieure à la date d\'adhésion.'
-                })
+        # Générer automatiquement l'identifiant si pas fourni
+        if not self.identifiant:
+            self.generate_identifiant()
 
     def save(self, *args, **kwargs):
-        """Override save pour appeler clean()"""
-        self.clean()
+        """Override save pour générer l'identifiant automatiquement"""
+        if not self.identifiant:
+            self.generate_identifiant()
         super().save(*args, **kwargs)
+
+    def generate_identifiant(self):
+        """Génère automatiquement l'identifiant basé sur l'organisation et le rang"""
+        if self.organisation:
+            # Compter les adhérents existants pour cette organisation
+            existing_count = Adherent.objects.filter(
+                organisation=self.organisation
+            ).count()
+            # Format: ID_ORG + rang (ex: 001, 002, etc.)
+            self.identifiant = f"{self.organisation.identifiant:03d}-{existing_count + 1:03d}"
 
     @property
     def full_name(self):
-        """Retourne le nom complet"""
         return f"{self.first_name} {self.last_name}"
 
-    @property
-    def is_badge_valid(self):
-        """Vérifie si le badge est encore valide"""
-        return self.badge_validity >= timezone.now().date()
-    
     def get_age_membership(self):
-        """Calcule l'ancienneté de l'adhésion en années"""
-        from datetime import date
-        today = date.today()
-        return today.year - self.join_date.year - ((today.month, today.day) < (self.join_date.month, self.join_date.day))
+        """Calcule l'âge d'adhésion en jours"""
+        if self.join_date:
+            return (timezone.now().date() - self.join_date).days
+        return 0
+    
+    def get_age(self):
+        """Calcule l'âge de l'adhérent en années"""
+        if self.birth_date:
+            return (timezone.now().date() - self.birth_date).days // 365
+        return None
 
 
 # Updated Interaction Model
@@ -600,6 +672,10 @@ class Interaction(models.Model):
         max_length=20,
         unique=True,
         verbose_name="Identifiant"
+    )
+    date_enregistrement = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date d'enregistrement"
     )
     personnel = models.ForeignKey(
         'User',
@@ -689,6 +765,15 @@ class Badge(models.Model):
         related_name='issued_badges',
         verbose_name="Émis par"
     )
+    activity_name = models.CharField(max_length=100, verbose_name="Nom de l'activité")
+    badge_validity = models.DateField(verbose_name="Validité du badge")
+    
+    activity_image = models.ImageField(
+        upload_to='activity_images/', 
+        null=True, 
+        blank=True,
+        verbose_name="Image de l'activité"
+    )
     notes = models.TextField(
         blank=True,
         verbose_name="Notes"
@@ -748,5 +833,133 @@ class Badge(models.Model):
         self.status = 'active'
         if reactivated_by:
             self.notes = f"Réactivé le {timezone.now().strftime('%d/%m/%Y')} par {reactivated_by}"
+        self.save()
+
+
+class UserObjective(models.Model):
+    """Modèle pour les objectifs assignés aux utilisateurs par les superviseurs"""
+    STATUS_CHOICES = (
+        ('pending', 'En attente'),
+        ('in_progress', 'En cours'),
+        ('completed', 'Terminé'),
+        ('failed', 'Échoué'),
+    )
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='objectives',
+        verbose_name="Utilisateur"
+    )
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_objectives',
+        verbose_name="Assigné par"
+    )
+    objective_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('organizations', 'Nombre d\'organisations'),
+            ('adherents', 'Nombre d\'adhérents'),
+            ('interactions', 'Nombre d\'interactions'),
+        ],
+        verbose_name="Type d'objectif"
+    )
+    target_value = models.PositiveIntegerField(verbose_name="Valeur cible")
+    current_value = models.PositiveIntegerField(default=0, verbose_name="Valeur actuelle")
+    deadline = models.DateField(verbose_name="Date limite")
+    description = models.TextField(blank=True, verbose_name="Description")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name="Statut"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Objectif Utilisateur'
+        verbose_name_plural = 'Objectifs Utilisateurs'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Objectif {self.objective_type} pour {self.user.get_full_name()}"
+    
+    def update_progress(self):
+        """Met à jour la progression de l'objectif"""
+        if self.objective_type == 'organizations':
+            self.current_value = Organization.objects.filter(created_by=self.user).count()
+        elif self.objective_type == 'adherents':
+            self.current_value = Adherent.objects.filter(
+                organisation__in=Organization.objects.filter(created_by=self.user)
+            ).count()
+        elif self.objective_type == 'interactions':
+            self.current_value = Interaction.objects.filter(personnel=self.user).count()
+        
+        # Mettre à jour le statut
+        if self.current_value >= self.target_value:
+            self.status = 'completed'
+        elif timezone.now().date() > self.deadline:
+            self.status = 'failed'
+        elif self.current_value > 0:
+            self.status = 'in_progress'
+        
+        self.save()
+    
+    @property
+    def progress_percentage(self):
+        """Calcule le pourcentage de progression"""
+        if self.target_value == 0:
+            return 0
+        return min(100, (self.current_value / self.target_value) * 100)
+    
+    @property
+    def is_overdue(self):
+        """Vérifie si l'objectif est en retard"""
+        return timezone.now().date() > self.deadline and self.status != 'completed'
+
+class SupervisorStats(models.Model):
+    """Modèle pour stocker les statistiques des superviseurs"""
+    supervisor = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='supervisor_stats',
+        verbose_name="Superviseur"
+    )
+    agent = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='agent_stats',
+        verbose_name="Agent"
+    )
+    organizations_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'organisations")
+    categories_count = models.PositiveIntegerField(default=0, verbose_name="Nombre de catégories")
+    adherents_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'adhérents")
+    interactions_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'interactions")
+    last_updated = models.DateTimeField(auto_now=True, verbose_name="Dernière mise à jour")
+    
+    class Meta:
+        verbose_name = 'Statistique Superviseur'
+        verbose_name_plural = 'Statistiques Superviseurs'
+        unique_together = ['supervisor', 'agent']
+        ordering = ['-last_updated']
+    
+    def __str__(self):
+        return f"Stats de {self.agent.get_full_name()} pour {self.supervisor.get_full_name()}"
+    
+    def update_stats(self):
+        """Met à jour les statistiques de l'agent"""
+        self.organizations_count = Organization.objects.filter(created_by=self.agent).count()
+        self.categories_count = Category.objects.filter(
+            organizations__created_by=self.agent
+        ).distinct().count()
+        self.adherents_count = Adherent.objects.filter(
+            organisation__in=Organization.objects.filter(created_by=self.agent)
+        ).count()
+        self.interactions_count = Interaction.objects.filter(personnel=self.agent).count()
         self.save()
 

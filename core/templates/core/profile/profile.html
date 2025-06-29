@@ -34,7 +34,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Nom complet</label>
-                            <p class="form-control-plaintext">{{ user.name }}</p>
+                            <p class="form-control-plaintext">{{ user.first_name }} {{ user.last_name }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Matricule</label>
@@ -127,7 +127,7 @@
                             <i class="fas fa-user fa-3x text-white"></i>
                         </div>
                     </div>
-                    <h4>{{ user.name }}</h4>
+                    <h4>{{ user.first_name }} {{ user.last_name }}</h4>
                     <p class="text-muted">{{ user.profession }}</p>
                     <p class="text-muted">{{ user.matricule }}</p>
                     
@@ -178,15 +178,18 @@
                             <li><i class="fas fa-check text-success"></i> Gestion des catégories</li>
                             <li><i class="fas fa-check text-success"></i> Gestion des interactions</li>
                         {% elif user.role == 'superviseur' %}
-                            <li><i class="fas fa-check text-success"></i> Gestion des adhérents</li>
-                            <li><i class="fas fa-check text-success"></i> Gestion des interactions</li>
+                            <li><i class="fas fa-check text-success"></i> Gestion de ses agnes</li>
+                            <li><i class="fas fa-check text-success"></i> Gestion des objectifs</li>
                             <li><i class="fas fa-times text-danger"></i> Gestion des organisations (lecture seule)</li>
                             <li><i class="fas fa-times text-danger"></i> Gestion des catégories (lecture seule)</li>
                         {% elif user.role == 'agent' %}
                             <li><i class="fas fa-check text-success"></i> Gestion des organisations</li>
                             <li><i class="fas fa-check text-success"></i> Gestion des catégories</li>
-                            <li><i class="fas fa-times text-danger"></i> Gestion des adhérents (non autorisé)</li>
-                            <li><i class="fas fa-times text-danger"></i> Gestion des interactions (non autorisé)</li>
+                            <li><i class="fas fa-times text-success"></i> Gestion des adhérents </li>
+                            <li><i class="fas fa-times text-success"></i> Gestion des interactions </li>
+                            <li><i class="fas fa-times text-success"></i> Gestion des badges </li>
+                            <li><i class="fas fa-times text-danger"></i> Gestion des objectifs</li>
+
                         {% endif %}
                     </ul>
                 </div>

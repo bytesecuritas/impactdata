@@ -61,6 +61,7 @@ urlpatterns = [
     # Badge Management URLs
     path('badges/', views.badge_list, name='badge_list'),
     path('badges/<int:badge_id>/', views.badge_detail, name='badge_detail'),
+    path('badges/<int:badge_id>/card/', views.badge_card, name='badge_card'),
     path('badges/<int:badge_id>/revoke/', views.revoke_badge, name='revoke_badge'),
     path('badges/<int:badge_id>/reactivate/', views.reactivate_badge, name='reactivate_badge'),
     path('badges/<int:badge_id>/download/', views.download_badge_pdf, name='download_badge_pdf'),

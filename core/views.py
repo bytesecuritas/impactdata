@@ -20,7 +20,8 @@ from .models import User, Adherent, Organization, Category, Interaction, Badge, 
 from .forms import (
     UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, 
     CategoryForm, InteractionForm, UserForm, UserRegistrationForm, UserEditForm,
-    BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm
+    BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm,
+    BadgeGenerationForm
 )
 import calendar
 import qrcode
@@ -857,6 +858,18 @@ def badge_detail(request, badge_id):
     return render(request, 'core/badges/badge_detail.html', context)
 
 @login_required
+def badge_card(request, badge_id):
+    """Afficher le badge comme une carte d'identité"""
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
+    
+    badge = get_object_or_404(Badge, id=badge_id)
+    context = {
+        'badge': badge,
+    }
+    return render(request, 'core/badges/badge_card.html', context)
+
+@login_required
 def generate_badge(request, adherent_id):
     """Générer un badge pour un adhérent"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
@@ -864,47 +877,68 @@ def generate_badge(request, adherent_id):
     
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
-    # Vérifier si l'adhérent a déjà un badge actif
+    # Vérifier que l'adhérent a déjà un badge actif
     existing_badge = Badge.objects.filter(adherent=adherent, status='active').first()
     if existing_badge and existing_badge.is_valid:
         messages.warning(request, f"{adherent.full_name} a déjà un badge actif valide jusqu'au {adherent.badge_validity}.")
         return redirect('core:adherent_detail', adherent_id=adherent_id)
     
-    try:
-        # Créer un nouveau badge
-        badge = Badge.objects.create(
-            adherent=adherent,
-            issued_by=request.user,
-            notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
-        )
-        
-        # Générer le QR code
-        qr_data = f"ADHERENT:{adherent.identifiant}|BADGE:{badge.badge_number}|VALID:{adherent.badge_validity}"
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-        
-        # Créer l'image du QR code
-        img = qr.make_image(fill='black', back_color='white')
-        img_io = BytesIO()
-        img.save(img_io, 'PNG')
-        img_io.seek(0)
-        
-        # Sauvegarder le QR code
-        filename = f"qr_badge_{badge.badge_number}.png"
-        badge.qr_code.save(filename, File(img_io), save=True)
-        
-        messages.success(request, f"Badge {badge.badge_number} généré avec succès pour {adherent.full_name}.")
-        return redirect('core:badge_detail', badge_id=badge.id)
-        
-    except Exception as e:
-        messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
+    # Vérifier que l'adhérent a bien une activité et une validité de badge
+    if not adherent.activity_name or not adherent.badge_validity:
+        messages.error(request, "Veuillez d'abord renseigner l'activité et la validité du badge pour cet adhérent.")
         return redirect('core:adherent_detail', adherent_id=adherent_id)
+    
+    if request.method == 'POST':
+        form = BadgeGenerationForm(request.POST)
+        if form.is_valid():
+            template = form.cleaned_data['template']
+            
+            try:
+                # Créer un nouveau badge
+                badge = Badge.objects.create(
+                    adherent=adherent,
+                    issued_by=request.user,
+                    template=template,
+                    badge_validity=adherent.badge_validity,  # Utiliser la validité de l'adhérent
+                    activity_name=adherent.activity_name,    # Utiliser l'activité de l'adhérent
+                    notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+                )
+                
+                # Générer le QR code
+                qr_data = f"ADHERENT:{adherent.identifiant}|BADGE:{badge.badge_number}|VALID:{adherent.badge_validity}"
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(qr_data)
+                qr.make(fit=True)
+                
+                # Créer l'image du QR code
+                img = qr.make_image(fill='black', back_color='white')
+                img_io = BytesIO()
+                img.save(img_io, 'PNG')
+                img_io.seek(0)
+                
+                # Sauvegarder le QR code
+                filename = f"qr_badge_{badge.badge_number}.png"
+                badge.qr_code.save(filename, File(img_io), save=True)
+                
+                messages.success(request, f"Badge {badge.badge_number} généré avec succès pour {adherent.full_name}.")
+                return redirect('core:badge_detail', badge_id=badge.id)
+                
+            except Exception as e:
+                messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
+                return redirect('core:adherent_detail', adherent_id=adherent_id)
+    else:
+        form = BadgeGenerationForm()
+    
+    context = {
+        'adherent': adherent,
+        'form': form,
+    }
+    return render(request, 'core/badges/badge_generation.html', context)
 
 @login_required
 def revoke_badge(request, badge_id):
@@ -916,7 +950,7 @@ def revoke_badge(request, badge_id):
     
     if request.method == 'POST':
         reason = request.POST.get('reason', '')
-        badge.revoke(reason=reason, revoked_by=request.user.name)
+        badge.revoke(reason=reason, revoked_by=request.user.get_full_name())
         messages.success(request, f"Badge {badge.badge_number} révoqué avec succès.")
         return redirect('core:badge_list')
     
@@ -932,7 +966,7 @@ def reactivate_badge(request, badge_id):
     #     return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
-    badge.reactivate(reactivated_by=request.user.name)
+    badge.reactivate(reactivated_by=request.user.get_full_name())
     messages.success(request, f"Badge {badge.badge_number} réactivé avec succès.")
     return redirect('core:badge_list')
 
@@ -957,48 +991,115 @@ def download_badge_pdf(request, badge_id):
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontSize=18,
+        fontSize=24,
         spaceAfter=30,
         alignment=TA_CENTER,
-        textColor=colors.darkblue
+        textColor=colors.darkblue,
+        fontName='Helvetica-Bold'
     )
     
-    # Titre
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Normal'],
+        fontSize=12,
+        spaceAfter=20,
+        alignment=TA_CENTER,
+        textColor=colors.grey,
+        fontName='Helvetica'
+    )
+    
+    # Titre principal
     elements.append(Paragraph("BADGE D'ADHÉRENT", title_style))
+    elements.append(Paragraph("Impact Data Platform", subtitle_style))
     elements.append(Spacer(1, 20))
     
-    # Informations du badge
-    badge_data = [
-        ['Numéro de badge:', badge.badge_number],
-        ['Nom complet:', badge.adherent.full_name],
-        ['Identifiant:', badge.adherent.identifiant],
-        ['Organisation:', badge.adherent.organisation.name],
-        ['Activité:', badge.adherent.activity_name],
-        ['Date d\'émission:', badge.issued_date.strftime('%d/%m/%Y')],
-        ['Validité jusqu\'au:', badge.adherent.badge_validity.strftime('%d/%m/%Y')],
-        ['Statut:', badge.get_status_display()],
-    ]
+    # Créer un tableau pour le badge avec image
+    badge_data = []
     
-    # Créer le tableau
-    badge_table = Table(badge_data, colWidths=[4*cm, 8*cm])
+    # En-tête avec numéro de badge
+    badge_data.append([
+        Paragraph(f"<b>Numéro de Badge:</b> {badge.badge_number}", styles['Normal']),
+        Paragraph(f"<b>Statut:</b> {badge.get_status_display()}", styles['Normal'])
+    ])
+    
+    # Informations de l'adhérent
+    badge_data.append([
+        Paragraph(f"<b>Nom complet:</b> {badge.adherent.full_name}", styles['Normal']),
+        Paragraph(f"<b>Identifiant:</b> {badge.adherent.identifiant}", styles['Normal'])
+    ])
+    
+    badge_data.append([
+        Paragraph(f"<b>Organisation:</b> {badge.adherent.organisation.name}", styles['Normal']),
+        Paragraph(f"<b>Activité:</b> {badge.adherent.activity_name}", styles['Normal'])
+    ])
+    
+    badge_data.append([
+        Paragraph(f"<b>Type:</b> {badge.adherent.get_type_adherent_display()}", styles['Normal']),
+        Paragraph(f"<b>Date d'adhésion:</b> {badge.adherent.join_date.strftime('%d/%m/%Y')}", styles['Normal'])
+    ])
+    
+    badge_data.append([
+        Paragraph(f"<b>Date d'émission:</b> {badge.issued_date.strftime('%d/%m/%Y')}", styles['Normal']),
+        Paragraph(f"<b>Validité jusqu'au:</b> {badge.adherent.badge_validity.strftime('%d/%m/%Y')}", styles['Normal'])
+    ])
+    
+    if badge.issued_by:
+        badge_data.append([
+            Paragraph(f"<b>Émis par:</b> {badge.issued_by.get_full_name()}", styles['Normal']),
+            Paragraph("", styles['Normal'])  # Cellule vide pour l'alignement
+        ])
+    
+    # Créer le tableau principal
+    badge_table = Table(badge_data, colWidths=[8*cm, 8*cm])
     badge_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     
     elements.append(badge_table)
     elements.append(Spacer(1, 30))
     
+    # Section pour l'image de profil si disponible
+    if badge.adherent.profile_picture:
+        elements.append(Paragraph("<b>Photo de profil:</b>", styles['Heading3']))
+        elements.append(Spacer(1, 10))
+        
+        # Note: Pour inclure l'image dans le PDF, il faudrait utiliser Image de reportlab
+        # Mais cela nécessiterait des modifications plus complexes
+        elements.append(Paragraph(f"<i>Photo disponible: {badge.adherent.profile_picture.name}</i>", styles['Normal']))
+        elements.append(Spacer(1, 20))
+    
+    # Section pour le QR code si disponible
+    if badge.qr_code:
+        elements.append(Paragraph("<b>QR Code:</b>", styles['Heading3']))
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph(f"<i>QR Code disponible: {badge.qr_code.name}</i>", styles['Normal']))
+        elements.append(Spacer(1, 20))
+    
     # Notes si présentes
     if badge.notes:
-        elements.append(Paragraph("Notes:", styles['Heading3']))
+        elements.append(Paragraph("<b>Notes:</b>", styles['Heading3']))
         elements.append(Paragraph(badge.notes, styles['Normal']))
         elements.append(Spacer(1, 20))
+    
+    # Footer
+    elements.append(Spacer(1, 30))
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        alignment=TA_CENTER,
+        textColor=colors.grey,
+        fontName='Helvetica'
+    )
+    elements.append(Paragraph(f"Document généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}", footer_style))
     
     # Construire le PDF
     doc.build(elements)

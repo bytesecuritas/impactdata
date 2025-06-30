@@ -597,6 +597,19 @@ class Adherent(models.Model):
         related_name='adherents',
         verbose_name="Organisation"
     )
+    activity_name = models.CharField(
+        max_length=200, 
+        verbose_name="Nom de l'activité",
+        help_text="Activité principale de l'adhérent",
+        blank=True,
+        null=True
+    )
+    badge_validity = models.DateField(
+        verbose_name="Validité du badge",
+        help_text="Date de validité du badge d'adhérent",
+        blank=True,
+        null=True
+    )
 
     # Media Files
     profile_picture = models.ImageField(
@@ -722,6 +735,35 @@ class Interaction(models.Model):
             })
 
 
+# Badge Template Model
+class BadgeTemplate(models.Model):
+    """Modèle pour les templates de badges avec différents designs"""
+    TEMPLATE_CHOICES = (
+        ('classic', 'Classique'),
+        ('modern', 'Moderne'),
+        ('premium', 'Premium'),
+    )
+    
+    name = models.CharField(max_length=50, verbose_name="Nom du template")
+    template_type = models.CharField(
+        max_length=20, 
+        choices=TEMPLATE_CHOICES,
+        verbose_name="Type de template"
+    )
+    description = models.TextField(verbose_name="Description")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Template de Badge'
+        verbose_name_plural = 'Templates de Badges'
+        ordering = ['name']
+    
+    def __str__(self):
+        return f"{self.get_template_type_display()} - {self.name}"
+
+
 # Badge Model
 class Badge(models.Model):
     STATUS_CHOICES = (
@@ -764,6 +806,14 @@ class Badge(models.Model):
         blank=True,
         related_name='issued_badges',
         verbose_name="Émis par"
+    )
+    template = models.ForeignKey(
+        BadgeTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Template de badge",
+        help_text="Design du badge"
     )
     activity_name = models.CharField(max_length=100, verbose_name="Nom de l'activité")
     badge_validity = models.DateField(verbose_name="Validité du badge")

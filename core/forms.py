@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective
+from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, BadgeTemplate
 
 User = get_user_model()
 
@@ -30,6 +30,7 @@ class CustomPasswordChangeForm(PasswordChangeForm):
 
 # Formulaires pour Adhérent
 class AdherentForm(forms.ModelForm):
+    """Formulaire pour créer/modifier un adhérent"""
     class Meta:
         model = Adherent
         fields = [
@@ -37,13 +38,13 @@ class AdherentForm(forms.ModelForm):
             'commune', 'quartier', 'secteur', 'phone1', 'phone2', 
             'num_urgence1', 'num_urgence2', 'email', 'medical_info',
             'formation_pro', 'distinction', 'langues', 'join_date', 
-            'organisation', 'profile_picture'
+            'organisation', 'profile_picture', 'activity_name', 'badge_validity'
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'type_adherent': forms.Select(attrs={'class': 'form-control'}),
+            'type_adherent': forms.Select(attrs={'class': 'form-select'}),
             'commune': forms.TextInput(attrs={'class': 'form-control'}),
             'quartier': forms.TextInput(attrs={'class': 'form-control'}),
             'secteur': forms.TextInput(attrs={'class': 'form-control'}),
@@ -57,17 +58,46 @@ class AdherentForm(forms.ModelForm):
             'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'langues': forms.TextInput(attrs={'class': 'form-control'}),
             'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'organisation': forms.Select(attrs={'class': 'form-control'}),
+            'organisation': forms.Select(attrs={'class': 'form-select'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
+            'activity_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'badge_validity': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
+        # Rendre les champs de badge obligatoires
+        self.fields['activity_name'].required = True
+        self.fields['badge_validity'].required = True
+        
+        # Ajouter des labels et help_text personnalisés
+        self.fields['activity_name'].label = "Nom de l'activité"
+        self.fields['activity_name'].help_text = "Ex: Macanier, Commerçant, Artisan, etc."
+        
+        self.fields['badge_validity'].label = "Validité du badge"
+        self.fields['badge_validity'].help_text = "Date jusqu'à laquelle le badge sera valide (généralement 1 an)"
+        
         # Filtrer les organisations selon le rôle de l'utilisateur
         # if user and user.role == 'agent':
         #     self.fields['organisation'].queryset = Organization.objects.filter(created_by=user)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        activity_name = cleaned_data.get('activity_name')
+        badge_validity = cleaned_data.get('badge_validity')
+        
+        # Validation personnalisée pour les champs de badge
+        if not activity_name:
+            self.add_error('activity_name', 'Le nom de l\'activité est obligatoire pour générer un badge.')
+        
+        if not badge_validity:
+            self.add_error('badge_validity', 'La validité du badge est obligatoire.')
+        elif badge_validity and badge_validity < timezone.now().date():
+            self.add_error('badge_validity', 'La validité du badge ne peut pas être dans le passé.')
+        
+        return cleaned_data
 
 # Formulaires pour Organisation
 class OrganizationForm(forms.ModelForm):
@@ -257,6 +287,18 @@ class UserEditForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+class BadgeGenerationForm(forms.Form):
+    """Formulaire pour générer un badge avec choix du template"""
+    template = forms.ModelChoiceField(
+        queryset=BadgeTemplate.objects.filter(is_active=True),
+        empty_label="Choisir un template",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Template de badge"
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 class BadgeForm(forms.ModelForm):
     """Formulaire pour les badges"""

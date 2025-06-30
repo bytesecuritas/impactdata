@@ -1,0 +1,272 @@
+/* Styles pour les badges avec image de profil */
+
+.badge-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 3px solid #007bff;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.badge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+.badge-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #007bff, #0056b3, #007bff);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.badge-profile-image {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border: 4px solid #007bff;
+    border-radius: 50%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease-in-out;
+}
+
+.badge-profile-image:hover {
+    transform: scale(1.05);
+}
+
+.badge-profile-placeholder {
+    width: 140px;
+    height: 140px;
+    border: 4px solid #007bff;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6c757d, #495057);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.badge-qr-code {
+    max-width: 100px;
+    max-height: 100px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    padding: 8px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.badge-qr-code:hover {
+    transform: scale(1.1);
+}
+
+.badge-status {
+    font-weight: 700;
+    border-radius: 25px;
+    padding: 8px 20px;
+    font-size: 1.1rem;
+}
+
+.badge-status.active {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.badge-status.expired {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+}
+
+.badge-status.revoked {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.badge-info-table {
+    border: none;
+}
+
+.badge-info-table td {
+    border: none;
+    padding: 8px 0;
+    vertical-align: middle;
+}
+
+.badge-info-label {
+    font-weight: 700;
+    color: #495057;
+    font-size: 14px;
+    width: 40%;
+}
+
+.badge-info-value {
+    font-weight: 600;
+    color: #212529;
+    font-size: 16px;
+}
+
+.badge-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    padding: 20px;
+    text-align: center;
+    border: none;
+}
+
+.badge-footer {
+    background: #f8f9fa;
+    border-top: 2px solid #dee2e6;
+    padding: 15px;
+    text-align: center;
+    border-radius: 0 0 15px 15px;
+}
+
+/* Styles pour la liste des badges en cartes */
+.badge-list-card {
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    height: 100%;
+}
+
+.badge-list-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.badge-list-profile-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border: 3px solid #007bff;
+    border-radius: 50%;
+    transition: transform 0.2s ease-in-out;
+}
+
+.badge-list-profile-image:hover {
+    transform: scale(1.1);
+}
+
+.badge-list-qr-code {
+    max-width: 60px;
+    max-height: 60px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    padding: 4px;
+}
+
+/* Styles pour l'impression */
+@media print {
+    .badge-card {
+        border: 4px solid #007bff !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+        margin: 0 !important;
+        padding: 20px !important;
+    }
+    
+    .btn, .navbar, .sidebar {
+        display: none !important;
+    }
+    
+    .container-fluid {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .badge-card::before {
+        display: none;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.badge-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .badge-card {
+        padding: 15px;
+        border-radius: 15px;
+    }
+    
+    .badge-profile-image,
+    .badge-profile-placeholder {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .badge-qr-code {
+        max-width: 80px;
+        max-height: 80px;
+    }
+    
+    .badge-info-label {
+        width: 35%;
+        font-size: 12px;
+    }
+    
+    .badge-info-value {
+        font-size: 14px;
+    }
+}
+
+/* Effet de brillance */
+.badge-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transform: rotate(45deg);
+    transition: all 0.3s ease;
+    opacity: 0;
+}
+
+.badge-card:hover::after {
+    opacity: 1;
+    animation: shine 1s ease-out;
+}
+
+@keyframes shine {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+} 

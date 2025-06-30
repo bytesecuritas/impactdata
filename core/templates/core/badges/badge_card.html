@@ -1,0 +1,145 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Carte Badge - {{ badge.badge_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/badge-templates.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }}
+        </h1>
+        <div>
+            <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour aux détails
+            </a>
+            <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info">
+                <i class="fas fa-download"></i> Télécharger PDF
+            </a>
+            <button onclick="window.print()" class="btn btn-success">
+                <i class="fas fa-print"></i> Imprimer
+            </button>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Carte Badge avec template -->
+            <div class="badge-card-container" style="max-width: 600px; margin: 0 auto;">
+                <div class="badge-template-{{ badge.template.template_type|default:'classic' }}">
+                    <div class="badge-header">
+                        BADGE D'ADHÉRENT
+                    </div>
+                    
+                    <div class="badge-content">
+                        <!-- Photo de profil -->
+                        {% if badge.adherent.profile_picture %}
+                        <div class="badge-profile-picture">
+                            <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo de profil">
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Informations de l'adhérent -->
+                        <div class="badge-field">
+                            <strong>Nom complet:</strong>
+                            <span>{{ badge.adherent.full_name }}</span>
+                        </div>
+                        
+                        <div class="badge-field">
+                            <strong>Identifiant:</strong>
+                            <span>{{ badge.adherent.identifiant }}</span>
+                        </div>
+                        
+                        <div class="badge-field">
+                            <strong>Organisation:</strong>
+                            <span>{{ badge.adherent.organisation.name }}</span>
+                        </div>
+                        
+                        <div class="badge-field">
+                            <strong>Activité:</strong>
+                            <span>{{ badge.adherent.activity_name }}</span>
+                        </div>
+                        
+                        <div class="badge-field">
+                            <strong>Type:</strong>
+                            <span>{{ badge.adherent.get_type_adherent_display }}</span>
+                        </div>
+                        
+                        <div class="badge-field">
+                            <strong>Validité:</strong>
+                            <span>
+                                {% if badge.is_valid %}
+                                    <span class="text-success">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                {% else %}
+                                    <span class="text-danger">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="badge-field">
+                            <strong>Numéro de badge:</strong>
+                            <span>{{ badge.badge_number }}</span>
+                        </div>
+                        
+                        <div class="badge-field">
+                            <strong>Statut:</strong>
+                            <span>
+                                {% if badge.status == 'active' %}
+                                    <span class="badge bg-success">ACTIF</span>
+                                {% elif badge.status == 'expired' %}
+                                    <span class="badge bg-warning">EXPIRÉ</span>
+                                {% elif badge.status == 'revoked' %}
+                                    <span class="badge bg-danger">RÉVOQUÉ</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- QR Code -->
+                    {% if badge.qr_code %}
+                    <div class="badge-qr-code">
+                        <img src="{{ badge.qr_code.url }}" alt="QR Code">
+                        <p>Scanner pour vérifier</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Footer -->
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar-alt me-1"></i> 
+                            Émis le {{ badge.issued_date|date:"d/m/Y" }}
+                            {% if badge.issued_by %}
+                                par {{ badge.issued_by.get_full_name }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .badge-template-classic,
+    .badge-template-modern,
+    .badge-template-premium {
+        border: 4px solid #007bff !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+    
+    .btn {
+        display: none !important;
+    }
+    
+    .container-fluid {
+        padding: 0 !important;
+    }
+}
+</style>
+{% endblock %} 

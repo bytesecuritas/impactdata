@@ -12,6 +12,9 @@
             <a href="{% url 'core:badge_list' %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Retour à la liste
             </a>
+            <a href="{% url 'core:badge_card' badge.id %}" class="btn btn-success">
+                <i class="fas fa-id-card"></i> Voir la carte
+            </a>
             <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info">
                 <i class="fas fa-download"></i> Télécharger PDF
             </a>
@@ -51,7 +54,11 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Émis par:</strong></td>
-                                    <td>{{ badge.issued_by.name|default:"Non spécifié" }}</td>
+                                    <td>{{ badge.issued_by.get_full_name|default:"Non spécifié" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Template:</strong></td>
+                                    <td>{{ badge.template.name|default:"Template par défaut" }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -87,6 +94,125 @@
                         <p class="text-muted">{{ badge.notes }}</p>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- Badge comme carte d'identité -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Badge - Carte d'Identité</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row justify-content-center">
+                        <div class="col-md-10">
+                            <div class="badge-card" style="border: 3px solid #007bff; border-radius: 20px; padding: 25px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                                <div class="row">
+                                    <!-- Photo de profil et QR Code -->
+                                    <div class="col-md-4 text-center">
+                                        <!-- Photo de profil -->
+                                        {% if badge.adherent.profile_picture %}
+                                            <img src="{{ badge.adherent.profile_picture.url }}" 
+                                                 alt="Photo de profil" 
+                                                 class="img-fluid rounded-circle mb-3" 
+                                                 style="width: 140px; height: 140px; object-fit: cover; border: 4px solid #007bff; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                                 style="width: 140px; height: 140px; border: 4px solid #007bff;">
+                                                <i class="fas fa-user fa-4x text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- QR Code -->
+                                        {% if badge.qr_code %}
+                                            <div class="mt-3">
+                                                <img src="{{ badge.qr_code.url }}" 
+                                                     alt="QR Code" 
+                                                     class="img-fluid" 
+                                                     style="max-width: 100px; max-height: 100px; border: 2px solid #dee2e6; border-radius: 8px;">
+                                                <p class="text-muted small mt-2">Scanner pour vérifier</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Informations du badge -->
+                                    <div class="col-md-8">
+                                        <!-- En-tête du badge -->
+                                        <div class="text-center mb-4">
+                                            <h3 class="text-primary mb-1" style="font-weight: bold; text-transform: uppercase;">Badge d'Adhérent</h3>
+                                            <p class="text-muted mb-0" style="font-size: 14px;">Impact Data Platform</p>
+                                            <div class="mt-2">
+                                                <span class="badge bg-primary fs-6 px-3 py-2">{{ badge.badge_number }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Informations de l'adhérent -->
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-borderless">
+                                                        <tr>
+                                                            <td style="width: 35%; font-weight: 600; color: #495057;">Nom complet:</td>
+                                                            <td style="font-weight: 500;">{{ badge.adherent.full_name }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight: 600; color: #495057;">Identifiant:</td>
+                                                            <td style="font-weight: 500;">{{ badge.adherent.identifiant }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight: 600; color: #495057;">Organisation:</td>
+                                                            <td style="font-weight: 500;">{{ badge.adherent.organisation.name }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight: 600; color: #495057;">Activité:</td>
+                                                            <td style="font-weight: 500;">{{ badge.adherent.activity_name }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight: 600; color: #495057;">Type:</td>
+                                                            <td style="font-weight: 500;">{{ badge.adherent.get_type_adherent_display }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="font-weight: 600; color: #495057;">Validité:</td>
+                                                            <td>
+                                                                {% if badge.is_valid %}
+                                                                    <span class="text-success fw-bold">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                                                {% else %}
+                                                                    <span class="text-danger fw-bold">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Statut du badge -->
+                                        <div class="text-center mt-4">
+                                            {% if badge.status == 'active' %}
+                                                <span class="badge bg-success fs-6 px-4 py-2" style="font-weight: 600;">BADGE ACTIF</span>
+                                            {% elif badge.status == 'expired' %}
+                                                <span class="badge bg-warning fs-6 px-4 py-2" style="font-weight: 600;">BADGE EXPIRÉ</span>
+                                            {% elif badge.status == 'revoked' %}
+                                                <span class="badge bg-danger fs-6 px-4 py-2" style="font-weight: 600;">BADGE RÉVOQUÉ</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Footer du badge -->
+                                <div class="row mt-4 pt-3" style="border-top: 1px solid #dee2e6;">
+                                    <div class="col-12 text-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt me-1"></i> 
+                                            Émis le {{ badge.issued_date|date:"d/m/Y" }}
+                                            {% if badge.issued_by %}
+                                                par {{ badge.issued_by.name }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

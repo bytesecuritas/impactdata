@@ -6,6 +6,7 @@ app_name = 'core'
 urlpatterns = [
     # Authentification
     path('login/', views.login_view, name='login'),
+    path('create-admin/', views.create_admin_view, name='create_admin'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile, name='profile'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),

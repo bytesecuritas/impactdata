@@ -98,6 +98,68 @@ def login_view(request):
     # Affichage du formulaire de connexion
     return render(request, 'core/auth/login.html', {})
 
+def create_admin_view(request):
+    """Vue pour créer un administrateur depuis la page de connexion"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        matricule = request.POST.get('matricule')
+        telephone = request.POST.get('telephone', '')
+        profession = request.POST.get('profession', '')
+        password = request.POST.get('password')
+        password_confirm = request.POST.get('password_confirm')
+        
+        # Validation des champs requis
+        if not all([email, first_name, last_name, matricule, password, password_confirm]):
+            messages.error(request, 'Tous les champs obligatoires doivent être remplis.')
+            return redirect('core:login')
+        
+        # Validation du mot de passe
+        if password != password_confirm:
+            messages.error(request, 'Les mots de passe ne correspondent pas.')
+            return redirect('core:login')
+        
+        if len(password) < 6:
+            messages.error(request, 'Le mot de passe doit contenir au moins 6 caractères.')
+            return redirect('core:login')
+        
+        # Vérifier si l'email existe déjà
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'Un utilisateur avec cet email existe déjà.')
+            return redirect('core:login')
+        
+        # Vérifier si le matricule existe déjà
+        if User.objects.filter(matricule=matricule).exists():
+            messages.error(request, 'Un utilisateur avec ce matricule existe déjà.')
+            return redirect('core:login')
+        
+        try:
+            # Créer l'utilisateur administrateur
+            user = User.objects.create_user(
+                email=email,
+                matricule=matricule,
+                first_name=first_name,
+                last_name=last_name,
+                telephone=telephone,
+                profession=profession,
+                role='admin'
+            )
+            user.set_password(password)
+            user.is_staff = True
+            user.is_superuser = True
+            user.save()
+            
+            messages.success(request, f'Administrateur {user.get_full_name()} créé avec succès! Vous pouvez maintenant vous connecter.')
+            return redirect('core:login')
+            
+        except Exception as e:
+            messages.error(request, f'Erreur lors de la création de l\'administrateur: {str(e)}')
+            return redirect('core:login')
+    
+    # Si ce n'est pas POST, rediriger vers la page de connexion
+    return redirect('core:login')
+
 @login_required
 def logout_view(request):
     """Vue de déconnexion"""

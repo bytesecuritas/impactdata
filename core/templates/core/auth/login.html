@@ -88,6 +88,24 @@
             color: white;
         }
         
+        .btn-create-admin {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            color: white;
+            margin-top: 15px;
+        }
+        
+        .btn-create-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+        
         .login-footer {
             text-align: center;
             padding: 20px;
@@ -107,6 +125,29 @@
         .alert {
             border-radius: 10px;
             margin-bottom: 20px;
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e9ecef;
+        }
+        
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            color: #6c757d;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -148,6 +189,14 @@
                     <i class="fas fa-sign-in-alt"></i> Se connecter
                 </button>
             </form>
+            
+            <div class="divider">
+                <span>ou</span>
+            </div>
+            
+            <button type="button" class="btn btn-create-admin" data-bs-toggle="modal" data-bs-target="#createAdminModal">
+                <i class="fas fa-user-plus"></i> Créer un administrateur
+            </button>
         </div>
         
         <div class="login-footer">
@@ -155,7 +204,88 @@
         </div>
     </div>
 
+    <!-- Modal pour créer un admin -->
+    <div class="modal fade" id="createAdminModal" tabindex="-1" aria-labelledby="createAdminModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAdminModalLabel">
+                        <i class="fas fa-user-plus"></i> Créer un administrateur
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'core:create_admin' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="admin_email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="admin_email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_first_name" class="form-label">Prénom *</label>
+                            <input type="text" class="form-control" id="admin_first_name" name="first_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_last_name" class="form-label">Nom *</label>
+                            <input type="text" class="form-control" id="admin_last_name" name="last_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_matricule" class="form-label">Matricule *</label>
+                            <input type="text" class="form-control" id="admin_matricule" name="matricule" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_telephone" class="form-label">Téléphone</label>
+                            <input type="tel" class="form-control" id="admin_telephone" name="telephone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_profession" class="form-label">Profession</label>
+                            <input type="text" class="form-control" id="admin_profession" name="profession">
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_password" class="form-label">Mot de passe *</label>
+                            <input type="password" class="form-control" id="admin_password" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_password_confirm" class="form-label">Confirmer le mot de passe *</label>
+                            <input type="password" class="form-control" id="admin_password_confirm" name="password_confirm" required>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> Cet utilisateur sera créé avec les privilèges d'administrateur.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-user-plus"></i> Créer l'administrateur
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Validation du formulaire de création d'admin
+        document.getElementById('createAdminModal').addEventListener('submit', function(e) {
+            const password = document.getElementById('admin_password').value;
+            const passwordConfirm = document.getElementById('admin_password_confirm').value;
+            
+            if (password !== passwordConfirm) {
+                e.preventDefault();
+                alert('Les mots de passe ne correspondent pas.');
+                return false;
+            }
+            
+            if (password.length < 6) {
+                e.preventDefault();
+                alert('Le mot de passe doit contenir au moins 6 caractères.');
+                return false;
+            }
+        });
+    </script>
 </body>
 </html> 

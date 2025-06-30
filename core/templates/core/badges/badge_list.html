@@ -78,11 +78,11 @@
                             <!-- Validité -->
                             <div class="badge-card-details mt-2">
                                 <small class="text-muted">Validité: 
-                                    {% if badge.is_valid %}
+                                {% if badge.is_valid %}
                                         <span class="text-success">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
-                                    {% else %}
+                                {% else %}
                                         <span class="text-danger">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
-                                    {% endif %}
+                                {% endif %}
                                 </small>
                             </div>
                         </div>

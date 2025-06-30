@@ -426,7 +426,7 @@ def adherent_create(request):
             try:
                 adherent = form.save()
                 messages.success(request, f'Adhérent {adherent.identifiant} créé avec succès.')
-                return redirect('core:adherent_detail', adherent_id=adherent.id)
+            return redirect('core:adherent_detail', adherent_id=adherent.id)
             except Exception as e:
                 messages.error(request, f'Erreur lors de la création de l\'adhérent: {str(e)}')
     else:
@@ -901,9 +901,9 @@ def generate_badge(request, adherent_id):
         # Vérifier s'il y a des badges actifs
         existing_badges = Badge.objects.filter(adherent=adherent, status='active')
         existing_badge = existing_badges.first()  # Prendre le premier pour la vérification
-        if existing_badge and existing_badge.is_valid:
-            messages.warning(request, f"{adherent.full_name} a déjà un badge actif valide jusqu'au {adherent.badge_validity}.")
-            return redirect('core:adherent_detail', adherent_id=adherent_id)
+    if existing_badge and existing_badge.is_valid:
+        messages.warning(request, f"{adherent.full_name} a déjà un badge actif valide jusqu'au {adherent.badge_validity}.")
+        return redirect('core:adherent_detail', adherent_id=adherent_id)
     
     # Vérifier que l'adhérent a bien une activité et une validité de badge
     if not adherent.activity_name or not adherent.badge_validity:
@@ -911,39 +911,39 @@ def generate_badge(request, adherent_id):
         return redirect('core:adherent_detail', adherent_id=adherent_id)
     
     if request.method == 'POST':
-        try:
+            try:
             # Récupérer l'image d'activité si fournie
             activity_image = request.FILES.get('activity_image')
             
-            badge = Badge.objects.create(
-                adherent=adherent,
-                issued_by=request.user,
+                badge = Badge.objects.create(
+                    adherent=adherent,
+                    issued_by=request.user,
                 badge_validity=adherent.badge_validity,
                 activity_name=adherent.activity_name,
-                notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
-            )
-            
+                    notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+                )
+                
             # Sauvegarder l'image d'activité si fournie
             if activity_image:
                 badge.activity_image = activity_image
                 badge.save()
             
             badge.refresh_from_db()
-            qr_data = f"ADHERENT:{adherent.identifiant}|BADGE:{badge.badge_number}|VALID:{adherent.badge_validity}"
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            qr.add_data(qr_data)
-            qr.make(fit=True)
-            img = qr.make_image(fill='black', back_color='white')
-            img_io = BytesIO()
-            img.save(img_io, 'PNG')
-            img_io.seek(0)
-            filename = f"qr_badge_{badge.badge_number}.png"
-            badge.qr_code.save(filename, File(img_io), save=True)
+                qr_data = f"ADHERENT:{adherent.identifiant}|BADGE:{badge.badge_number}|VALID:{adherent.badge_validity}"
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(qr_data)
+                qr.make(fit=True)
+                img = qr.make_image(fill='black', back_color='white')
+                img_io = BytesIO()
+                img.save(img_io, 'PNG')
+                img_io.seek(0)
+                filename = f"qr_badge_{badge.badge_number}.png"
+                badge.qr_code.save(filename, File(img_io), save=True)
             badge.refresh_from_db()
             if badge.id:
                 messages.success(request, f"Badge {badge.badge_number} généré avec succès pour {adherent.full_name}.")
@@ -951,9 +951,9 @@ def generate_badge(request, adherent_id):
             else:
                 messages.error(request, "Erreur : le badge n'a pas pu être créé correctement.")
                 return redirect('core:adherent_detail', adherent_id=adherent_id)
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
-            return redirect('core:adherent_detail', adherent_id=adherent_id)
+            except Exception as e:
+                messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
+                return redirect('core:adherent_detail', adherent_id=adherent_id)
     
     context = {
         'adherent': adherent,

@@ -111,13 +111,13 @@
                                     <i class="fas fa-folder-open me-2"></i>Parcourir les fichiers
                                 </button>
                             </div>
-                            
+                                        
                             <!-- Aperçu de l'image -->
                             <div id="imagePreview" style="display: none;" class="text-center mt-3">
                                 <h6>Aperçu de l'image</h6>
                                 <img id="previewImg" class="preview-image" alt="Aperçu">
-                            </div>
-                        </div>
+                                                </div>
+                                                    </div>
 
                         <!-- Aperçu du badge -->
                         <div class="badge-preview">
@@ -128,7 +128,7 @@
                                         <i class="fas fa-id-card me-2"></i>
                                         Badge {{ adherent.identifiant }}
                                     </h6>
-                                </div>
+                                                    </div>
                                 
                                 <div class="badge-card-body">
                                     <div class="badge-card-profile">
@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (files.length > 0) {
             fileInput.files = files;
             handleFileSelect(files[0]);
-        }
+}
     });
 
     // Gestion de la sélection de fichier

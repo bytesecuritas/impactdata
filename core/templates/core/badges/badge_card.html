@@ -80,25 +80,25 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0 text-gray-800">
-      <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }}
-    </h1>
-    <div>
-      <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Retour aux détails
-      </a>
-      <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info">
-        <i class="fas fa-download"></i> Télécharger PDF
-      </a>
-      <button onclick="window.print()" class="btn btn-success">
-        <i class="fas fa-print"></i> Imprimer
-      </button>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }}
+        </h1>
+        <div>
+            <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour aux détails
+            </a>
+            <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info">
+                <i class="fas fa-download"></i> Télécharger PDF
+            </a>
+            <button onclick="window.print()" class="btn btn-success">
+                <i class="fas fa-print"></i> Imprimer
+            </button>
+        </div>
     </div>
-  </div>
   <div class="badge-exemple">
     <!-- Bandeau supérieur -->
-    <div class="badge-header">
+                    <div class="badge-header">
       <img src="{% static 'img/guinee_logo.png' %}" class="badge-logo-guinee" alt="Guinée">
       <div class="badge-republique">
         <span>RÉPUBLIQUE DE GUINÉE</span><br>
@@ -107,8 +107,8 @@
           <span class="devise-yellow">Justice</span> –
           <span class="devise-green">Solidarité</span>
         </div>
-      </div>
-    </div>
+                    </div>
+                        </div>
     <!-- Ligne principale -->
     <div class="badge-main">
       <div class="badge-col badge-col-left">
@@ -117,18 +117,18 @@
         <div class="badge-qr">
           {% if badge.qr_code %}
             <img src="{{ badge.qr_code.url }}" alt="QR Code">
-          {% endif %}
-        </div>
+                        {% endif %}
+                        </div>
         <div class="badge-apprenti">Apprenti</div>
-      </div>
+                        </div>
       <div class="badge-col badge-col-center">
         <div class="badge-photo-cercle">
           {% if badge.adherent.profile_picture %}
             <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo">
-          {% else %}
+                                {% else %}
             <img src="{% static 'img/default_avatar.png' %}" alt="Photo">
-          {% endif %}
-        </div>
+                                {% endif %}
+                        </div>
         <div class="badge-nom">{{ badge.adherent.full_name }}</div>
         <div class="badge-id">
           ID:
@@ -136,16 +136,16 @@
             <span class="badge-id-digit">{{ digit }}</span>
           {% endfor %}
           -{{ badge.badge_number|slice:'-3:' }}
-        </div>
+                        </div>
         <div class="badge-tel">{{ badge.adherent.phone1 }}</div>
         <div class="badge-lieu">{{ badge.adherent.commune|upper }}</div>
-      </div>
+                        </div>
       <div class="badge-col badge-col-right">
         {% if badge.activity_image %}
           <img src="{{ badge.activity_image.url }}" class="badge-activity-img" alt="Activité">
-        {% endif %}
-      </div>
-    </div>
+                            {% endif %}
+                    </div>
+                </div>
     <!-- Bloc urgence -->
     <div class="badge-urgence">
       <img src="{% static 'img/sirene.png' %}" class="badge-sirene" alt="Urgence">
@@ -163,7 +163,7 @@
     <div class="badge-footer">
       <img src="{% static 'img/babaly_logo.png' %}" class="badge-logo-babaly-footer" alt="Babaly Data">
       <span class="badge-validite">Validité {{ badge.badge_validity|date:'F Y' }}</span>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %} 

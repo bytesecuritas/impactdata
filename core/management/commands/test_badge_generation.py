@@ -40,7 +40,7 @@ class Command(BaseCommand):
                     self.style.WARNING('Tous les adhérents ont déjà des badges')
                 )
                 return
-            
+        
             self.stdout.write(
                 f'Génération de badges pour {adherents_without_badge.count()} adhérents...'
             )
@@ -60,29 +60,29 @@ class Command(BaseCommand):
 
     def generate_badge_for_adherent(self, adherent):
         """Génère un badge pour un adhérent spécifique"""
-        try:
+            try:
             # Vérifier si l'adhérent a déjà un badge actif
-            existing_badge = Badge.objects.filter(
-                adherent=adherent,
-                status='active'
-            ).first()
-            
-            if existing_badge:
-                self.stdout.write(
-                    self.style.WARNING(
+                existing_badge = Badge.objects.filter(
+                    adherent=adherent, 
+                    status='active'
+                ).first()
+                
+                if existing_badge:
+                    self.stdout.write(
+                        self.style.WARNING(
                         f'L\'adhérent {adherent.full_name} a déjà un badge actif: {existing_badge.badge_number}'
                     )
                 )
                 return
-            
-            # Créer le badge
-            badge = Badge.objects.create(
-                adherent=adherent,
+                
+                # Créer le badge
+                badge = Badge.objects.create(
+                    adherent=adherent,
                 activity_name=adherent.activity_name or "Activité non spécifiée",
                 badge_validity=adherent.badge_validity or timezone.now().date(),
                 notes="Badge généré automatiquement par la commande de test"
-            )
-            
+                )
+                
             # Générer le QR code
             qr_data = f"BADGE:{badge.badge_number}:{adherent.identifiant}"
             qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -107,8 +107,8 @@ class Command(BaseCommand):
             )
             
         except Exception as e:
-            self.stdout.write(
+                self.stdout.write(
                 self.style.ERROR(
                     f'❌ Erreur lors de la génération du badge pour {adherent.full_name}: {str(e)}'
-                )
-            ) 
+            )
+        ) 

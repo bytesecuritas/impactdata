@@ -1,6 +1,11 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block title %}Liste des Badges{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -19,34 +24,48 @@
     <div class="row">
         {% for badge in badges %}
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow h-100" style="border-radius: 15px; overflow: hidden;">
+            <div class="card badge-card h-100">
                 <!-- En-tête du badge -->
-                <div class="card-header bg-primary text-white text-center py-3" style="border: none;">
+                <div class="badge-card-header">
                     <h6 class="mb-0">
                         <i class="fas fa-id-card me-2"></i>
                         Badge {{ badge.badge_number }}
                     </h6>
                 </div>
                 
-                <div class="card-body p-0">
+                <div class="badge-card-body">
                     <!-- Photo de profil et informations -->
-                    <div class="row g-0">
+                    <div class="badge-card-profile">
                         <!-- Photo de profil -->
-                        <div class="col-4 text-center p-3">
+                        <div class="badge-card-avatar">
                             {% if badge.adherent.profile_picture %}
-                                <img src="{{ badge.adherent.profile_picture.url }}" 
-                                     alt="Photo de profil" 
-                                     class="img-fluid rounded-circle mb-2" 
-                                     style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #007bff;">
+                                <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo de profil">
                             {% else %}
-                                <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
-                                     style="width: 80px; height: 80px; border: 3px solid #007bff;">
-                                    <i class="fas fa-user fa-2x text-white"></i>
+                                <div class="default-avatar">
+                                    <i class="fas fa-user"></i>
                                 </div>
                             {% endif %}
+                        </div>
+                        
+                        <!-- Informations -->
+                        <div class="badge-card-info">
+                            <div class="badge-card-name">
+                                <a href="{% url 'core:adherent_detail' badge.adherent.id %}" class="text-decoration-none">
+                                    {{ badge.adherent.full_name }}
+                                </a>
+                            </div>
+                            <div class="badge-card-details">
+                                <i class="fas fa-hashtag me-1"></i>{{ badge.adherent.identifiant }}
+                            </div>
+                            <div class="badge-card-details">
+                                <i class="fas fa-building me-1"></i>{{ badge.adherent.organisation.name }}
+                            </div>
+                            <div class="badge-card-details">
+                                <i class="fas fa-briefcase me-1"></i>{{ badge.adherent.activity_name|default:"Non spécifiée" }}
+                            </div>
                             
                             <!-- Statut du badge -->
-                            <div class="mt-2">
+                            <div class="badge-card-status">
                                 {% if badge.status == 'active' %}
                                     <span class="badge bg-success">Actif</span>
                                 {% elif badge.status == 'expired' %}
@@ -55,53 +74,34 @@
                                     <span class="badge bg-danger">Révoqué</span>
                                 {% endif %}
                             </div>
-                        </div>
-                        
-                        <!-- Informations -->
-                        <div class="col-8 p-3">
-                            <h6 class="card-title mb-2">
-                                <a href="{% url 'core:adherent_detail' badge.adherent.id %}" class="text-decoration-none">
-                                    {{ badge.adherent.full_name }}
-                                </a>
-                            </h6>
-                            <p class="text-muted small mb-1">
-                                <i class="fas fa-hashtag me-1"></i>{{ badge.adherent.identifiant }}
-                            </p>
-                            <p class="text-muted small mb-1">
-                                <i class="fas fa-building me-1"></i>{{ badge.adherent.organisation.name }}
-                            </p>
-                            <p class="text-muted small mb-2">
-                                <i class="fas fa-briefcase me-1"></i>{{ badge.adherent.activity_name }}
-                            </p>
                             
                             <!-- Validité -->
-                            <div class="mb-2">
-                                <small class="text-muted">Validité:</small><br>
-                                {% if badge.is_valid %}
-                                    <span class="text-success small">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
-                                {% else %}
-                                    <span class="text-danger small">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
-                                {% endif %}
+                            <div class="badge-card-details mt-2">
+                                <small class="text-muted">Validité: 
+                                    {% if badge.is_valid %}
+                                        <span class="text-success">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                    {% endif %}
+                                </small>
                             </div>
                         </div>
                     </div>
                     
                     <!-- QR Code (petit) -->
                     {% if badge.qr_code %}
-                    <div class="text-center p-2" style="background-color: #f8f9fa;">
-                        <img src="{{ badge.qr_code.url }}" 
-                             alt="QR Code" 
-                             class="img-fluid" 
-                             style="max-width: 60px; max-height: 60px;">
-                        <p class="text-muted small mb-0">Scanner pour vérifier</p>
+                    <div class="badge-card-qr">
+                        <img src="{{ badge.qr_code.url }}" alt="QR Code">
+                        <p class="badge-card-qr-text">Scanner pour vérifier</p>
                     </div>
                     {% endif %}
                 </div>
                 
                 <!-- Actions -->
-                <div class="card-footer bg-white border-0 p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="btn-group" role="group">
+                <div class="badge-card-footer">
+                    <div class="badge-actions">
+                        <div class="badge-action-buttons">
+                            {% if badge.id %}
                             <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-sm btn-primary" title="Voir détails">
                                 <i class="fas fa-eye"></i>
                             </a>
@@ -111,14 +111,15 @@
                             <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-sm btn-info" title="Télécharger PDF">
                                 <i class="fas fa-download"></i>
                             </a>
+                            {% endif %}
                         </div>
                         
-                        <div class="btn-group" role="group">
-                            {% if badge.status == 'active' %}
+                        <div class="badge-status-buttons">
+                            {% if badge.id and badge.status == 'active' %}
                                 <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#revokeModal{{ badge.id }}" title="Révoquer">
                                     <i class="fas fa-ban"></i>
                                 </button>
-                            {% elif badge.status == 'revoked' %}
+                            {% elif badge.id and badge.status == 'revoked' %}
                                 <a href="{% url 'core:reactivate_badge' badge.id %}" class="btn btn-sm btn-success" 
                                    onclick="return confirm('Êtes-vous sûr de vouloir réactiver ce badge ?')" title="Réactiver">
                                     <i class="fas fa-check"></i>
@@ -131,7 +132,7 @@
         </div>
         
         <!-- Modal pour révoquer le badge -->
-        {% if badge.status == 'active' %}
+        {% if badge.id and badge.status == 'active' %}
         <div class="modal fade" id="revokeModal{{ badge.id }}" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -169,18 +170,4 @@
     </div>
     {% endif %}
 </div>
-
-<style>
-.card {
-    transition: transform 0.2s ease-in-out;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-}
-
-.badge-card {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-</style>
 {% endblock %} 

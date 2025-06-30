@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, BadgeTemplate
+from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective
 
 User = get_user_model()
 
@@ -287,18 +287,6 @@ class UserEditForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
-
-class BadgeGenerationForm(forms.Form):
-    """Formulaire pour générer un badge avec choix du template"""
-    template = forms.ModelChoiceField(
-        queryset=BadgeTemplate.objects.filter(is_active=True),
-        empty_label="Choisir un template",
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Template de badge"
-    )
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 class BadgeForm(forms.ModelForm):
     """Formulaire pour les badges"""

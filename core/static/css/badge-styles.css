@@ -1,3 +1,349 @@
+/* Styles pour les badges - Design unique et moderne */
+
+.badge-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 400px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.badge-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    pointer-events: none;
+}
+
+.badge-header {
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.badge-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.badge-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 5px 0 0 0;
+}
+
+.badge-content {
+    display: flex;
+    gap: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.badge-profile-section {
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.badge-profile-picture {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+    margin: 0 auto 10px;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.badge-profile-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.badge-profile-picture .default-avatar {
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.badge-info-section {
+    flex: 1;
+}
+
+.badge-field {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-field-label {
+    font-size: 12px;
+    opacity: 0.8;
+    min-width: 80px;
+}
+
+.badge-field-value {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.badge-field-icon {
+    width: 16px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.badge-status {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 2;
+}
+
+.badge-status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-status-active {
+    background: rgba(40, 167, 69, 0.9);
+    color: white;
+}
+
+.badge-status-expired {
+    background: rgba(255, 193, 7, 0.9);
+    color: #333;
+}
+
+.badge-status-revoked {
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+}
+
+.badge-qr-section {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.badge-qr-code {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 10px;
+    background: white;
+    border-radius: 8px;
+    padding: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.badge-qr-code img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.badge-qr-text {
+    font-size: 11px;
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Styles pour la liste des badges */
+.badge-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+}
+
+.badge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.badge-card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    text-align: center;
+    border: none;
+}
+
+.badge-card-header h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.badge-card-body {
+    padding: 0;
+}
+
+.badge-card-profile {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    gap: 15px;
+}
+
+.badge-card-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid #667eea;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.badge-card-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.badge-card-avatar .default-avatar {
+    width: 100%;
+    height: 100%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 24px;
+}
+
+.badge-card-info {
+    flex: 1;
+}
+
+.badge-card-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.badge-card-details {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 3px;
+}
+
+.badge-card-status {
+    margin-top: 8px;
+}
+
+.badge-card-qr {
+    text-align: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.badge-card-qr img {
+    max-width: 50px;
+    max-height: 50px;
+}
+
+.badge-card-qr-text {
+    font-size: 10px;
+    color: #6c757d;
+    margin: 5px 0 0 0;
+}
+
+.badge-card-footer {
+    padding: 15px;
+    background: white;
+    border: none;
+}
+
+.badge-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.badge-action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.badge-action-buttons .btn {
+    padding: 5px 8px;
+    font-size: 12px;
+}
+
+.badge-status-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .badge-container {
+        max-width: 100%;
+        margin: 10px;
+    }
+    
+    .badge-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .badge-profile-section {
+        margin-bottom: 15px;
+    }
+    
+    .badge-card-profile {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .badge-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .badge-action-buttons,
+    .badge-status-buttons {
+        justify-content: center;
+    }
+}
+
+/* Animations */
+@keyframes badgeGlow {
+    0% { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+    50% { box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+    100% { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+}
+
+.badge-container:hover {
+    animation: badgeGlow 2s ease-in-out infinite;
+}
+
 /* Styles pour les badges avec image de profil */
 
 .badge-card {

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, FileResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Count, Sum
@@ -20,8 +20,7 @@ from .models import User, Adherent, Organization, Category, Interaction, Badge, 
 from .forms import (
     UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, 
     CategoryForm, InteractionForm, UserForm, UserRegistrationForm, UserEditForm,
-    BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm,
-    BadgeGenerationForm
+    BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm
 )
 import calendar
 import qrcode
@@ -424,10 +423,12 @@ def adherent_create(request):
     if request.method == 'POST':
         form = AdherentForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            adherent = form.save(commit=False)
-            adherent.save()
-            messages.success(request, 'Adhérent créé avec succès.')
-            return redirect('core:adherent_detail', adherent_id=adherent.id)
+            try:
+                adherent = form.save()
+                messages.success(request, f'Adhérent {adherent.identifiant} créé avec succès.')
+                return redirect('core:adherent_detail', adherent_id=adherent.id)
+            except Exception as e:
+                messages.error(request, f'Erreur lors de la création de l\'adhérent: {str(e)}')
     else:
         form = AdherentForm(user=request.user)
     
@@ -847,11 +848,18 @@ def badge_list(request):
 
 @login_required
 def badge_detail(request, badge_id):
-    """Détails d'un badge"""
+    """Afficher les détails d'un badge"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
     #     return HttpResponseForbidden("Accès refusé")
     
-    badge = get_object_or_404(Badge, id=badge_id)
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        # En cas de doublons, prendre le plus récent
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+    
     context = {
         'badge': badge,
     }
@@ -863,7 +871,14 @@ def badge_card(request, badge_id):
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
     #     return HttpResponseForbidden("Accès refusé")
     
-    badge = get_object_or_404(Badge, id=badge_id)
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        # En cas de doublons, prendre le plus récent
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+    
     context = {
         'badge': badge,
     }
@@ -871,17 +886,24 @@ def badge_card(request, badge_id):
 
 @login_required
 def generate_badge(request, adherent_id):
-    """Générer un badge pour un adhérent"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
+    """Générer un badge pour un adhérent (avec option de régénération)"""
     adherent = get_object_or_404(Adherent, id=adherent_id)
+    force = request.GET.get('force') == '1'
     
-    # Vérifier que l'adhérent a déjà un badge actif
-    existing_badge = Badge.objects.filter(adherent=adherent, status='active').first()
-    if existing_badge and existing_badge.is_valid:
-        messages.warning(request, f"{adherent.full_name} a déjà un badge actif valide jusqu'au {adherent.badge_validity}.")
-        return redirect('core:adherent_detail', adherent_id=adherent_id)
+    # Supprimer tous les badges actifs ET révoqués si force
+    if force:
+        old_badges = Badge.objects.filter(adherent=adherent, status__in=['active', 'revoked'])
+        count = old_badges.count()
+        old_badges.delete()
+        if count:
+            messages.info(request, f"{count} badge(s) précédent(s) supprimé(s) automatiquement.")
+    else:
+        # Vérifier s'il y a des badges actifs
+        existing_badges = Badge.objects.filter(adherent=adherent, status='active')
+        existing_badge = existing_badges.first()  # Prendre le premier pour la vérification
+        if existing_badge and existing_badge.is_valid:
+            messages.warning(request, f"{adherent.full_name} a déjà un badge actif valide jusqu'au {adherent.badge_validity}.")
+            return redirect('core:adherent_detail', adherent_id=adherent_id)
     
     # Vérifier que l'adhérent a bien une activité et une validité de badge
     if not adherent.activity_name or not adherent.badge_validity:
@@ -889,54 +911,52 @@ def generate_badge(request, adherent_id):
         return redirect('core:adherent_detail', adherent_id=adherent_id)
     
     if request.method == 'POST':
-        form = BadgeGenerationForm(request.POST)
-        if form.is_valid():
-            template = form.cleaned_data['template']
+        try:
+            # Récupérer l'image d'activité si fournie
+            activity_image = request.FILES.get('activity_image')
             
-            try:
-                # Créer un nouveau badge
-                badge = Badge.objects.create(
-                    adherent=adherent,
-                    issued_by=request.user,
-                    template=template,
-                    badge_validity=adherent.badge_validity,  # Utiliser la validité de l'adhérent
-                    activity_name=adherent.activity_name,    # Utiliser l'activité de l'adhérent
-                    notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
-                )
-                
-                # Générer le QR code
-                qr_data = f"ADHERENT:{adherent.identifiant}|BADGE:{badge.badge_number}|VALID:{adherent.badge_validity}"
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
-                qr.add_data(qr_data)
-                qr.make(fit=True)
-                
-                # Créer l'image du QR code
-                img = qr.make_image(fill='black', back_color='white')
-                img_io = BytesIO()
-                img.save(img_io, 'PNG')
-                img_io.seek(0)
-                
-                # Sauvegarder le QR code
-                filename = f"qr_badge_{badge.badge_number}.png"
-                badge.qr_code.save(filename, File(img_io), save=True)
-                
+            badge = Badge.objects.create(
+                adherent=adherent,
+                issued_by=request.user,
+                badge_validity=adherent.badge_validity,
+                activity_name=adherent.activity_name,
+                notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+            )
+            
+            # Sauvegarder l'image d'activité si fournie
+            if activity_image:
+                badge.activity_image = activity_image
+                badge.save()
+            
+            badge.refresh_from_db()
+            qr_data = f"ADHERENT:{adherent.identifiant}|BADGE:{badge.badge_number}|VALID:{adherent.badge_validity}"
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            img = qr.make_image(fill='black', back_color='white')
+            img_io = BytesIO()
+            img.save(img_io, 'PNG')
+            img_io.seek(0)
+            filename = f"qr_badge_{badge.badge_number}.png"
+            badge.qr_code.save(filename, File(img_io), save=True)
+            badge.refresh_from_db()
+            if badge.id:
                 messages.success(request, f"Badge {badge.badge_number} généré avec succès pour {adherent.full_name}.")
                 return redirect('core:badge_detail', badge_id=badge.id)
-                
-            except Exception as e:
-                messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
+            else:
+                messages.error(request, "Erreur : le badge n'a pas pu être créé correctement.")
                 return redirect('core:adherent_detail', adherent_id=adherent_id)
-    else:
-        form = BadgeGenerationForm()
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la génération du badge: {str(e)}")
+            return redirect('core:adherent_detail', adherent_id=adherent_id)
     
     context = {
         'adherent': adherent,
-        'form': form,
     }
     return render(request, 'core/badges/badge_generation.html', context)
 
@@ -946,7 +966,13 @@ def revoke_badge(request, badge_id):
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
     #     return HttpResponseForbidden("Accès refusé")
     
-    badge = get_object_or_404(Badge, id=badge_id)
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        # En cas de doublons, prendre le plus récent
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
     
     if request.method == 'POST':
         reason = request.POST.get('reason', '')
@@ -965,7 +991,14 @@ def reactivate_badge(request, badge_id):
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
     #     return HttpResponseForbidden("Accès refusé")
     
-    badge = get_object_or_404(Badge, id=badge_id)
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        # En cas de doublons, prendre le plus récent
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+    
     badge.reactivate(reactivated_by=request.user.get_full_name())
     messages.success(request, f"Badge {badge.badge_number} réactivé avec succès.")
     return redirect('core:badge_list')
@@ -976,7 +1009,13 @@ def download_badge_pdf(request, badge_id):
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
     #     return HttpResponseForbidden("Accès refusé")
     
-    badge = get_object_or_404(Badge, id=badge_id)
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        # En cas de doublons, prendre le plus récent
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
     
     # Créer le PDF
     response = HttpResponse(content_type='application/pdf')
@@ -1129,7 +1168,12 @@ def badge_qr_scan(request):
             
             if adherent_id and badge_number:
                 adherent = Adherent.objects.get(identifiant=adherent_id)
-                badge = Badge.objects.get(badge_number=badge_number)
+                # Utiliser filter() et prendre le badge actif le plus récent
+                badges = Badge.objects.filter(badge_number=badge_number).order_by('-issued_date')
+                if badges.exists():
+                    badge = badges.first()  # Prendre le plus récent
+                else:
+                    raise Badge.DoesNotExist()
                 
                 context = {
                     'adherent': adherent,

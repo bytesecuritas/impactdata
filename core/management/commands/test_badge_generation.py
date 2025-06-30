@@ -1,136 +1,114 @@
+from core.models import Adherent, Badge
 from django.core.management.base import BaseCommand
-from core.models import Adherent, BadgeTemplate, Badge
-from django.contrib.auth import get_user_model
 from django.utils import timezone
+import qrcode
+from io import BytesIO
+from django.core.files import File
 
-User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Teste la génération de badge avec différents templates'
+    help = 'Test de génération de badges pour les adhérents'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--adherent-id',
             type=int,
-            help='ID de l\'adhérent pour lequel générer le badge'
+            help='ID de l\'adhérent pour lequel générer un badge'
+        )
+        parser.add_argument(
+            '--all',
+            action='store_true',
+            help='Générer des badges pour tous les adhérents sans badge'
         )
 
     def handle(self, *args, **options):
-        adherent_id = options.get('adherent_id')
-        
-        if not adherent_id:
-            # Utiliser le premier adhérent disponible
-            adherent = Adherent.objects.first()
-            if not adherent:
-                self.stdout.write(
-                    self.style.ERROR('❌ Aucun adhérent trouvé. Créez d\'abord un adhérent.')
-                )
-                return
-        else:
+        if options['adherent_id']:
+            # Générer un badge pour un adhérent spécifique
             try:
-                adherent = Adherent.objects.get(id=adherent_id)
+                adherent = Adherent.objects.get(id=options['adherent_id'])
+                self.generate_badge_for_adherent(adherent)
             except Adherent.DoesNotExist:
                 self.stdout.write(
-                    self.style.ERROR(f'❌ Adhérent avec l\'ID {adherent_id} non trouvé.')
+                    self.style.ERROR(f'Adhérent avec ID {options["adherent_id"]} non trouvé')
+                )
+        elif options['all']:
+            # Générer des badges pour tous les adhérents sans badge
+            adherents_without_badge = Adherent.objects.filter(badges__isnull=True)
+            
+            if not adherents_without_badge.exists():
+                self.stdout.write(
+                    self.style.WARNING('Tous les adhérents ont déjà des badges')
                 )
                 return
-        
-        # Vérifier que l'adhérent a les informations nécessaires
-        if not adherent.activity_name or not adherent.badge_validity:
+            
+            self.stdout.write(
+                f'Génération de badges pour {adherents_without_badge.count()} adhérents...'
+            )
+            
+            for adherent in adherents_without_badge:
+                self.generate_badge_for_adherent(adherent)
+                
+            self.stdout.write(
+                self.style.SUCCESS('Génération terminée!')
+            )
+        else:
             self.stdout.write(
                 self.style.ERROR(
-                    f'❌ L\'adhérent {adherent.full_name} n\'a pas les informations de badge complètes.\n'
-                    f'   Activité: {adherent.activity_name or "Manquante"}\n'
-                    f'   Validité: {adherent.badge_validity or "Manquante"}'
+                    'Veuillez spécifier --adherent-id ou --all'
                 )
             )
-            return
-        
-        # Récupérer un utilisateur pour émettre le badge
-        user = User.objects.first()
-        if not user:
-            self.stdout.write(
-                self.style.ERROR('❌ Aucun utilisateur trouvé. Créez d\'abord un utilisateur.')
-            )
-            return
-        
-        # Récupérer les templates disponibles
-        templates = BadgeTemplate.objects.filter(is_active=True)
-        
-        if not templates:
-            self.stdout.write(
-                self.style.ERROR('❌ Aucun template de badge actif trouvé.')
-            )
-            return
-        
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'🎯 Test de génération de badge pour {adherent.full_name}\n'
-                f'   Activité: {adherent.activity_name}\n'
-                f'   Validité: {adherent.badge_validity}\n'
-                f'   Templates disponibles: {templates.count()}'
-            )
-        )
-        
-        # Générer un badge pour chaque template
-        for template in templates:
-            try:
-                # Vérifier s'il existe déjà un badge actif pour cet adhérent
-                existing_badge = Badge.objects.filter(
-                    adherent=adherent, 
-                    status='active'
-                ).first()
-                
-                if existing_badge:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f'⚠️  Badge actif existant pour {adherent.full_name} (ID: {existing_badge.id})'
-                        )
-                    )
-                    continue
-                
-                # Créer le badge
-                badge = Badge.objects.create(
-                    adherent=adherent,
-                    issued_by=user,
-                    template=template,
-                    badge_validity=adherent.badge_validity,
-                    activity_name=adherent.activity_name,
-                    notes=f"Badge de test généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')} avec le template {template.name}"
-                )
-                
+
+    def generate_badge_for_adherent(self, adherent):
+        """Génère un badge pour un adhérent spécifique"""
+        try:
+            # Vérifier si l'adhérent a déjà un badge actif
+            existing_badge = Badge.objects.filter(
+                adherent=adherent,
+                status='active'
+            ).first()
+            
+            if existing_badge:
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        f'✅ Badge généré avec le template "{template.name}":\n'
-                        f'   Numéro: {badge.badge_number}\n'
-                        f'   Template: {badge.template.name}\n'
-                        f'   Statut: {badge.get_status_display()}'
+                    self.style.WARNING(
+                        f'L\'adhérent {adherent.full_name} a déjà un badge actif: {existing_badge.badge_number}'
                     )
                 )
-                
-            except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(f'❌ Erreur lors de la génération du badge avec {template.name}: {str(e)}')
-                )
-        
-        # Afficher les badges générés
-        badges = Badge.objects.filter(adherent=adherent).order_by('-issued_date')
-        if badges:
+                return
+            
+            # Créer le badge
+            badge = Badge.objects.create(
+                adherent=adherent,
+                activity_name=adherent.activity_name or "Activité non spécifiée",
+                badge_validity=adherent.badge_validity or timezone.now().date(),
+                notes="Badge généré automatiquement par la commande de test"
+            )
+            
+            # Générer le QR code
+            qr_data = f"BADGE:{badge.badge_number}:{adherent.identifiant}"
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            
+            qr_image = qr.make_image(fill_color="black", back_color="white")
+            buffer = BytesIO()
+            qr_image.save(buffer, format='PNG')
+            
+            # Sauvegarder le QR code
+            badge.qr_code.save(
+                f'qr_code_{badge.badge_number}.png',
+                File(buffer),
+                save=True
+            )
+            
             self.stdout.write(
                 self.style.SUCCESS(
-                    f'\n📋 Badges générés pour {adherent.full_name}:'
+                    f'✅ Badge généré pour {adherent.full_name}: {badge.badge_number}'
                 )
             )
-            for badge in badges:
-                self.stdout.write(
-                    f'   - {badge.badge_number} ({badge.template.name if badge.template else "Sans template"}) - {badge.get_status_display()}'
+            
+        except Exception as e:
+            self.stdout.write(
+                self.style.ERROR(
+                    f'❌ Erreur lors de la génération du badge pour {adherent.full_name}: {str(e)}'
                 )
-        
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'\n🎉 Test terminé! Vous pouvez maintenant:\n'
-                f'   1. Voir les badges dans l\'interface web\n'
-                f'   2. Tester les différents templates\n'
-                f'   3. Télécharger les badges en PDF'
-            )
-        ) 
+            ) 

@@ -4,142 +4,166 @@
 {% block title %}Carte Badge - {{ badge.badge_number }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/badge-templates.css' %}">
+<link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
+<style>
+.badge-exemple { 
+    width: 400px; 
+    border-radius: 20px; 
+    background: #fff; 
+    box-shadow: 0 4px 20px #0002; 
+    padding: 16px; 
+    font-family: Arial, sans-serif; 
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+{% if badge.activity_image %}
+.badge-exemple::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('{{ badge.activity_image.url }}');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.3;
+    z-index: 0;
+}
+{% endif %}
+
+.badge-header, .badge-main, .badge-urgence, .badge-footer {
+    position: relative;
+    z-index: 1;
+}
+
+.badge-header { display: flex; align-items: center; }
+.badge-logo-guinee { height: 40px; }
+.badge-republique { flex: 1; text-align: right; }
+.badge-republique span { font-weight: bold; font-size: 15px; }
+.badge-devise { font-size: 13px; }
+.devise-red { color: #e53935; }
+.devise-yellow { color: #fbc02d; }
+.devise-green { color: #43a047; }
+.badge-main { display: flex; margin-top: 10px; }
+.badge-col { flex: 1; text-align: center; }
+.badge-photo-cercle { border-radius: 50%; border: 4px solid #fbc02d; overflow: hidden; width: 110px; height: 110px; margin: 0 auto; }
+.badge-photo-cercle img { width: 100%; height: 100%; object-fit: cover; }
+.badge-job-title { color: #2e7d32; font-weight: bold; font-size: 22px; margin: 10px 0; }
+.badge-nom { font-size: 20px; font-weight: bold; margin-top: 8px; }
+.badge-id { font-size: 16px; margin: 6px 0; }
+.badge-id-digit { background: #00bcd4; color: #fff; border-radius: 50%; padding: 2px 8px; margin: 0 1px; display: inline-block; }
+.badge-tel, .badge-lieu { font-size: 15px; margin: 2px 0; }
+.badge-apprenti { color: #e53935; font-family: 'Pacifico', cursive; font-size: 18px; margin-top: 10px; }
+.badge-qr img { width: 90px; }
+.badge-activity-img { width: 100px; border-radius: 10px; margin-top: 10px; }
+.badge-urgence { display: flex; align-items: center; background: rgba(255, 243, 224, 0.9); border-radius: 10px; margin: 12px 0; padding: 8px; }
+.badge-sirene { width: 32px; margin-right: 8px; }
+.badge-urgence-titre { font-weight: bold; }
+.badge-urgence-num { color: #e53935; font-size: 18px; font-weight: bold; }
+.badge-phone { width: 32px; margin-left: 8px; }
+.badge-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.badge-logo-babaly-footer { height: 30px; }
+.badge-validite { font-family: 'Pacifico', cursive; font-size: 16px; color: #222; }
+
+/* Amélioration de la lisibilité avec l'image de fond */
+.badge-header, .badge-main, .badge-footer {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 8px;
+    margin: 4px 0;
+}
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }}
-        </h1>
-        <div>
-            <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Retour aux détails
-            </a>
-            <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info">
-                <i class="fas fa-download"></i> Télécharger PDF
-            </a>
-            <button onclick="window.print()" class="btn btn-success">
-                <i class="fas fa-print"></i> Imprimer
-            </button>
-        </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }}
+    </h1>
+    <div>
+      <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Retour aux détails
+      </a>
+      <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info">
+        <i class="fas fa-download"></i> Télécharger PDF
+      </a>
+      <button onclick="window.print()" class="btn btn-success">
+        <i class="fas fa-print"></i> Imprimer
+      </button>
     </div>
-
-    <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10">
-            <!-- Carte Badge avec template -->
-            <div class="badge-card-container" style="max-width: 600px; margin: 0 auto;">
-                <div class="badge-template-{{ badge.template.template_type|default:'classic' }}">
-                    <div class="badge-header">
-                        BADGE D'ADHÉRENT
-                    </div>
-                    
-                    <div class="badge-content">
-                        <!-- Photo de profil -->
-                        {% if badge.adherent.profile_picture %}
-                        <div class="badge-profile-picture">
-                            <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo de profil">
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Informations de l'adhérent -->
-                        <div class="badge-field">
-                            <strong>Nom complet:</strong>
-                            <span>{{ badge.adherent.full_name }}</span>
-                        </div>
-                        
-                        <div class="badge-field">
-                            <strong>Identifiant:</strong>
-                            <span>{{ badge.adherent.identifiant }}</span>
-                        </div>
-                        
-                        <div class="badge-field">
-                            <strong>Organisation:</strong>
-                            <span>{{ badge.adherent.organisation.name }}</span>
-                        </div>
-                        
-                        <div class="badge-field">
-                            <strong>Activité:</strong>
-                            <span>{{ badge.adherent.activity_name }}</span>
-                        </div>
-                        
-                        <div class="badge-field">
-                            <strong>Type:</strong>
-                            <span>{{ badge.adherent.get_type_adherent_display }}</span>
-                        </div>
-                        
-                        <div class="badge-field">
-                            <strong>Validité:</strong>
-                            <span>
-                                {% if badge.is_valid %}
-                                    <span class="text-success">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
-                                {% else %}
-                                    <span class="text-danger">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
-                                {% endif %}
-                            </span>
-                        </div>
-                        
-                        <div class="badge-field">
-                            <strong>Numéro de badge:</strong>
-                            <span>{{ badge.badge_number }}</span>
-                        </div>
-                        
-                        <div class="badge-field">
-                            <strong>Statut:</strong>
-                            <span>
-                                {% if badge.status == 'active' %}
-                                    <span class="badge bg-success">ACTIF</span>
-                                {% elif badge.status == 'expired' %}
-                                    <span class="badge bg-warning">EXPIRÉ</span>
-                                {% elif badge.status == 'revoked' %}
-                                    <span class="badge bg-danger">RÉVOQUÉ</span>
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <!-- QR Code -->
-                    {% if badge.qr_code %}
-                    <div class="badge-qr-code">
-                        <img src="{{ badge.qr_code.url }}" alt="QR Code">
-                        <p>Scanner pour vérifier</p>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Footer -->
-                    <div class="text-center mt-3">
-                        <small class="text-muted">
-                            <i class="fas fa-calendar-alt me-1"></i> 
-                            Émis le {{ badge.issued_date|date:"d/m/Y" }}
-                            {% if badge.issued_by %}
-                                par {{ badge.issued_by.get_full_name }}
-                            {% endif %}
-                        </small>
-                    </div>
-                </div>
-            </div>
+  </div>
+  <div class="badge-exemple">
+    <!-- Bandeau supérieur -->
+    <div class="badge-header">
+      <img src="{% static 'img/guinee_logo.png' %}" class="badge-logo-guinee" alt="Guinée">
+      <div class="badge-republique">
+        <span>RÉPUBLIQUE DE GUINÉE</span><br>
+        <div class="badge-devise">
+          <span class="devise-red">Travail</span> –
+          <span class="devise-yellow">Justice</span> –
+          <span class="devise-green">Solidarité</span>
         </div>
+      </div>
     </div>
+    <!-- Ligne principale -->
+    <div class="badge-main">
+      <div class="badge-col badge-col-left">
+        <img src="{% static 'img/babaly_logo.png' %}" class="badge-logo-babaly" alt="Babaly Data">
+        <div class="badge-job-title">{{ badge.activity_name|upper }}</div>
+        <div class="badge-qr">
+          {% if badge.qr_code %}
+            <img src="{{ badge.qr_code.url }}" alt="QR Code">
+          {% endif %}
+        </div>
+        <div class="badge-apprenti">Apprenti</div>
+      </div>
+      <div class="badge-col badge-col-center">
+        <div class="badge-photo-cercle">
+          {% if badge.adherent.profile_picture %}
+            <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo">
+          {% else %}
+            <img src="{% static 'img/default_avatar.png' %}" alt="Photo">
+          {% endif %}
+        </div>
+        <div class="badge-nom">{{ badge.adherent.full_name }}</div>
+        <div class="badge-id">
+          ID:
+          {% for digit in badge.adherent.identifiant %}
+            <span class="badge-id-digit">{{ digit }}</span>
+          {% endfor %}
+          -{{ badge.badge_number|slice:'-3:' }}
+        </div>
+        <div class="badge-tel">{{ badge.adherent.phone1 }}</div>
+        <div class="badge-lieu">{{ badge.adherent.commune|upper }}</div>
+      </div>
+      <div class="badge-col badge-col-right">
+        {% if badge.activity_image %}
+          <img src="{{ badge.activity_image.url }}" class="badge-activity-img" alt="Activité">
+        {% endif %}
+      </div>
+    </div>
+    <!-- Bloc urgence -->
+    <div class="badge-urgence">
+      <img src="{% static 'img/sirene.png' %}" class="badge-sirene" alt="Urgence">
+      <div>
+        <span class="badge-urgence-titre">En Cas <span class="text-danger">d'Urgence</span></span>
+        <div class="badge-urgence-texte">
+          d'assistance ou de besoin de notre service d'aide de tous type<br>
+          ou si cette Personne est en danger, prière d'appeler :
+        </div>
+        <div class="badge-urgence-num">+224 624 05 91 89</div>
+      </div>
+      <img src="{% static 'img/phone.png' %}" class="badge-phone" alt="Téléphone">
+    </div>
+    <!-- Footer -->
+    <div class="badge-footer">
+      <img src="{% static 'img/babaly_logo.png' %}" class="badge-logo-babaly-footer" alt="Babaly Data">
+      <span class="badge-validite">Validité {{ badge.badge_validity|date:'F Y' }}</span>
+    </div>
+  </div>
 </div>
-
-<style>
-@media print {
-    .badge-template-classic,
-    .badge-template-modern,
-    .badge-template-premium {
-        border: 4px solid #007bff !important;
-        box-shadow: none !important;
-        page-break-inside: avoid;
-    }
-    
-    .btn {
-        display: none !important;
-    }
-    
-    .container-fluid {
-        padding: 0 !important;
-    }
-}
-</style>
 {% endblock %} 

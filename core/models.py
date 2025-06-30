@@ -7,6 +7,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils.crypto import get_random_string
+import time
+from django.db import transaction
 
 
 # Custom User Manager
@@ -649,13 +651,50 @@ class Adherent(models.Model):
 
     def generate_identifiant(self):
         """Génère automatiquement l'identifiant basé sur l'organisation et le rang"""
-        if self.organisation:
-            # Compter les adhérents existants pour cette organisation
-            existing_count = Adherent.objects.filter(
-                organisation=self.organisation
-            ).count()
-            # Format: ID_ORG + rang (ex: 001, 002, etc.)
-            self.identifiant = f"{self.organisation.identifiant:03d}-{existing_count + 1:03d}"
+        if not self.organisation:
+            return
+            
+        # Utiliser une transaction pour éviter les conditions de course
+        with transaction.atomic():
+            # Trouver le prochain numéro disponible pour cette organisation
+            # Exclure l'instance actuelle si elle a déjà un ID
+            queryset = Adherent.objects.filter(organisation=self.organisation)
+            if self.pk:
+                queryset = queryset.exclude(pk=self.pk)
+                
+            existing_identifiants = queryset.values_list('identifiant', flat=True)
+            
+            # Extraire les numéros existants
+            existing_numbers = []
+            for identifiant in existing_identifiants:
+                try:
+                    # Format attendu: "XXX-YYY" où XXX est l'ID org et YYY le numéro
+                    parts = identifiant.split('-')
+                    if len(parts) == 2 and parts[0] == f"{self.organisation.identifiant:03d}":
+                        existing_numbers.append(int(parts[1]))
+                except (ValueError, IndexError):
+                    continue
+            
+            # Trouver le prochain numéro disponible
+            next_number = 1
+            if existing_numbers:
+                next_number = max(existing_numbers) + 1
+            
+            # Générer l'identifiant et vérifier qu'il n'existe pas déjà
+            max_attempts = 100
+            attempt = 0
+            while attempt < max_attempts:
+                identifiant = f"{self.organisation.identifiant:03d}-{next_number:03d}"
+                # Vérifier que cet identifiant n'existe pas déjà
+                if not Adherent.objects.filter(identifiant=identifiant).exists():
+                    self.identifiant = identifiant
+                    return
+                next_number += 1
+                attempt += 1
+            
+            # En cas d'échec, utiliser un timestamp
+            timestamp = int(time.time()) % 10000
+            self.identifiant = f"{self.organisation.identifiant:03d}-{timestamp:04d}"
 
     @property
     def full_name(self):
@@ -735,35 +774,6 @@ class Interaction(models.Model):
             })
 
 
-# Badge Template Model
-class BadgeTemplate(models.Model):
-    """Modèle pour les templates de badges avec différents designs"""
-    TEMPLATE_CHOICES = (
-        ('classic', 'Classique'),
-        ('modern', 'Moderne'),
-        ('premium', 'Premium'),
-    )
-    
-    name = models.CharField(max_length=50, verbose_name="Nom du template")
-    template_type = models.CharField(
-        max_length=20, 
-        choices=TEMPLATE_CHOICES,
-        verbose_name="Type de template"
-    )
-    description = models.TextField(verbose_name="Description")
-    is_active = models.BooleanField(default=True, verbose_name="Actif")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name = 'Template de Badge'
-        verbose_name_plural = 'Templates de Badges'
-        ordering = ['name']
-    
-    def __str__(self):
-        return f"{self.get_template_type_display()} - {self.name}"
-
-
 # Badge Model
 class Badge(models.Model):
     STATUS_CHOICES = (
@@ -807,17 +817,8 @@ class Badge(models.Model):
         related_name='issued_badges',
         verbose_name="Émis par"
     )
-    template = models.ForeignKey(
-        BadgeTemplate,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Template de badge",
-        help_text="Design du badge"
-    )
     activity_name = models.CharField(max_length=100, verbose_name="Nom de l'activité")
     badge_validity = models.DateField(verbose_name="Validité du badge")
-    
     activity_image = models.ImageField(
         upload_to='activity_images/', 
         null=True, 
@@ -843,43 +844,31 @@ class Badge(models.Model):
         return f"Badge {self.badge_number} - {self.adherent.full_name}"
     
     def save(self, *args, **kwargs):
-        """Override save pour générer automatiquement le numéro de badge si nécessaire"""
         if not self.badge_number:
             self.badge_number = self.generate_badge_number()
         super().save(*args, **kwargs)
     
     def generate_badge_number(self):
-        """Génère un numéro de badge unique"""
         import random
         import string
-        
         while True:
-            # Format: BADGE-YYYY-XXXXX (ex: BADGE-2024-12345)
             year = timezone.now().year
             random_part = ''.join(random.choices(string.digits, k=5))
             badge_number = f"BADGE-{year}-{random_part}"
-            
-            # Vérifier si le numéro existe déjà
             if not Badge.objects.filter(badge_number=badge_number).exists():
                 return badge_number
-    
     @property
     def is_valid(self):
-        """Vérifie si le badge est valide"""
         return (
             self.status == 'active' and 
             self.adherent.badge_validity >= timezone.now().date()
         )
-    
     def revoke(self, reason="", revoked_by=None):
-        """Révoque le badge"""
         self.status = 'revoked'
         if reason:
             self.notes = f"Révoqué le {timezone.now().strftime('%d/%m/%Y')} par {revoked_by}: {reason}"
         self.save()
-    
     def reactivate(self, reactivated_by=None):
-        """Réactive le badge"""
         self.status = 'active'
         if reactivated_by:
             self.notes = f"Réactivé le {timezone.now().strftime('%d/%m/%Y')} par {reactivated_by}"

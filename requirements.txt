@@ -1,5 +1,5 @@
-Django==4.2.7
-Pillow==10.1.0
+Django==4.2.23
+Pillow==10.4.0
 qrcode==7.4.2
 reportlab==4.0.7
 gunicorn==21.2.0

@@ -73,25 +73,32 @@ def login_view(request):
         password = request.POST.get('password')
         
         if email and password:
-            user = authenticate(request, username=email, password=password)
-            if user is not None:
-                if user.is_active:
-                    login(request, user)
-                    messages.success(request, f'Bienvenue {user.get_full_name()}!')
-                    
-                    # Redirection selon le rôle
-                    if user.is_superuser or user.role == 'admin':
-                        return redirect('core:admin_dashboard')
-                    elif user.role == 'superviseur':
-                        return redirect('core:superviseur_dashboard')
-                    elif user.role == 'agent':
-                        return redirect('core:agent_dashboard')
+            try:
+                user = authenticate(request, username=email, password=password)
+                if user is not None:
+                    if user.is_active:
+                        login(request, user)
+                        messages.success(request, f'Bienvenue {user.get_full_name()}!')
+                        
+                        # Redirection selon le rôle
+                        if hasattr(user, 'role'):
+                            if user.is_superuser or user.role == 'admin':
+                                return redirect('core:admin_dashboard')
+                            elif user.role == 'superviseur':
+                                return redirect('core:superviseur_dashboard')
+                            elif user.role == 'agent':
+                                return redirect('core:agent_dashboard')
+                            else:
+                                return redirect('core:dashboard')
+                        else:
+                            # Si pas de rôle, rediriger vers le dashboard général
+                            return redirect('core:dashboard')
                     else:
-                        return redirect('core:dashboard')
+                        messages.error(request, 'Votre compte est désactivé.')
                 else:
-                    messages.error(request, 'Votre compte est désactivé.')
-            else:
-                messages.error(request, 'Email ou mot de passe incorrect.')
+                    messages.error(request, 'Email ou mot de passe incorrect.')
+            except Exception as e:
+                messages.error(request, f'Erreur lors de la connexion: {str(e)}')
         else:
             messages.error(request, 'Veuillez remplir tous les champs.')
     

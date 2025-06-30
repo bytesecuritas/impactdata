@@ -26,4 +26,7 @@ pip install tzdata==2023.3
 python manage.py collectstatic --no-input
 
 # Effectuer les migrations
-python manage.py migrate 
+python manage.py migrate
+
+# Créer un superutilisateur par défaut (seulement si aucun n'existe)
+python manage.py create_default_admin 

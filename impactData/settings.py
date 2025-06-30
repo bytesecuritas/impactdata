@@ -162,6 +162,11 @@ CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Configuration de l'authentification
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/login/'
+
 # Configuration de sécurité pour la production
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True

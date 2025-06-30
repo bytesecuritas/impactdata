@@ -178,10 +178,13 @@
                             <li><i class="fas fa-check text-success"></i> Gestion des catégories</li>
                             <li><i class="fas fa-check text-success"></i> Gestion des interactions</li>
                         {% elif user.role == 'superviseur' %}
-                            <li><i class="fas fa-check text-success"></i> Gestion de ses agnes</li>
+                            <li><i class="fas fa-check text-success"></i> Gestion de ses agens</li>
                             <li><i class="fas fa-check text-success"></i> Gestion des objectifs</li>
-                            <li><i class="fas fa-times text-danger"></i> Gestion des organisations (lecture seule)</li>
-                            <li><i class="fas fa-times text-danger"></i> Gestion des catégories (lecture seule)</li>
+                            <li><i class="fas fa-check text-success"></i> Gestion des adhérents</li>
+                            <li><i class="fas fa-check text-success"></i> Gestion des organisations</li>
+                            <li><i class="fas fa-check text-success"></i> Gestion des catégories</li>
+                            <li><i class="fas fa-check text-success"></i> Gestion des interactions</li>
+                            <li><i class="fas fa-times text-danger"></i> Gestion des administrateurs (lecture seule)</li>
                         {% elif user.role == 'agent' %}
                             <li><i class="fas fa-check text-success"></i> Gestion des organisations</li>
                             <li><i class="fas fa-check text-success"></i> Gestion des catégories</li>
@@ -189,6 +192,7 @@
                             <li><i class="fas fa-times text-success"></i> Gestion des interactions </li>
                             <li><i class="fas fa-times text-success"></i> Gestion des badges </li>
                             <li><i class="fas fa-times text-danger"></i> Gestion des objectifs</li>
+                            <li><i class="fas fa-times text-danger"></i> Gestion des utilisateurs</li>
 
                         {% endif %}
                     </ul>

@@ -52,6 +52,13 @@
                                 <tr><td><strong>Statut:</strong></td><td>
                                     {% if user_obj.is_active %}<span class="badge bg-success">Actif</span>{% else %}<span class="badge bg-secondary">Inactif</span>{% endif %}
                                 </td></tr>
+                                <tr><td><strong>Assigné à:</strong></td><td>
+                                    {% if user_obj.created_by %}
+                                        {{ user_obj.created_by.get_full_name }}
+                                    {% else %}
+                                        <span class="text-muted">Non spécifié</span>
+                                    {% endif %}
+                                </td></tr>
                                 <tr><td><strong>Dernière connexion:</strong></td><td>
                                     {% if user_obj.last_login %}{{ user_obj.last_login|date:"d/m/Y H:i" }}{% else %}<span class="text-muted">Jamais connecté</span>{% endif %}
                                 </td></tr>

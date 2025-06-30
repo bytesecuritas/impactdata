@@ -302,8 +302,8 @@ def change_password(request):
 @login_required
 def adherent_list(request):
     """Liste des adhérents"""
-    if request.user.role not in ['agent','superviseur', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent','superviseur', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     adherents = Adherent.objects.all().order_by('last_name', 'first_name')
     context = {
@@ -315,8 +315,8 @@ def adherent_list(request):
 @login_required
 def adherent_detail(request, adherent_id):
     """Détail d'un adhérent"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     try:
         adherent = Adherent.objects.get(id=adherent_id)
@@ -335,21 +335,23 @@ def adherent_detail(request, adherent_id):
 @login_required
 def organization_list(request):
     """Liste des organisations"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     organizations = Organization.objects.all().order_by('name')
     context = {
         'organizations': organizations,
         'total_organizations': organizations.count(),
+        'total_personel': Organization.objects.aggregate(Sum('number_personnel'))['number_personnel__sum'] or 0,
+        'total_revenue': Organization.objects.aggregate(Sum('monthly_revenue'))['monthly_revenue__sum'] or 0,
     }
     return render(request, 'core/organizations/organization_list.html', context)
 
 @login_required
 def organization_detail(request, organization_id):
     """Détail d'une organisation"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     try:
         organization = Organization.objects.get(id=organization_id)
@@ -368,8 +370,8 @@ def organization_detail(request, organization_id):
 @login_required
 def category_list(request):
     """Liste des catégories"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     categories = Category.objects.all().order_by('name')
     context = {
@@ -382,8 +384,8 @@ def category_list(request):
 @login_required
 def interaction_list(request):
     """Liste des interactions"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     interactions = Interaction.objects.all().order_by('-created_at')
     context = {
@@ -396,8 +398,8 @@ def interaction_list(request):
 @login_required
 def interaction_detail(request, interaction_id):
     """Détail d'une interaction"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     try:
         interaction = Interaction.objects.get(id=interaction_id)
@@ -415,8 +417,8 @@ def interaction_detail(request, interaction_id):
 @login_required
 def adherent_create(request):
     """Créer un nouvel adhérent"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
         form = AdherentForm(request.POST, request.FILES, user=request.user)
@@ -433,8 +435,8 @@ def adherent_create(request):
 @login_required
 def adherent_update(request, adherent_id):
     """Modifier un adhérent"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
@@ -452,8 +454,8 @@ def adherent_update(request, adherent_id):
 @login_required
 def adherent_delete(request, adherent_id):
     """Supprimer un adhérent"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
@@ -469,8 +471,8 @@ def adherent_delete(request, adherent_id):
 @login_required
 def organization_create(request):
     """Créer une nouvelle organisation"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
         form = OrganizationForm(request.POST)
@@ -488,8 +490,8 @@ def organization_create(request):
 @login_required
 def organization_update(request, organization_id):
     """Modifier une organisation"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     organization = get_object_or_404(Organization, id=organization_id)
     
@@ -511,8 +513,8 @@ def organization_update(request, organization_id):
 @login_required
 def organization_delete(request, organization_id):
     """Supprimer une organisation"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     organization = get_object_or_404(Organization, id=organization_id)
     
@@ -532,8 +534,8 @@ def organization_delete(request, organization_id):
 @login_required
 def category_create(request):
     """Créer une nouvelle catégorie"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
         form = CategoryForm(request.POST)
@@ -554,8 +556,8 @@ def category_create(request):
 @login_required
 def category_update(request, category_id):
     """Modifier une catégorie"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'adherent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     category = get_object_or_404(Category, id=category_id)
     
@@ -579,8 +581,8 @@ def category_update(request, category_id):
 @login_required
 def category_delete(request, category_id):
     """Supprimer une catégorie"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'adherent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     category = get_object_or_404(Category, id=category_id)
     
@@ -601,8 +603,8 @@ def category_delete(request, category_id):
 @login_required
 def interaction_create(request):
     """Créer une nouvelle interaction"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user) or is_supervisor(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
         form = InteractionForm(request.POST, user=request.user)
@@ -620,8 +622,8 @@ def interaction_create(request):
 @login_required
 def interaction_update(request, interaction_id):
     """Modifier une interaction"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user) or is_supervisor(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
@@ -643,8 +645,8 @@ def interaction_update(request, interaction_id):
 @login_required
 def interaction_delete(request, interaction_id):
     """Supprimer une interaction"""
-    if not (is_admin(request.user) or is_agent(request.user)):
-        return HttpResponseForbidden("Accès refusé")
+    # if not (is_admin(request.user) or is_agent(request.user) or is_supervisor(request.user)):
+    #     return HttpResponseForbidden("Accès refusé")
     
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
@@ -826,8 +828,8 @@ class UserDeleteView(LoginRequiredMixin, DeleteView):
 @login_required
 def badge_list(request):
     """Liste des badges"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     badges = Badge.objects.select_related('adherent', 'issued_by').all()
     
@@ -845,8 +847,8 @@ def badge_list(request):
 @login_required
 def badge_detail(request, badge_id):
     """Détails d'un badge"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
     context = {
@@ -857,8 +859,8 @@ def badge_detail(request, badge_id):
 @login_required
 def generate_badge(request, adherent_id):
     """Générer un badge pour un adhérent"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
@@ -907,8 +909,8 @@ def generate_badge(request, adherent_id):
 @login_required
 def revoke_badge(request, badge_id):
     """Révoquer un badge"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
     
@@ -926,8 +928,8 @@ def revoke_badge(request, badge_id):
 @login_required
 def reactivate_badge(request, badge_id):
     """Réactiver un badge"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
     badge.reactivate(reactivated_by=request.user.name)
@@ -937,8 +939,8 @@ def reactivate_badge(request, badge_id):
 @login_required
 def download_badge_pdf(request, badge_id):
     """Télécharger le badge en PDF"""
-    if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     badge = get_object_or_404(Badge, id=badge_id)
     
@@ -1005,8 +1007,8 @@ def download_badge_pdf(request, badge_id):
 @login_required
 def badge_qr_scan(request):
     """Scanner un QR code de badge"""
-    if request.user.role not in ['superviseur', 'admin', 'agent'] and not request.user.is_superuser:
-        return HttpResponseForbidden("Accès refusé")
+    # if request.user.role not in ['superviseur', 'admin', 'agent'] and not request.user.is_superuser:
+    #     return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
         qr_data = request.POST.get('qr_data', '')

@@ -244,7 +244,7 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'telephone', 
-                 'profession', 'fonction', 'role', 'is_active', 'notes']
+                 'profession', 'fonction', 'role', 'created_by', 'is_active', 'notes']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -253,6 +253,7 @@ class UserEditForm(forms.ModelForm):
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
+            'created_by': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }

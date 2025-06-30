@@ -77,10 +77,10 @@
                         <!-- Menu selon le rôle -->
                         {% if user.is_superuser or user.role == 'admin' %}
                             <!-- Menu Admin -->
-                            <li class="nav-item">
-                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
-                                   href="{% url 'core:adherent_list' %}">
-                                    <i class="fas fa-users"></i> Adhérents
+                             <li class="nav-item">
+                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:category_list' %}">
+                                    <i class="fas fa-tags"></i> Catégories
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -89,10 +89,11 @@
                                     <i class="fas fa-building"></i> Organisations
                                 </a>
                             </li>
+                            
                             <li class="nav-item">
-                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
-                                   href="{% url 'core:category_list' %}">
-                                    <i class="fas fa-tags"></i> Catégories
+                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:adherent_list' %}">
+                                    <i class="fas fa-users"></i> Adhérents
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -127,10 +128,35 @@
                                     <i class="fas fa-bullseye"></i> Objectifs
                                 </a>
                             </li>
+                            
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:category_list' %}">
+                                    <i class="fas fa-tags"></i> Catégories
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'organization' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:organization_list' %}">
+                                    <i class="fas fa-building"></i> Organisations
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:adherent_list' %}">
                                     <i class="fas fa-users"></i> Adhérents
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'interaction' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:interaction_list' %}">
+                                    <i class="fas fa-comments"></i> Interactions
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'badge' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:badge_list' %}">
+                                    <i class="fas fa-id-card"></i> Badges
                                 </a>
                             </li>
                             

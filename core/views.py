@@ -426,7 +426,7 @@ def adherent_create(request):
             try:
                 adherent = form.save()
                 messages.success(request, f'Adhérent {adherent.identifiant} créé avec succès.')
-            return redirect('core:adherent_detail', adherent_id=adherent.id)
+                return redirect('core:adherent_detail', adherent_id=adherent.id)
             except Exception as e:
                 messages.error(request, f'Erreur lors de la création de l\'adhérent: {str(e)}')
     else:

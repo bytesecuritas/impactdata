@@ -1,0 +1,238 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Générer un badge - {{ adherent.full_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
+<style>
+    .upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+    }
+    
+    .upload-area:hover {
+        border-color: #007bff;
+        background-color: #f0f8ff;
+    }
+    
+    .upload-area.dragover {
+        border-color: #28a745;
+        background-color: #f8fff9;
+    }
+    
+    .preview-image {
+        max-width: 200px;
+        max-height: 200px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .badge-preview {
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        background: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-id-card me-2"></i>
+                        Générer un badge pour {{ adherent.full_name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Informations de l'adhérent -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Informations de l'adhérent</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Nom complet:</strong></td>
+                                    <td>{{ adherent.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Identifiant:</strong></td>
+                                    <td>{{ adherent.identifiant }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Organisation:</strong></td>
+                                    <td>{{ adherent.organisation.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Activité:</strong></td>
+                                    <td>{{ adherent.activity_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Validité:</strong></td>
+                                    <td>{{ adherent.badge_validity|date:"d/m/Y" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            {% if adherent.profile_picture %}
+                            <div class="text-center">
+                                <h5>Photo de profil</h5>
+                                <img src="{{ adherent.profile_picture.url }}" 
+                                     alt="Photo de profil" 
+                                     class="img-fluid rounded" 
+                                     style="max-width: 150px;">
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Upload de l'image d'activité -->
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <h5>Image d'activité (fond du badge)</h5>
+                            <p class="text-muted">Téléchargez une image qui servira de fond pour le badge. Formats acceptés : JPG, PNG, GIF. Taille recommandée : 400x600px.</p>
+                            
+                            <div class="upload-area" id="uploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h6>Cliquez ou glissez-déposez une image ici</h6>
+                                <p class="text-muted small">ou</p>
+                                <input type="file" id="activityImage" name="activity_image" accept="image/*" style="display: none;">
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('activityImage').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Parcourir les fichiers
+                                </button>
+                            </div>
+                            
+                            <!-- Aperçu de l'image -->
+                            <div id="imagePreview" style="display: none;" class="text-center mt-3">
+                                <h6>Aperçu de l'image</h6>
+                                <img id="previewImg" class="preview-image" alt="Aperçu">
+                            </div>
+                        </div>
+
+                        <!-- Aperçu du badge -->
+                        <div class="badge-preview">
+                            <h5>Aperçu du badge</h5>
+                            <div class="badge-card" id="badgePreview">
+                                <div class="badge-card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-id-card me-2"></i>
+                                        Badge {{ adherent.identifiant }}
+                                    </h6>
+                                </div>
+                                
+                                <div class="badge-card-body">
+                                    <div class="badge-card-profile">
+                                        <div class="badge-card-avatar">
+                                            {% if adherent.profile_picture %}
+                                                <img src="{{ adherent.profile_picture.url }}" alt="Photo de profil">
+                                            {% else %}
+                                                <div class="default-avatar">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="badge-card-info">
+                                            <div class="badge-card-name">{{ adherent.full_name }}</div>
+                                            <div class="badge-card-details">
+                                                <i class="fas fa-hashtag me-1"></i>{{ adherent.identifiant }}
+                                            </div>
+                                            <div class="badge-card-details">
+                                                <i class="fas fa-building me-1"></i>{{ adherent.organisation.name }}
+                                            </div>
+                                            <div class="badge-card-details">
+                                                <i class="fas fa-briefcase me-1"></i>{{ adherent.activity_name }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'core:adherent_detail' adherent.id %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-magic me-2"></i>Générer le badge
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('activityImage');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const badgePreview = document.getElementById('badgePreview');
+
+    // Gestion du clic sur la zone d'upload
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // Gestion du drag & drop
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect(files[0]);
+        }
+    });
+
+    // Gestion de la sélection de fichier
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelect(file) {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+                
+                // Mettre à jour l'aperçu du badge avec l'image de fond
+                badgePreview.style.backgroundImage = `url(${e.target.result})`;
+                badgePreview.style.backgroundSize = 'cover';
+                badgePreview.style.backgroundPosition = 'center';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            alert('Veuillez sélectionner un fichier image valide.');
+        }
+    }
+});
+</script>
+{% endblock %} 

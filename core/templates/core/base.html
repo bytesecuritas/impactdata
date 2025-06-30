@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -36,7 +37,7 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ user.name }}
+                            <i class="fas fa-user"></i> {{ user.get_full_name }}
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'core:profile' %}">
@@ -77,10 +78,10 @@
                         <!-- Menu selon le rôle -->
                         {% if user.is_superuser or user.role == 'admin' %}
                             <!-- Menu Admin -->
-                            <li class="nav-item">
-                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
-                                   href="{% url 'core:adherent_list' %}">
-                                    <i class="fas fa-users"></i> Adhérents
+                             <li class="nav-item">
+                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:category_list' %}">
+                                    <i class="fas fa-tags"></i> Catégories
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -89,10 +90,11 @@
                                     <i class="fas fa-building"></i> Organisations
                                 </a>
                             </li>
+                            
                             <li class="nav-item">
-                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
-                                   href="{% url 'core:category_list' %}">
-                                    <i class="fas fa-tags"></i> Catégories
+                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:adherent_list' %}">
+                                    <i class="fas fa-users"></i> Adhérents
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -110,11 +112,36 @@
                             <li class="nav-item">
                                 <a class="nav-link {% if 'user' in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:user_list' %}">
-                                    <i class="fas fa-users-cog"></i> Utilisateurs
+                                    <i class="fas fa-users"></i> Utilisateurs
                                 </a>
                             </li>
                         {% elif user.role == 'superviseur' %}
                             <!-- Menu Superviseur -->
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'user' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:user_list' %}">
+                                    <i class="fas fa-users-cog"></i> Gestion des Agents
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'objective' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:objective_list' %}">
+                                    <i class="fas fa-bullseye"></i> Objectifs
+                                </a>
+                            </li>
+                            
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:category_list' %}">
+                                    <i class="fas fa-tags"></i> Catégories
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'organization' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:organization_list' %}">
+                                    <i class="fas fa-building"></i> Organisations
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:adherent_list' %}">
@@ -133,8 +160,15 @@
                                     <i class="fas fa-id-card"></i> Badges
                                 </a>
                             </li>
+                            
                         {% elif user.role == 'agent' %}
                             <!-- Menu Agent -->
+                             <li class="nav-item">
+                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:category_list' %}">
+                                    <i class="fas fa-tags"></i> Catégories
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link {% if 'organization' in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:organization_list' %}">
@@ -142,9 +176,21 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
-                                   href="{% url 'core:category_list' %}">
-                                    <i class="fas fa-tags"></i> Catégories
+                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:adherent_list' %}">
+                                    <i class="fas fa-users"></i> Adhérents
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'interaction' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:interaction_list' %}">
+                                    <i class="fas fa-comments"></i> Interactions
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'badge' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:badge_list' %}">
+                                    <i class="fas fa-id-card"></i> Badges
                                 </a>
                             </li>
                         {% endif %}
@@ -198,106 +244,30 @@
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.querySelector('.col-md-9, .col-lg-10');
-            
-            // Create backdrop for mobile
-            let backdrop = document.querySelector('.sidebar-backdrop');
-            if (!backdrop) {
-                backdrop = document.createElement('div');
-                backdrop.className = 'sidebar-backdrop';
-                document.body.appendChild(backdrop);
-            }
-            
-            // Check if sidebar state is saved in localStorage
-            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            
-            // Initialize sidebar state
-            function initializeSidebar() {
-                if (window.innerWidth < 768) {
-                    // Mobile: sidebar hidden by default
-                    sidebar.classList.remove('show');
-                    backdrop.classList.remove('show');
-                } else {
-                    // Desktop: restore saved state
-                    if (sidebarCollapsed) {
-                        sidebar.classList.add('collapsed');
-                        if (mainContent) {
-                            mainContent.classList.add('expanded');
-                        }
-                    }
-                }
-            }
-            
-            // Toggle sidebar function
-            function toggleSidebar() {
-                if (window.innerWidth < 768) {
-                    // Mobile: toggle with overlay
-                    sidebar.classList.toggle('show');
-                    backdrop.classList.toggle('show');
-                } else {
-                    // Desktop: toggle collapse
-                    sidebar.classList.toggle('collapsed');
-                    if (mainContent) {
-                        mainContent.classList.toggle('expanded');
-                    }
-                    // Save state to localStorage
-                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                }
-            }
-            
-            // Event listeners
-            sidebarToggle.addEventListener('click', toggleSidebar);
-            
-            // Close sidebar button (mobile)
             const sidebarClose = document.getElementById('sidebarClose');
-            if (sidebarClose) {
-                sidebarClose.addEventListener('click', function() {
-                    if (window.innerWidth < 768) {
-                        sidebar.classList.remove('show');
-                        backdrop.classList.remove('show');
-                    }
+
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
                 });
             }
-            
-            // Close sidebar when clicking backdrop (mobile)
-            backdrop.addEventListener('click', function() {
-                if (window.innerWidth < 768) {
+
+            if (sidebarClose) {
+                sidebarClose.addEventListener('click', function() {
                     sidebar.classList.remove('show');
-                    backdrop.classList.remove('show');
+                });
+            }
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth < 768) {
+                    if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                        sidebar.classList.remove('show');
+                    }
                 }
             });
-            
-            // Handle window resize
-            function handleResize() {
-                if (window.innerWidth < 768) {
-                    // Mobile: hide sidebar and backdrop
-                    sidebar.classList.remove('collapsed', 'show');
-                    backdrop.classList.remove('show');
-                    if (mainContent) {
-                        mainContent.classList.remove('expanded');
-                    }
-                } else {
-                    // Desktop: restore saved state
-                    backdrop.classList.remove('show');
-                    if (sidebarCollapsed) {
-                        sidebar.classList.add('collapsed');
-                        if (mainContent) {
-                            mainContent.classList.add('expanded');
-                        }
-                    } else {
-                        sidebar.classList.remove('collapsed');
-                        if (mainContent) {
-                            mainContent.classList.remove('expanded');
-                        }
-                    }
-                }
-            }
-            
-            // Initialize and listen for resize
-            initializeSidebar();
-            window.addEventListener('resize', handleResize);
         });
     </script>
-    
     {% block extra_js %}{% endblock %}
 </body>
 </html> 

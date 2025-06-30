@@ -59,6 +59,16 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label for="{{ form.birth_date.id_for_label }}" class="form-label">
+                                        Date de naissance
+                                    </label>
+                                    {{ form.birth_date }}
+                                    {% if form.birth_date.errors %}
+                                        <div class="text-danger">{{ form.birth_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
                                     <label for="{{ form.type_adherent.id_for_label }}" class="form-label">
                                         Type d'adhérent <span class="text-danger">*</span>
                                     </label>
@@ -69,12 +79,12 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="{{ form.address.id_for_label }}" class="form-label">
-                                        Adresse <span class="text-danger">*</span>
+                                    <label for="{{ form.langues.id_for_label }}" class="form-label">
+                                        Langues parlées
                                     </label>
-                                    {{ form.address }}
-                                    {% if form.address.errors %}
-                                        <div class="text-danger">{{ form.address.errors }}</div>
+                                    {{ form.langues }}
+                                    {% if form.langues.errors %}
+                                        <div class="text-danger">{{ form.langues.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -105,10 +115,144 @@
                                     {% endif %}
                                 </div>
 
-                                <h5 class="text-primary mb-3 mt-4">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.num_urgence1.id_for_label }}" class="form-label">
+                                                Numéro d'urgence 1
+                                            </label>
+                                            {{ form.num_urgence1 }}
+                                            {% if form.num_urgence1.errors %}
+                                                <div class="text-danger">{{ form.num_urgence1.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.num_urgence2.id_for_label }}" class="form-label">
+                                                Numéro d'urgence 2
+                                            </label>
+                                            {{ form.num_urgence2 }}
+                                            {% if form.num_urgence2.errors %}
+                                                <div class="text-danger">{{ form.num_urgence2.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        Email
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger">{{ form.email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Localisation -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-map-marker-alt"></i> Localisation
+                                </h5>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.commune.id_for_label }}" class="form-label">
+                                        Commune <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.commune }}
+                                    {% if form.commune.errors %}
+                                        <div class="text-danger">{{ form.commune.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.quartier.id_for_label }}" class="form-label">
+                                        Quartier <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.quartier }}
+                                    {% if form.quartier.errors %}
+                                        <div class="text-danger">{{ form.quartier.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.secteur.id_for_label }}" class="form-label">
+                                        Secteur <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.secteur }}
+                                    {% if form.secteur.errors %}
+                                        <div class="text-danger">{{ form.secteur.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informations professionnelles -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-briefcase"></i> Informations professionnelles
+                                </h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.formation_pro.id_for_label }}" class="form-label">
+                                        Formation professionnelle
+                                    </label>
+                                    {{ form.formation_pro }}
+                                    {% if form.formation_pro.errors %}
+                                        <div class="text-danger">{{ form.formation_pro.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.distinction.id_for_label }}" class="form-label">
+                                        Distinctions
+                                    </label>
+                                    {{ form.distinction }}
+                                    {% if form.distinction.errors %}
+                                        <div class="text-danger">{{ form.distinction.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informations médicales -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-heartbeat"></i> Informations médicales
+                                </h5>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.medical_info.id_for_label }}" class="form-label">
+                                        Informations médicales
+                                    </label>
+                                    {{ form.medical_info }}
+                                    {% if form.medical_info.errors %}
+                                        <div class="text-danger">{{ form.medical_info.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informations d'adhésion -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
                                     <i class="fas fa-building"></i> Informations d'adhésion
                                 </h5>
-
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.organisation.id_for_label }}" class="form-label">
                                         Organisation <span class="text-danger">*</span>
@@ -118,7 +262,8 @@
                                         <div class="text-danger">{{ form.organisation.errors }}</div>
                                     {% endif %}
                                 </div>
-
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.join_date.id_for_label }}" class="form-label">
                                         Date d'adhésion <span class="text-danger">*</span>
@@ -128,7 +273,21 @@
                                         <div class="text-danger">{{ form.join_date.errors }}</div>
                                     {% endif %}
                                 </div>
+                            </div>
+                        </div>
 
+                        <!-- Informations de badge -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-id-card"></i> Informations de badge
+                                </h5>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Ces informations sont nécessaires pour générer le badge de l'adhérent.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.activity_name.id_for_label }}" class="form-label">
                                         Nom de l'activité <span class="text-danger">*</span>
@@ -137,8 +296,12 @@
                                     {% if form.activity_name.errors %}
                                         <div class="text-danger">{{ form.activity_name.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        Ex: Macanier, Commerçant, Artisan, etc.
+                                    </div>
                                 </div>
-
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.badge_validity.id_for_label }}" class="form-label">
                                         Validité du badge <span class="text-danger">*</span>
@@ -147,17 +310,15 @@
                                     {% if form.badge_validity.errors %}
                                         <div class="text-danger">{{ form.badge_validity.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        Date jusqu'à laquelle le badge sera valide (généralement 1 an)
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Images -->
                         <div class="row mt-4">
-                            <div class="col-12">
-                                <h5 class="text-primary mb-3">
-                                    <i class="fas fa-images"></i> Images
-                                </h5>
-                            </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.profile_picture.id_for_label }}" class="form-label">
@@ -169,17 +330,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.activity_image.id_for_label }}" class="form-label">
-                                        Image de l'activité
-                                    </label>
-                                    {{ form.activity_image }}
-                                    {% if form.activity_image.errors %}
-                                        <div class="text-danger">{{ form.activity_image.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                            
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">

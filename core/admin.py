@@ -4,21 +4,20 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from .models import User, UserSession, UserActionLog, Category, Organization, Adherent, Interaction
-
+from .models import User, UserSession, UserActionLog, Category, Organization, Adherent, Interaction, UserObjective, SupervisorStats
 
 from django.utils.crypto import get_random_string
 from django.contrib import messages
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['matricule', 'name', 'email', 'role', 'profession', 'is_active', 'last_login']
+    list_display = ['matricule', 'get_full_name', 'email', 'role', 'profession', 'is_active', 'last_login']
     list_filter = ['role', 'is_active', 'is_staff', 'date_joined']
-    search_fields = ['matricule', 'name', 'email', 'telephone']
+    search_fields = ['matricule', 'first_name', 'last_name', 'email', 'telephone']
     readonly_fields = ['date_joined', 'last_login', 'password_last_changed']
     fieldsets = (
         ('Informations personnelles', {
-            'fields': ('matricule', 'name', 'email', 'profession', 'telephone')
+            'fields': ('matricule', 'first_name', 'last_name', 'email', 'profession', 'fonction', 'telephone')
         }),
         ('Rôle et permissions', {
             'fields': ('role', 'is_active', 'is_staff', 'is_superuser')
@@ -36,16 +35,22 @@ class UserAdmin(admin.ModelAdmin):
         }),
     )
 
+    def get_full_name(self, obj):
+        return obj.get_full_name()
+    get_full_name.short_description = 'Nom complet'
+
     def save_model(self, request, obj, form, change):
         if not change:  # Si c'est une création d'utilisateur
             # Le mot de passe sera généré dans create_user si non fourni
             user = User.objects.create_user(
                 email=obj.email,
                 matricule=obj.matricule,
-                name=obj.name,
+                first_name=obj.first_name,
+                last_name=obj.last_name,
                 password=form.cleaned_data.get('password1') if form.cleaned_data.get('password1') else None,
                 role=obj.role,
                 profession=obj.profession,
+                fonction=obj.fonction,
                 telephone=obj.telephone,
                 is_active=obj.is_active,
                 is_staff=obj.is_staff,
@@ -53,7 +58,7 @@ class UserAdmin(admin.ModelAdmin):
             )
             # Si un mot de passe a été généré automatiquement
             if hasattr(user, '_password_generated') and user._password_generated:
-                messages.success(request, f'Mot de passe généré pour {user.name}: {user._password_generated}')
+                messages.success(request, f'Mot de passe généré pour {user.get_full_name()}: {user._password_generated}')
             return user
         return super().save_model(request, obj, form, change)
 
@@ -74,7 +79,7 @@ class UserAdmin(admin.ModelAdmin):
 class UserSessionAdmin(admin.ModelAdmin):
     list_display = ['user', 'ip_address', 'login_time', 'last_activity', 'is_active']
     list_filter = ['is_active', 'login_time']
-    search_fields = ['user__name', 'user__email', 'ip_address']
+    search_fields = ['user__first_name', 'user__last_name', 'user__email', 'ip_address']
     readonly_fields = ['session_key', 'login_time', 'last_activity']
 
 
@@ -82,7 +87,7 @@ class UserSessionAdmin(admin.ModelAdmin):
 class UserActionLogAdmin(admin.ModelAdmin):
     list_display = ['user', 'action', 'timestamp', 'ip_address', 'success']
     list_filter = ['action', 'success', 'timestamp']
-    search_fields = ['user__name', 'user__email', 'description']
+    search_fields = ['user__first_name', 'user__last_name', 'user__email', 'description']
     readonly_fields = ['timestamp']
 
 
@@ -99,8 +104,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ['identifiant', 'name', 'category', 'monthly_revenue', 'phone', 'creation_date', 'adherents_count']
-    list_filter = ['category', 'creation_date']
+    list_display = ['identifiant', 'name', 'category', 'monthly_revenue', 'phone', 'creation_date', 'adherents_count', 'created_by']
+    list_filter = ['category', 'creation_date', 'created_by']
     search_fields = ['identifiant', 'name', 'address', 'phone']
     readonly_fields = ['created_at', 'updated_at', 'adherents_count']
     
@@ -115,22 +120,22 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 @admin.register(Adherent)
 class AdherentAdmin(admin.ModelAdmin):
-    list_display = ['identifiant', 'full_name', 'type_adherent', 'organisation', 'activity_name', 'join_date', 'badge_validity', 'is_badge_valid_display']
-    list_filter = ['type_adherent', 'organisation', 'join_date', 'badge_validity']
-    search_fields = ['identifiant', 'first_name', 'last_name', 'activity_name', 'phone1']
-    readonly_fields = ['created_at', 'updated_at', 'is_badge_valid_display']
+    list_display = ['identifiant', 'full_name', 'type_adherent', 'organisation', 'join_date', 'created_at']
+    list_filter = ['type_adherent', 'organisation', 'join_date']
+    search_fields = ['identifiant', 'first_name', 'last_name', 'phone1']
+    readonly_fields = ['created_at', 'updated_at']
     fieldsets = (
         ('Informations personnelles', {
-            'fields': ('identifiant', 'first_name', 'last_name', 'type_adherent')
+            'fields': ('identifiant', 'first_name', 'last_name', 'birth_date', 'type_adherent')
         }),
         ('Informations de contact', {
-            'fields': ('address', 'phone1', 'phone2')
+            'fields': ('commune', 'quartier', 'secteur', 'phone1', 'phone2', 'num_urgence1', 'num_urgence2', 'email')
+        }),
+        ('Informations supplémentaires', {
+            'fields': ('medical_info', 'formation_pro', 'distinction', 'langues')
         }),
         ('Adhésion', {
-            'fields': ('join_date', 'organisation', 'activity_name')
-        }),
-        ('Badge', {
-            'fields': ('badge_validity', 'barcode', 'activity_image')
+            'fields': ('join_date', 'organisation')
         }),
         ('Médias', {
             'fields': ('profile_picture',)
@@ -140,13 +145,6 @@ class AdherentAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
-    def is_badge_valid_display(self, obj):
-        if obj.is_badge_valid:
-            return format_html('<span style="color: green;">✓ Valide</span>')
-        else:
-            return format_html('<span style="color: red;">✗ Expiré</span>')
-    is_badge_valid_display.short_description = "Statut du badge"
 
     def has_module_permission(self, request):
         """Seuls les administrateurs et les superviseurs peuvent accéder aux adhérents"""
@@ -173,7 +171,7 @@ class AdherentAdmin(admin.ModelAdmin):
 class InteractionAdmin(admin.ModelAdmin):
     list_display = ['identifiant', 'personnel', 'adherent', 'status', 'due_date', 'created_at']
     list_filter = ['status', 'created_at', 'due_date']
-    search_fields = ['identifiant', 'personnel__name', 'adherent__first_name', 'adherent__last_name']
+    search_fields = ['identifiant', 'personnel__first_name', 'personnel__last_name', 'adherent__first_name', 'adherent__last_name']
     readonly_fields = ['created_at', 'updated_at']
     fieldsets = (
         ('Informations générales', {
@@ -207,3 +205,31 @@ class InteractionAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         """Seuls les administrateurs peuvent supprimer les interactions"""
         return request.user.is_superuser or request.user.role == 'admin'
+
+
+@admin.register(UserObjective)
+class UserObjectiveAdmin(admin.ModelAdmin):
+    list_display = ['user', 'objective_type', 'target_value', 'current_value', 'deadline', 'status', 'progress_percentage_display']
+    list_filter = ['objective_type', 'status', 'deadline', 'assigned_by']
+    search_fields = ['user__first_name', 'user__last_name', 'description']
+    readonly_fields = ['created_at', 'updated_at', 'progress_percentage_display']
+    
+    def progress_percentage_display(self, obj):
+        return f"{obj.progress_percentage:.1f}%"
+    progress_percentage_display.short_description = "Progression"
+
+    def has_module_permission(self, request):
+        """Seuls les administrateurs et les superviseurs peuvent accéder aux objectifs"""
+        return request.user.is_superuser or request.user.role in ['admin', 'superviseur']
+
+
+@admin.register(SupervisorStats)
+class SupervisorStatsAdmin(admin.ModelAdmin):
+    list_display = ['supervisor', 'agent', 'organizations_count', 'adherents_count', 'interactions_count', 'last_updated']
+    list_filter = ['supervisor', 'agent', 'last_updated']
+    search_fields = ['supervisor__first_name', 'supervisor__last_name', 'agent__first_name', 'agent__last_name']
+    readonly_fields = ['last_updated']
+
+    def has_module_permission(self, request):
+        """Seuls les administrateurs et les superviseurs peuvent accéder aux statistiques"""
+        return request.user.is_superuser or request.user.role in ['admin', 'superviseur']

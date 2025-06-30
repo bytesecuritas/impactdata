@@ -1,0 +1,425 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Carte Badge - {{ badge.badge_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Pacifico&display=swap');
+
+.badge-exemple { 
+    width: 420px; 
+    background: #fff; 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15); 
+    font-family: 'Roboto', Arial, sans-serif; 
+    margin: 20px auto;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+/* En-tête avec bannière noire */
+.badge-header {
+    background: #2C3E50;
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.badge-logo-guinee { 
+    height: 45px; 
+    width: auto;
+}
+
+.badge-republique {
+    text-align: right;
+    line-height: 1.2;
+}
+
+.badge-republique-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.badge-devise {
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.devise-red { color: #D32F2F; }
+.devise-yellow { color: #FFC107; }
+.devise-green { color: #4CAF50; }
+
+/* Section principale avec photo et infos */
+.badge-main {
+    padding: 20px 16px;
+    background: linear-gradient(135deg, #FFC107 0%, #4CAF50 100%);
+    position: relative;
+}
+
+.badge-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.badge-left-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.badge-logo-babaly {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    height: 40px;
+}
+
+.badge-job-title {
+    color: #2E7D32;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 15px;
+    background: rgba(255,255,255,0.9);
+    padding: 8px 12px;
+    border-radius: 6px;
+    line-height: 1.1;
+}
+
+.badge-qr {
+    background: white;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.badge-qr img {
+    width: 80px;
+    height: 80px;
+}
+
+.badge-apprenti {
+    color: #D32F2F;
+    font-family: 'Pacifico', cursive;
+    font-size: 16px;
+    font-weight: 400;
+    background: rgba(255,255,255,0.9);
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+/* Photo centrale */
+.badge-center-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.badge-photo-container {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.badge-photo-cercle {
+    border-radius: 50%;
+    border: 6px solid #D32F2F;
+    overflow: hidden;
+    width: 120px;
+    height: 120px;
+    position: relative;
+    z-index: 2;
+}
+
+.badge-photo-cercle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Drapeau en arrière-plan de la photo */
+.flag-background {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: linear-gradient(to right, #D32F2F 33.33%, #FFC107 33.33% 66.66%, #4CAF50 66.66%);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.badge-nom {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1A237E;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.95);
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.badge-id {
+    font-size: 16px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.9);
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.badge-id-digit {
+    background: #81D4FA;
+    color: #1A237E;
+    border-radius: 50%;
+    padding: 4px 8px;
+    margin: 0 2px;
+    display: inline-block;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.badge-tel {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1A237E;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.9);
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.badge-lieu {
+    font-size: 16px;
+    font-weight: 700;
+    color: #D32F2F;
+    background: rgba(255,255,255,0.9);
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+/* Section droite avec image métier */
+.badge-right-section {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+}
+
+.badge-activity-img {
+    width: 100px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 3px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Section urgence */
+.badge-urgence {
+    background: rgba(255, 245, 238, 0.95);
+    border: 2px solid #FF5722;
+    border-radius: 12px;
+    margin: 16px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.badge-sirene {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.badge-urgence-content {
+    flex: 1;
+}
+
+.badge-urgence-titre {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.badge-urgence-titre .text-danger {
+    color: #D32F2F !important;
+}
+
+.badge-urgence-texte {
+    font-size: 12px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    color: #424242;
+}
+
+.badge-urgence-num {
+    color: #D32F2F;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.badge-phone {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+/* Footer */
+.badge-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #F5F5F5;
+}
+
+.badge-logo-babaly-footer {
+    height: 32px;
+}
+
+.badge-validite {
+    font-family: 'Pacifico', cursive;
+    font-size: 16px;
+    color: #2C3E50;
+    font-style: italic;
+}
+
+/* Media queries pour l'impression */
+@media print {
+    .badge-exemple {
+        width: 400px;
+        margin: 0;
+        box-shadow: none;
+        page-break-inside: avoid;
+    }
+    
+    .container-fluid .d-flex {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }}
+    </h1>
+    <div>
+      <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Retour aux détails
+      </a>
+      <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info">
+        <i class="fas fa-download"></i> Télécharger PDF
+      </a>
+      <button onclick="window.print()" class="btn btn-success">
+        <i class="fas fa-print"></i> Imprimer
+      </button>
+    </div>
+  </div>
+
+  <div class="badge-exemple">
+    <!-- En-tête avec bannière noire -->
+    <div class="badge-header">
+      <img src="{% static 'images/guinee_logo.png' %}" class="badge-logo-guinee" alt="Logo Guinée">
+      <div class="badge-republique">
+        <div class="badge-republique-title">RÉPUBLIQUE DE GUINÉE</div>
+        <div class="badge-devise">
+          <span class="devise-red">Travail</span> –
+          <span class="devise-yellow">Justice</span> –
+          <span class="devise-green">Solidarité</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section principale -->
+    <div class="badge-main">
+      <div class="badge-content">
+        <!-- Section gauche -->
+        <div class="badge-left-section">
+          <img src="{% static 'img/babaly_logo.png' %}" class="badge-logo-babaly" alt="Babaly Data">
+          
+          <div class="badge-job-title">{{ badge.activity_name|upper }}</div>
+          
+          <div class="badge-qr">
+            {% if badge.qr_code %}
+              <img src="{{ badge.qr_code.url }}" alt="QR Code">
+            {% endif %}
+          </div>
+          
+          <div class="badge-apprenti">Apprenti</div>
+        </div>
+
+        <!-- Section centrale - Photo et infos -->
+        <div class="badge-center-section">
+          <div class="badge-photo-container">
+            <div class="flag-background"></div>
+            <div class="badge-photo-cercle">
+              {% if badge.adherent.profile_picture %}
+                <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo de profil">
+              {% else %}
+                <img src="{% static 'img/default_avatar.png' %}" alt="Photo par défaut">
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="badge-nom">{{ badge.adherent.full_name|upper }}</div>
+          
+          <div class="badge-id">
+            ID:
+            {% for digit in badge.adherent.identifiant %}
+              <span class="badge-id-digit">{{ digit }}</span>
+            {% endfor %}
+            -{{ badge.badge_number|slice:'-3:' }}
+          </div>
+          
+          <div class="badge-tel">{{ badge.adherent.phone1 }}</div>
+          
+          <div class="badge-lieu">{{ badge.adherent.commune|upper }}</div>
+        </div>
+
+        <!-- Section droite - Image métier -->
+        <div class="badge-right-section">
+          {% if badge.activity_image %}
+            <img src="{{ badge.activity_image.url }}" class="badge-activity-img" alt="Image métier">
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section urgence -->
+    <div class="badge-urgence">
+      <img src="{% static 'img/sirene.png' %}" class="badge-sirene" alt="Sirène d'urgence">
+      
+      <div class="badge-urgence-content">
+        <div class="badge-urgence-titre">
+          En Cas <span class="text-danger">d'Urgence</span>
+        </div>
+        <div class="badge-urgence-texte">
+          d'assistance ou de besoin de notre service d'aide de tous type<br>
+          ou si cette Personne est en danger, prière d'appeler :
+        </div>
+        <div class="badge-urgence-num">+224 624 05 91 89</div>
+      </div>
+      
+      <img src="{% static 'img/phone.png' %}" class="badge-phone" alt="Téléphone">
+    </div>
+
+    <!-- Footer -->
+    <div class="badge-footer">
+      <img src="{% static 'img/babaly_logo.png' %}" class="badge-logo-babaly-footer" alt="Babaly Data">
+      <span class="badge-validite">Validité {{ badge.badge_validity|date:'F Y' }}</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

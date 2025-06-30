@@ -39,11 +39,15 @@
                                 <span class="badge bg-info">{{ organization.category.name }}</span>
                             </p>
                             <p><strong>Téléphone :</strong> {{ organization.phone }}</p>
+                            {% if organization.whatsapp %}
+                            <p><strong>WhatsApp :</strong> {{ organization.whatsapp }}</p>
+                            {% endif %}
+                            <p><strong>Nombre de personnel :</strong> {{ organization.number_personnel }} personnes</p>
                         </div>
                         <div class="col-md-6">
                             <p><strong>Chiffre d'affaires mensuel :</strong> 
                                 {% if organization.monthly_revenue %}
-                                    {{ organization.monthly_revenue|floatformat:0 }} FCFA
+                                    {{ organization.monthly_revenue|floatformat:0 }} GNF
                                 {% else %}
                                     <span class="text-muted">Non spécifié</span>
                                 {% endif %}
@@ -54,12 +58,30 @@
                             <p><strong>Adhérents :</strong> 
                                 <span class="badge bg-secondary">{{ organization.get_adherents_count }}</span>
                             </p>
+                            {% if organization.created_by %}
+                            <p><strong>Créé par :</strong> {{ organization.created_by.get_full_name }}</p>
+                            <p><strong>Date d'enregistrement :</strong> {{ organization.created_at|date:"d/m/Y H:i" }}</p>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="mt-3">
                         <p><strong>Adresse :</strong></p>
                         <p class="text-muted">{{ organization.address }}</p>
                     </div>
+                    
+                    {% if organization.infos_annexes %}
+                    <div class="mt-3">
+                        <p><strong>Informations annexes :</strong></p>
+                        <p class="text-muted">{{ organization.infos_annexes }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if organization.hobies %}
+                    <div class="mt-3">
+                        <p><strong>Hobbies :</strong></p>
+                        <p class="text-muted">{{ organization.hobies }}</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -72,6 +94,20 @@
                     <p>Adhérents</p>
                 </div>
             </div>
+            <div class="stats-card mb-3" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <div class="text-center">
+                    <h3>{{ organization.number_personnel }}</h3>
+                    <p>Personnel</p>
+                </div>
+            </div>
+            {% if organization.monthly_revenue %}
+            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                <div class="text-center">
+                    <h3>{{ organization.monthly_revenue|floatformat:0 }}</h3>
+                    <p>GNF/mois</p>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 

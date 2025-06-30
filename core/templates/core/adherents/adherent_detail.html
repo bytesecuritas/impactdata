@@ -66,8 +66,31 @@
                             <p class="mb-0">{{ adherent.full_name }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Date de naissance :</label>
+                            <p class="mb-0">
+                                {% if adherent.birth_date %}
+                                    {{ adherent.birth_date|date:"d/m/Y" }} ({{ adherent.get_age }} ans)
+                                {% else %}
+                                    <span class="text-muted">Non renseignée</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Activité :</label>
                             <p class="mb-0">{{ adherent.activity_name }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Langues parlées :</label>
+                            <p class="mb-0">
+                                {% if adherent.langues %}
+                                    {{ adherent.langues }}
+                                {% else %}
+                                    <span class="text-muted">Non renseignées</span>
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -98,12 +121,108 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Adresse :</label>
-                        <p class="mb-0">{{ adherent.address }}</p>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Numéro d'urgence 1 :</label>
+                            <p class="mb-0">
+                                {% if adherent.num_urgence1 %}
+                                    {{ adherent.num_urgence1 }}
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Numéro d'urgence 2 :</label>
+                            <p class="mb-0">
+                                {% if adherent.num_urgence2 %}
+                                    {{ adherent.num_urgence2 }}
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Email :</label>
+                            <p class="mb-0">
+                                {% if adherent.email %}
+                                    {{ adherent.email }}
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Informations de localisation -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-map-marker-alt"></i> Localisation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Commune :</label>
+                            <p class="mb-0">{{ adherent.commune }}</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Quartier :</label>
+                            <p class="mb-0">{{ adherent.quartier }}</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-bold">Secteur :</label>
+                            <p class="mb-0">{{ adherent.secteur }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations professionnelles -->
+            {% if adherent.formation_pro or adherent.distinction %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-briefcase"></i> Informations Professionnelles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if adherent.formation_pro %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Formation professionnelle :</label>
+                        <p class="mb-0">{{ adherent.formation_pro }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if adherent.distinction %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Distinctions :</label>
+                        <p class="mb-0">{{ adherent.distinction }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Informations médicales -->
+            {% if adherent.medical_info %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-heartbeat"></i> Informations Médicales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ adherent.medical_info }}</p>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Informations d'adhésion -->
             <div class="card mb-4">
@@ -198,30 +317,24 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-info-circle"></i> Informations Système
+                        <i class="fas fa-cogs"></i> Informations Système
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Code-barres :</label>
-                        <p class="mb-0">
-                            {% if adherent.barcode %}
-                                <code>{{ adherent.barcode }}</code>
-                            {% else %}
-                                <span class="text-muted">Non généré</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                    
-                    <div class="mb-3">
                         <label class="form-label fw-bold">Créé le :</label>
-                        <p class="mb-0">{{ adherent.created_at|date:"d/m/Y à H:i" }}</p>
+                        <p class="mb-0">{{ adherent.created_at|date:"d/m/Y H:i" }}</p>
                     </div>
-                    
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Dernière modification :</label>
-                        <p class="mb-0">{{ adherent.updated_at|date:"d/m/Y à H:i" }}</p>
+                        <label class="form-label fw-bold">Modifié le :</label>
+                        <p class="mb-0">{{ adherent.updated_at|date:"d/m/Y H:i" }}</p>
                     </div>
+                    {% if adherent.created_by %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Créé par :</label>
+                        <p class="mb-0">{{ adherent.created_by.get_full_name }}</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -241,8 +354,8 @@
                             <i class="fas fa-comments"></i> Nouvelle Interaction
                         </a>
                         {% if user.role in 'superviseur,admin' or user.is_superuser %}
-                            <a href="{% url 'core:generate_badge' adherent.pk %}" class="btn btn-outline-success">
-                                <i class="fas fa-id-card"></i> Générer un Badge
+                            <a href="{% url 'core:generate_badge' adherent.id %}?force=1" class="btn btn-warning me-2">
+                                <i class="fas fa-redo"></i> Régénérer un nouveau badge
                             </a>
                         {% endif %}
                         <a href="{% url 'core:adherent_delete' adherent.pk %}" class="btn btn-outline-danger">

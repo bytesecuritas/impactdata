@@ -65,43 +65,37 @@ def can_access_user_data(user, target_user):
 
 def login_view(request):
     """Vue de connexion personnalisée"""
+    # Vérifier si l'utilisateur est déjà connecté
     if request.user.is_authenticated:
         return redirect('core:dashboard')
     
+    # Traitement du formulaire POST
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
         
         if email and password:
             try:
+                # Authentification
                 user = authenticate(request, username=email, password=password)
-                if user is not None:
-                    if user.is_active:
-                        login(request, user)
-                        messages.success(request, f'Bienvenue {user.get_full_name()}!')
-                        
-                        # Redirection selon le rôle
-                        if hasattr(user, 'role'):
-                            if user.is_superuser or user.role == 'admin':
-                                return redirect('core:admin_dashboard')
-                            elif user.role == 'superviseur':
-                                return redirect('core:superviseur_dashboard')
-                            elif user.role == 'agent':
-                                return redirect('core:agent_dashboard')
-                            else:
-                                return redirect('core:dashboard')
-                        else:
-                            # Si pas de rôle, rediriger vers le dashboard général
-                            return redirect('core:dashboard')
-                    else:
-                        messages.error(request, 'Votre compte est désactivé.')
+                
+                if user is not None and user.is_active:
+                    # Connexion réussie
+                    login(request, user)
+                    messages.success(request, f'Bienvenue {user.get_full_name()}!')
+                    
+                    # Redirection simple vers le dashboard
+                    return redirect('core:dashboard')
                 else:
                     messages.error(request, 'Email ou mot de passe incorrect.')
             except Exception as e:
-                messages.error(request, f'Erreur lors de la connexion: {str(e)}')
+                # Log l'erreur pour le débogage
+                print(f"Erreur de connexion: {str(e)}")
+                messages.error(request, 'Erreur lors de la connexion. Veuillez réessayer.')
         else:
             messages.error(request, 'Veuillez remplir tous les champs.')
     
+    # Affichage du formulaire de connexion
     return render(request, 'core/auth/login.html', {})
 
 @login_required

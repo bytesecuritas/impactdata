@@ -22,11 +22,14 @@ pip install asgiref==3.7.2
 pip install sqlparse==0.4.4
 pip install tzdata==2023.3
 
-# Collecter les fichiers statiques
-python manage.py collectstatic --no-input
+# Créer le répertoire staticfiles s'il n'existe pas
+mkdir -p staticfiles
 
 # Effectuer les migrations
 python manage.py migrate
+
+# Collecter les fichiers statiques
+python manage.py collectstatic --no-input
 
 # Créer un superutilisateur par défaut (seulement si aucun n'existe)
 python manage.py create_default_admin 

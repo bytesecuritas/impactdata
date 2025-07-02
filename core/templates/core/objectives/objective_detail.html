@@ -13,12 +13,14 @@
                         <i class="fas fa-bullseye"></i> Objectif : {{ objective.get_objective_type_display }}
                     </h3>
                     <div class="btn-group">
+                        {% if user.role != 'agent' %}
                         <a href="{% url 'core:objective_update' objective.pk %}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Modifier
                         </a>
                         <a href="{% url 'core:objective_delete' objective.pk %}" class="btn btn-danger">
                             <i class="fas fa-trash"></i> Supprimer
                         </a>
+                        {% endif %}
                         <a href="{% url 'core:objective_list' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Retour
                         </a>
@@ -31,8 +33,10 @@
                             <table class="table table-borderless">
                                 <tr><td><strong>Agent:</strong></td><td>{{ objective.user.get_full_name }}</td></tr>
                                 <tr><td><strong>Type d'objectif:</strong></td><td>{{ objective.get_objective_type_display }}</td></tr>
-                                <tr><td><strong>Valeur cible:</strong></td><td>{{ objective.target_value }}</td></tr>
-                                <tr><td><strong>Valeur actuelle:</strong></td><td>{{ objective.current_value }}</td></tr>
+                                <tr><td><strong>Valeur de base:</strong></td><td>{{ objective.base_value }} (déjà existant)</td></tr>
+                                <tr><td><strong>Incrément cible:</strong></td><td>{{ objective.target_increment }} (à ajouter)</td></tr>
+                                <tr><td><strong>Valeur cible totale:</strong></td><td>{{ objective.target_value }}</td></tr>
+                                <tr><td><strong>Valeur actuelle:</strong></td><td>{{ objective.current_value }} (nouveau)</td></tr>
                                 <tr><td><strong>Date limite:</strong></td><td>{{ objective.deadline|date:"d/m/Y" }}</td></tr>
                                 <tr><td><strong>Statut:</strong></td><td>
                                     <span class="badge {% if objective.status == 'completed' %}bg-success{% elif objective.status == 'failed' %}bg-danger{% elif objective.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
@@ -50,16 +54,22 @@
                                 </div>
                             </div>
                             <div class="row text-center">
-                                <div class="col-6">
+                                <div class="col-4">
                                     <div class="border rounded p-3">
-                                        <h4 class="text-primary mb-1">{{ objective.current_value }}</h4>
-                                        <small class="text-muted">Actuel</small>
+                                        <h4 class="text-info mb-1">{{ objective.base_value }}</h4>
+                                        <small class="text-muted">Déjà fait</small>
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-4">
                                     <div class="border rounded p-3">
-                                        <h4 class="text-success mb-1">{{ objective.target_value }}</h4>
-                                        <small class="text-muted">Cible</small>
+                                        <h4 class="text-warning mb-1">{{ objective.current_value }}</h4>
+                                        <small class="text-muted">Nouveau</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded p-3">
+                                        <h4 class="text-success mb-1">{{ objective.target_increment }}</h4>
+                                        <small class="text-muted">À faire</small>
                                     </div>
                                 </div>
                             </div>

@@ -403,7 +403,8 @@ class UserObjectiveForm(forms.ModelForm):
     target_value = forms.IntegerField(
         min_value=1,
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
-        label="Valeur cible"
+        label="Nombre à ajouter",
+        help_text="Nombre d'éléments à créer en plus de ce qui existe déjà"
     )
     deadline = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),

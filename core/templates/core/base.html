@@ -115,6 +115,12 @@
                                     <i class="fas fa-users"></i> Utilisateurs
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'objective' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:objective_list' %}">
+                                    <i class="fas fa-bullseye"></i> Objectifs
+                                </a>
+                            </li>
                         {% elif user.role == 'superviseur' %}
                             <!-- Menu Superviseur -->
                             <li class="nav-item">
@@ -163,6 +169,11 @@
                             
                         {% elif user.role == 'agent' %}
                             <!-- Menu Agent -->
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'objective' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:objective_list' %}">
+                                    <i class="fas fa-bullseye"></i> Mes Objectifs
+                                </a>
                              <li class="nav-item">
                                 <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:category_list' %}">

@@ -10,9 +10,14 @@
             <i class="fas fa-bullseye"></i> Gestion des Objectifs
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="{% url 'core:objective_create' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Nouvel Objectif
-            </a>
+            {% if can_create_objectives %}
+                <a href="{% url 'core:refresh_objectives' %}" class="btn btn-outline-info me-2">
+                    <i class="fas fa-sync-alt"></i> Rafraîchir
+                </a>
+                <a href="{% url 'core:objective_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Nouvel Objectif
+                </a>
+            {% endif %}
         </div>
     </div>
 
@@ -125,11 +130,11 @@
                                                     </div>
                                                 </div>
                                                 <small class="text-muted">
-                                                    {{ objective.current_value }}/{{ objective.target_value }}
+                                                    {{ objective.current_value }}/{{ objective.target_increment }}
                                                 </small>
                                             </div>
                                             <small class="text-muted">
-                                                {{ objective.progress_percentage|floatformat:1 }}%
+                                                {{ objective.progress_percentage|floatformat:1 }}% ({{ objective.base_value }} déjà fait)
                                             </small>
                                         </td>
                                         <td>
@@ -153,12 +158,14 @@
                                                 <a href="{% url 'core:objective_detail' objective.pk %}" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+                                                {% if user.role != 'agent' %}
                                                 <a href="{% url 'core:objective_update' objective.pk %}" class="btn btn-sm btn-outline-warning">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <a href="{% url 'core:objective_delete' objective.pk %}" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i>
                                                 </a>
+                                                {% endif %}
                                             </div>
                                         </td>
                                     </tr>

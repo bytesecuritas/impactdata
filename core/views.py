@@ -1268,7 +1268,9 @@ class ObjectiveUpdateView(LoginRequiredMixin, UpdateView):
         elif self.request.user.role == 'superviseur':
             return UserObjective.objects.filter(assigned_by=self.request.user)
         else:
-            return UserObjective.objects.filter(user=self.request.user)
+            # return UserObjective.objects.filter(user=self.request.user)
+            raise PermissionDenied("Vous n'avez pas les permissions pour modifier les objectifs.")
+
     
     def form_valid(self, form):
         messages.success(self.request, "Objectif mis à jour avec succès.")
@@ -1289,9 +1291,57 @@ class ObjectiveDeleteView(LoginRequiredMixin, DeleteView):
         elif self.request.user.role == 'superviseur':
             return UserObjective.objects.filter(assigned_by=self.request.user)
         else:
-            return UserObjective.objects.filter(user=self.request.user)
+            # return UserObjective.objects.filter(user=self.request.user)
+            raise PermissionDenied("Vous n'avez pas les permissions pour supprimer les objectifs.")
     
     def delete(self, request, *args, **kwargs):
         messages.success(request, "Objectif supprimé avec succès.")
         return super().delete(request, *args, **kwargs)
+
+@login_required
+def refresh_objectives(request):
+    """Vue pour rafraîchir manuellement les objectifs"""
+    if request.user.role not in ['admin', 'superviseur']:
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        
+        if user_id:
+            # Rafraîchir les objectifs d'un utilisateur spécifique
+            try:
+                user = User.objects.get(id=user_id)
+                updated_count = UserObjective.update_objectives_for_user(user)
+                messages.success(request, f"Objectifs de {user.get_full_name()} mis à jour ({updated_count} modification(s)).")
+            except User.DoesNotExist:
+                messages.error(request, "Utilisateur non trouvé.")
+        else:
+            # Rafraîchir tous les objectifs assignés par ce superviseur
+            if request.user.role == 'superviseur':
+                objectives = UserObjective.objects.filter(assigned_by=request.user)
+                updated_count = 0
+                for objective in objectives:
+                    old_status = objective.status
+                    old_value = objective.current_value
+                    objective.update_progress()
+                    if (objective.status != old_status or objective.current_value != old_value):
+                        updated_count += 1
+                messages.success(request, f"Tous les objectifs mis à jour ({updated_count} modification(s)).")
+            else:
+                # Admin peut rafraîchir tous les objectifs
+                updated_count = UserObjective.update_all_objectives()
+                messages.success(request, f"Tous les objectifs mis à jour ({updated_count} modification(s)).")
+        
+        return redirect('core:objective_list')
+    
+    # GET request - afficher la page de rafraîchissement
+    if request.user.role == 'superviseur':
+        agents = User.objects.filter(role='agent', created_by=request.user)
+    else:
+        agents = User.objects.filter(role='agent')
+    
+    context = {
+        'agents': agents,
+    }
+    return render(request, 'core/objectives/refresh_objectives.html', context)
     

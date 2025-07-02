@@ -57,6 +57,7 @@ urlpatterns = [
     path('objectives/<int:pk>/', views.ObjectiveDetailView.as_view(), name='objective_detail'),
     path('objectives/<int:pk>/update/', views.ObjectiveUpdateView.as_view(), name='objective_update'),
     path('objectives/<int:pk>/delete/', views.ObjectiveDeleteView.as_view(), name='objective_delete'),
+    path('objectives/refresh/', views.refresh_objectives, name='refresh_objectives'),
     
     # Badge Management URLs
     path('badges/', views.badge_list, name='badge_list'),

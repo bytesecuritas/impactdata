@@ -209,10 +209,14 @@ class InteractionAdmin(admin.ModelAdmin):
 
 @admin.register(UserObjective)
 class UserObjectiveAdmin(admin.ModelAdmin):
-    list_display = ['user', 'objective_type', 'target_value', 'current_value', 'deadline', 'status', 'progress_percentage_display']
+    list_display = ['user', 'objective_type', 'base_value', 'target_increment_display', 'current_value', 'deadline', 'status', 'progress_percentage_display']
     list_filter = ['objective_type', 'status', 'deadline', 'assigned_by']
     search_fields = ['user__first_name', 'user__last_name', 'description']
-    readonly_fields = ['created_at', 'updated_at', 'progress_percentage_display']
+    readonly_fields = ['created_at', 'updated_at', 'progress_percentage_display', 'base_value', 'target_increment_display']
+    
+    def target_increment_display(self, obj):
+        return f"+{obj.target_increment}"
+    target_increment_display.short_description = "À ajouter"
     
     def progress_percentage_display(self, obj):
         return f"{obj.progress_percentage:.1f}%"

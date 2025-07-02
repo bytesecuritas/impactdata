@@ -1,0 +1,107 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Rafraîchir les objectifs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-sync-alt"></i> Rafraîchir les objectifs
+                    </h3>
+                    <a href="{% url 'core:objective_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Information :</strong> Cette page vous permet de forcer la mise à jour des objectifs de vos agents. 
+                        Les objectifs se mettent normalement à jour automatiquement, mais vous pouvez utiliser cette fonction 
+                        pour rafraîchir manuellement les données si nécessaire.
+                    </div>
+
+                    <!-- Rafraîchir tous les objectifs -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-sync"></i> Rafraîchir tous les objectifs
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">
+                                Met à jour tous les objectifs assignés par vous.
+                            </p>
+                            <form method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sync"></i> Rafraîchir tous les objectifs
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Rafraîchir les objectifs d'un agent spécifique -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user-cog"></i> Rafraîchir les objectifs d'un agent spécifique
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">
+                                Sélectionnez un agent pour mettre à jour uniquement ses objectifs.
+                            </p>
+                            
+                            {% if agents %}
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="user_id" class="form-label">Sélectionner un agent</label>
+                                                <select class="form-select" id="user_id" name="user_id" required>
+                                                    <option value="">Choisir un agent...</option>
+                                                    {% for agent in agents %}
+                                                        <option value="{{ agent.id }}">
+                                                            {{ agent.get_full_name }} ({{ agent.matricule }})
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 d-flex align-items-end">
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="fas fa-sync"></i> Rafraîchir les objectifs de cet agent
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Aucun agent trouvé. Vous devez d'abord créer des agents pour pouvoir assigner des objectifs.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Informations supplémentaires -->
+                    <div class="mt-4">
+                        <h6><i class="fas fa-lightbulb"></i> Comment ça fonctionne ?</h6>
+                        <ul class="text-muted">
+                            <li>Les objectifs se mettent à jour automatiquement quand vos agents créent des organisations, adhérents ou interactions.</li>
+                            <li>Si vous ne voyez pas les mises à jour, utilisez cette page pour forcer le rafraîchissement.</li>
+                            <li>Les objectifs sont basés sur les données réelles de votre base de données.</li>
+                            <li>Seuls les objectifs en statut "En attente" ou "En cours" sont mis à jour.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

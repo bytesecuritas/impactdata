@@ -89,10 +89,13 @@
         <!-- Objectifs assignés -->
         <div class="col-lg-6 mb-4">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-bullseye"></i> Mes Objectifs
                     </h5>
+                    <a href="{% url 'core:objective_list' %}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
                 </div>
                 <div class="card-body">
                     {% if objectives %}
@@ -113,13 +116,18 @@
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center">
                                             <small class="text-muted">
-                                                {{ objective.current_value }} / {{ objective.target_value }}
+                                                {{ objective.current_value }} / {{ objective.target_increment }}
                                                 ({{ objective.progress_percentage|floatformat:1 }}%)
                                             </small>
                                             <small class="text-muted">
                                                 Échéance: {{ objective.deadline|date:"d/m/Y" }}
                                             </small>
                                         </div>
+                                        {% if objective.base_value > 0 %}
+                                            <small class="text-info">
+                                                <i class="fas fa-info-circle"></i> {{ objective.base_value }} déjà fait avant l'objectif
+                                            </small>
+                                        {% endif %}
                                     </div>
                                     <div class="text-end ms-3">
                                         <span class="badge {% if objective.status == 'completed' %}bg-success{% elif objective.status == 'failed' %}bg-danger{% elif objective.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">

@@ -25,6 +25,16 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Comment fonctionnent les objectifs :</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Le système compte automatiquement ce que l'agent a déjà créé avant l'assignation de l'objectif</li>
+                            <li>La "Valeur cible" représente le nombre d'éléments à créer <strong>en plus</strong> de ce qui existe déjà</li>
+                            <li>Exemple : Si l'agent a déjà 2 organisations et que vous assignez un objectif de 3, la cible totale sera 5 (2+3)</li>
+                        </ul>
+                    </div>
+                    
                     <form method="post">
                         {% csrf_token %}
                         

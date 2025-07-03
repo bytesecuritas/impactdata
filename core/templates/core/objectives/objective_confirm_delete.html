@@ -52,12 +52,23 @@
                                 <hr>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <strong>Valeur cible :</strong><br>
+                                        <strong>Valeur de base :</strong><br>
+                                        {{ objective.base_value }} (déjà existant)
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Incrément cible :</strong><br>
+                                        {{ objective.target_increment }} (à ajouter)
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Valeur cible totale :</strong><br>
                                         {{ objective.target_value }}
                                     </div>
                                     <div class="col-md-6">
                                         <strong>Progression :</strong><br>
-                                        {{ objective.current_value }} / {{ objective.target_value }}
+                                        {{ objective.current_value }} / {{ objective.target_increment }}
                                         ({{ objective.progress_percentage|floatformat:1 }}%)
                                     </div>
                                 </div>

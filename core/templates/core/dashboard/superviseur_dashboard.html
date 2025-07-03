@@ -160,9 +160,14 @@
                     <h5 class="mb-0">
                         <i class="fas fa-bullseye"></i> Objectifs Récents
                     </h5>
-                    <a href="{% url 'core:objective_list' %}" class="btn btn-sm btn-outline-primary">
-                        Voir tout
-                    </a>
+                    <div class="btn-group">
+                        <a href="{% url 'core:refresh_objectives' %}" class="btn btn-sm btn-outline-info" title="Rafraîchir les objectifs">
+                            <i class="fas fa-sync-alt"></i>
+                        </a>
+                        <a href="{% url 'core:objective_list' %}" class="btn btn-sm btn-outline-primary">
+                            Voir tout
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     {% if objectives %}
@@ -181,7 +186,7 @@
                                             </div>
                                         </div>
                                         <small class="text-muted">
-                                            {{ objective.current_value }} / {{ objective.target_value }}
+                                            {{ objective.current_value }} / {{ objective.target_increment }}
                                             ({{ objective.progress_percentage|floatformat:1 }}%)
                                         </small>
                                     </div>

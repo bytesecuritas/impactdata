@@ -7,6 +7,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils.crypto import get_random_string
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 import time
 from django.db import transaction
 
@@ -909,6 +911,7 @@ class UserObjective(models.Model):
     )
     target_value = models.PositiveIntegerField(verbose_name="Valeur cible")
     current_value = models.PositiveIntegerField(default=0, verbose_name="Valeur actuelle")
+    base_value = models.PositiveIntegerField(default=0, verbose_name="Valeur de base")
     deadline = models.DateField(verbose_name="Date limite")
     description = models.TextField(blank=True, verbose_name="Description")
     status = models.CharField(
@@ -928,38 +931,107 @@ class UserObjective(models.Model):
     def __str__(self):
         return f"Objectif {self.objective_type} pour {self.user.get_full_name()}"
     
-    def update_progress(self):
-        """Met à jour la progression de l'objectif"""
+    def save(self, *args, **kwargs):
+        """Override save pour calculer automatiquement la valeur de base et la valeur cible"""
+        if not self.pk:  # Nouvel objectif
+            self.calculate_base_value()
+            # La valeur cible devient : base_value + target_value (ce qui était saisi)
+            self.target_value = self.base_value + self.target_value
+        super().save(*args, **kwargs)
+    
+    def calculate_base_value(self):
+        """Calcule la valeur de base (ce qui existait déjà avant l'objectif)"""
         if self.objective_type == 'organizations':
-            self.current_value = Organization.objects.filter(created_by=self.user).count()
+            self.base_value = Organization.objects.filter(created_by=self.user).count()
         elif self.objective_type == 'adherents':
-            self.current_value = Adherent.objects.filter(
+            self.base_value = Adherent.objects.filter(
                 organisation__in=Organization.objects.filter(created_by=self.user)
             ).count()
         elif self.objective_type == 'interactions':
-            self.current_value = Interaction.objects.filter(personnel=self.user).count()
+            self.base_value = Interaction.objects.filter(personnel=self.user).count()
+    
+    def update_progress(self):
+        """Met à jour la progression de l'objectif"""
+        if self.objective_type == 'organizations':
+            total_count = Organization.objects.filter(created_by=self.user).count()
+        elif self.objective_type == 'adherents':
+            total_count = Adherent.objects.filter(
+                organisation__in=Organization.objects.filter(created_by=self.user)
+            ).count()
+        elif self.objective_type == 'interactions':
+            total_count = Interaction.objects.filter(personnel=self.user).count()
+        
+        # La valeur actuelle est ce qui a été créé après l'assignation de l'objectif
+        self.current_value = max(0, total_count - self.base_value)
         
         # Mettre à jour le statut
-        if self.current_value >= self.target_value:
+        if self.current_value >= (self.target_value - self.base_value):
             self.status = 'completed'
         elif timezone.now().date() > self.deadline:
             self.status = 'failed'
         elif self.current_value > 0:
             self.status = 'in_progress'
+        else:
+            self.status = 'pending'
         
         self.save()
+    
+    @classmethod
+    def update_all_objectives(cls):
+        """Met à jour tous les objectifs actifs"""
+        objectives = cls.objects.filter(status__in=['pending', 'in_progress'])
+        updated_count = 0
+        
+        for objective in objectives:
+            old_status = objective.status
+            old_value = objective.current_value
+            
+            objective.update_progress()
+            
+            # Vérifier si quelque chose a changé
+            if (objective.status != old_status or objective.current_value != old_value):
+                updated_count += 1
+        
+        return updated_count
+    
+    @classmethod
+    def update_objectives_for_user(cls, user):
+        """Met à jour tous les objectifs d'un utilisateur spécifique"""
+        objectives = cls.objects.filter(
+            user=user,
+            status__in=['pending', 'in_progress']
+        )
+        updated_count = 0
+        
+        for objective in objectives:
+            old_status = objective.status
+            old_value = objective.current_value
+            
+            objective.update_progress()
+            
+            # Vérifier si quelque chose a changé
+            if (objective.status != old_status or objective.current_value != old_value):
+                updated_count += 1
+        
+        return updated_count
     
     @property
     def progress_percentage(self):
         """Calcule le pourcentage de progression"""
-        if self.target_value == 0:
+        target_increment = self.target_value - self.base_value
+        if target_increment == 0:
             return 0
-        return min(100, (self.current_value / self.target_value) * 100)
+        return min(100, (self.current_value / target_increment) * 100)
     
     @property
     def is_overdue(self):
         """Vérifie si l'objectif est en retard"""
         return timezone.now().date() > self.deadline and self.status != 'completed'
+    
+    @property
+    def target_increment(self):
+        """Retourne l'incrément cible (ce qui doit être ajouté)"""
+        return self.target_value - self.base_value
 
 class SupervisorStats(models.Model):
     """Modèle pour stocker les statistiques des superviseurs"""
@@ -1001,4 +1073,81 @@ class SupervisorStats(models.Model):
         ).count()
         self.interactions_count = Interaction.objects.filter(personnel=self.agent).count()
         self.save()
+
+
+# Signaux pour mettre à jour automatiquement les objectifs
+@receiver(post_save, sender=Organization)
+def update_objectives_on_organization_save(sender, instance, created, **kwargs):
+    """Met à jour les objectifs quand une organisation est créée ou modifiée"""
+    if created and instance.created_by:
+        # Mettre à jour tous les objectifs de type 'organizations' pour cet utilisateur
+        objectives = UserObjective.objects.filter(
+            user=instance.created_by,
+            objective_type='organizations',
+            status__in=['pending', 'in_progress']
+        )
+        for objective in objectives:
+            objective.update_progress()
+
+@receiver(post_delete, sender=Organization)
+def update_objectives_on_organization_delete(sender, instance, **kwargs):
+    """Met à jour les objectifs quand une organisation est supprimée"""
+    if instance.created_by:
+        objectives = UserObjective.objects.filter(
+            user=instance.created_by,
+            objective_type='organizations',
+            status__in=['pending', 'in_progress']
+        )
+        for objective in objectives:
+            objective.update_progress()
+
+@receiver(post_save, sender=Adherent)
+def update_objectives_on_adherent_save(sender, instance, created, **kwargs):
+    """Met à jour les objectifs quand un adhérent est créé ou modifié"""
+    if created and instance.organisation.created_by:
+        # Mettre à jour tous les objectifs de type 'adherents' pour le créateur de l'organisation
+        objectives = UserObjective.objects.filter(
+            user=instance.organisation.created_by,
+            objective_type='adherents',
+            status__in=['pending', 'in_progress']
+        )
+        for objective in objectives:
+            objective.update_progress()
+
+@receiver(post_delete, sender=Adherent)
+def update_objectives_on_adherent_delete(sender, instance, **kwargs):
+    """Met à jour les objectifs quand un adhérent est supprimé"""
+    if instance.organisation.created_by:
+        objectives = UserObjective.objects.filter(
+            user=instance.organisation.created_by,
+            objective_type='adherents',
+            status__in=['pending', 'in_progress']
+        )
+        for objective in objectives:
+            objective.update_progress()
+
+@receiver(post_save, sender=Interaction)
+def update_objectives_on_interaction_save(sender, instance, created, **kwargs):
+    """Met à jour les objectifs quand une interaction est créée ou modifiée"""
+    if created and instance.personnel:
+        # Mettre à jour tous les objectifs de type 'interactions' pour cet utilisateur
+        objectives = UserObjective.objects.filter(
+            user=instance.personnel,
+            objective_type='interactions',
+            status__in=['pending', 'in_progress']
+        )
+        for objective in objectives:
+            objective.update_progress()
+
+@receiver(post_delete, sender=Interaction)
+def update_objectives_on_interaction_delete(sender, instance, **kwargs):
+    """Met à jour les objectifs quand une interaction est supprimée"""
+    if instance.personnel:
+        objectives = UserObjective.objects.filter(
+            user=instance.personnel,
+            objective_type='interactions',
+            status__in=['pending', 'in_progress']
+        )
+        for objective in objectives:
+            objective.update_progress()
 

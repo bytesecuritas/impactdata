@@ -11,6 +11,8 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 import time
 from django.db import transaction
+from .services import EmailService
+import logging
 
 
 # Custom User Manager
@@ -48,6 +50,15 @@ class UserManager(BaseUserManager):
         # Stocker temporairement le mot de passe généré en clair pour l'affichage
         if generated_password:
             user._password_generated = generated_password
+        
+        # Envoyer l'email de bienvenue si un mot de passe a été généré
+        if generated_password:
+            try:
+                EmailService.send_welcome_email(user, generated_password)
+            except Exception as e:
+                # Log l'erreur mais ne pas faire échouer la création de l'utilisateur
+                logger = logging.getLogger(__name__)
+                logger.error(f"Erreur lors de l'envoi de l'email de bienvenue: {str(e)}")
         
         return user
 

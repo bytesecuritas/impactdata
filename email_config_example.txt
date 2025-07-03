@@ -1,0 +1,23 @@
+# Configuration Email
+# Copiez ces variables dans votre fichier .env
+
+# Configuration SMTP
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_SSL=True
+EMAIL_HOST_USER=votre_email@gmail.com
+EMAIL_HOST_PASSWORD=votre_mot_de_passe_application
+DEFAULT_FROM_EMAIL=votre_email@gmail.com
+
+# Configuration MySQL (optionnel)
+# DB_NAME=impact_data
+# DB_USER=root
+# DB_PASSWORD=votre_mot_de_passe
+# DB_HOST=localhost
+# DB_PORT=3306
+
+# Notes importantes :
+# 1. Pour Gmail, utilisez un "mot de passe d'application" et non votre mot de passe principal
+# 2. Activez l'authentification à 2 facteurs sur votre compte Gmail
+# 3. Générez un mot de passe d'application dans les paramètres de sécurité Google
+# 4. Pour d'autres fournisseurs, consultez leur documentation SMTP 

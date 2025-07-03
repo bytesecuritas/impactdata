@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue sur Impact Data Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+        }
+        .credentials {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .credential-item {
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 0 0 5px 5px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 Bienvenue sur Impact Data Platform</h1>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour <strong>{{ user.first_name }} {{ user.last_name }}</strong>,</p>
+        
+        <p>Votre compte a été créé avec succès sur la plateforme Impact Data. Voici vos informations de connexion :</p>
+        
+        <div class="credentials">
+            <div class="credential-item">
+                📧 <strong>Email de connexion :</strong> {{ user.email }}
+            </div>
+            <div class="credential-item">
+                🔑 <strong>Mot de passe temporaire :</strong> {{ password }}
+            </div>
+            <div class="credential-item">
+                🏷️ <strong>Matricule :</strong> {{ user.matricule }}
+            </div>
+            <div class="credential-item">
+                👤 <strong>Rôle :</strong> {{ user.get_role_display }}
+            </div>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Important :</strong> Pour des raisons de sécurité, vous devrez changer votre mot de passe lors de votre première connexion.
+        </div>
+        
+        <p>Vous pouvez maintenant vous connecter à la plateforme en utilisant les informations ci-dessus.</p>
+        
+        <p><strong>URL de connexion :</strong> <a href="{{ login_url }}">{{ login_url }}</a></p>
+        
+        <p>Si vous avez des questions ou besoin d'aide, n'hésitez pas à contacter l'équipe d'administration.</p>
+        
+        <p>Cordialement,<br>
+        <strong>L'équipe Impact Data Platform</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2024 Impact Data Platform. Tous droits réservés.</p>
+        <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+    </div>
+</body>
+</html> 

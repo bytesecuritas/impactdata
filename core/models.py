@@ -742,6 +742,13 @@ class Interaction(models.Model):
         auto_now_add=True,
         verbose_name="Date d'enregistrement"
     )
+    auteur = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        default=1,
+        related_name='interactions_created',
+        verbose_name="Auteur"
+    )
     personnel = models.ForeignKey(
         'User',
         on_delete=models.CASCADE,

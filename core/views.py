@@ -24,7 +24,8 @@ from .models import User, Adherent, Organization, Category, Interaction, Badge, 
 from .forms import (
     UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, 
     CategoryForm, InteractionForm, UserForm, UserRegistrationForm, UserEditForm,
-    BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm
+    BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm,
+    InteractionSearchForm
 )
 from .services import EmailService
 import calendar
@@ -336,6 +337,41 @@ def adherent_detail(request, adherent_id):
     }
     return render(request, 'core/adherents/adherent_detail.html', context)
 
+@login_required
+def adherent_interactions(request, adherent_id):
+    """Afficher toutes les interactions d'un adhérent spécifique"""
+    adherent = get_object_or_404(Adherent, id=adherent_id)
+    
+    # Récupérer toutes les interactions de cet adhérent
+    interactions = Interaction.objects.filter(adherent=adherent).select_related(
+        'personnel', 'auteur'
+    ).order_by('-created_at')
+    
+    # Statistiques des interactions
+    total_interactions = interactions.count()
+    completed_interactions = interactions.filter(status='completed').count()
+    in_progress_interactions = interactions.filter(status='in_progress').count()
+    overdue_interactions = interactions.filter(
+        due_date__lt=timezone.now(),
+        status__in=['in_progress', 'pending']
+    ).count()
+    
+    # Pagination
+    paginator = Paginator(interactions, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'adherent': adherent,
+        'interactions': page_obj,
+        'total_interactions': total_interactions,
+        'completed_interactions': completed_interactions,
+        'in_progress_interactions': in_progress_interactions,
+        'overdue_interactions': overdue_interactions,
+        'now': timezone.now(),
+    }
+    return render(request, 'core/adherents/adherent_interactions.html', context)
+
 # Vues pour les organisations (agents et admins)
 @login_required
 def organization_list(request):
@@ -388,14 +424,119 @@ def category_list(request):
 # Vues pour les interactions (superviseurs et admins)
 @login_required
 def interaction_list(request):
-    """Liste des interactions"""
+    """Liste des interactions avec recherche avancée"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
     #     return HttpResponseForbidden("Accès refusé")
     
-    interactions = Interaction.objects.all().order_by('-created_at')
+    # Initialiser le formulaire de recherche
+    search_form = InteractionSearchForm(request.GET)
+    
+    # Base queryset
+    if request.user.role == 'agent':
+        interactions = Interaction.objects.filter(
+            Q(auteur=request.user) | Q(personnel=request.user)
+            ).select_related('personnel', 'adherent', 'auteur')
+    elif request.user.role == 'superviseur':
+        # Les superviseurs voient les interactions de leurs agents
+        interactions = Interaction.objects.filter(
+            Q(personnel=request.user) | Q(auteur=request.user) | 
+            Q(personnel__created_by=request.user) | 
+            Q(auteur__created_by=request.user)
+        ).select_related('personnel', 'adherent', 'auteur')
+    else:
+        interactions = Interaction.objects.select_related('personnel', 'adherent', 'auteur').all()
+    
+    # Appliquer les filtres si le formulaire est valide
+    if search_form.is_valid():
+        personnel = search_form.cleaned_data.get('personnel')
+        adherent = search_form.cleaned_data.get('adherent')
+        status = search_form.cleaned_data.get('status')
+        due_date_from = search_form.cleaned_data.get('due_date_from')
+        due_date_to = search_form.cleaned_data.get('due_date_to')
+        keywords = search_form.cleaned_data.get('keywords')
+        overdue_only = search_form.cleaned_data.get('overdue_only')
+        due_soon = search_form.cleaned_data.get('due_soon')
+        
+        # Filtres
+        if personnel:
+            interactions = interactions.filter(personnel=personnel)
+        
+        if adherent:
+            interactions = interactions.filter(adherent=adherent)
+        
+        if status:
+            interactions = interactions.filter(status=status)
+        
+        if due_date_from:
+            interactions = interactions.filter(due_date__date__gte=due_date_from)
+        
+        if due_date_to:
+            interactions = interactions.filter(due_date__date__lte=due_date_to)
+        
+        if keywords:
+            interactions = interactions.filter(report__icontains=keywords)
+        
+        if overdue_only:
+            interactions = interactions.filter(due_date__lt=timezone.now())
+        
+        if due_soon:
+            # Interactions dont l'échéance est dans les 7 prochains jours
+            from datetime import timedelta
+            seven_days_from_now = timezone.now() + timedelta(days=7)
+            interactions = interactions.filter(
+                due_date__gte=timezone.now(),
+                due_date__lte=seven_days_from_now,
+                status__in=['in_progress', 'pending']
+            )
+    
+    # Tri par défaut
+    interactions = interactions.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(interactions, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Notifications pour les interactions en retard ou proches de l'échéance
+    notifications = []
+    
+    # Interactions en retard
+    overdue_interactions = Interaction.objects.filter(
+        due_date__lt=timezone.now(),
+        status__in=['in_progress', 'pending']
+    )
+    
+    if overdue_interactions.exists():
+        notifications.append({
+            'type': 'danger',
+            'message': f'{overdue_interactions.count()} interaction(s) en retard',
+            'count': overdue_interactions.count()
+        })
+    
+    # Interactions dont l'échéance approche (7 jours)
+    from datetime import timedelta
+    seven_days_from_now = timezone.now() + timedelta(days=7)
+    due_soon_interactions = Interaction.objects.filter(
+        due_date__gte=timezone.now(),
+        due_date__lte=seven_days_from_now,
+        status__in=['in_progress', 'pending']
+    )
+    
+    if due_soon_interactions.exists():
+        notifications.append({
+            'type': 'warning',
+            'message': f'{due_soon_interactions.count()} interaction(s) avec échéance proche',
+            'count': due_soon_interactions.count()
+        })
+    
     context = {
-        'interactions': interactions,
-        'total_interactions': interactions.count(),
+        'interactions': page_obj,
+        'total_interactions': Interaction.objects.count(),
+        'filtered_count': interactions.count(),
+        'search_form': search_form,
+        'notifications': notifications,
+        'overdue_interactions': overdue_interactions[:5],  # Limiter à 5 pour l'affichage
+        'due_soon_interactions': due_soon_interactions[:5],
         'now': timezone.now(),
     }
     return render(request, 'core/interactions/interaction_list.html', context)
@@ -416,6 +557,52 @@ def interaction_detail(request, interaction_id):
         'interaction': interaction,
     }
     return render(request, 'core/interactions/interaction_detail.html', context)
+
+@login_required
+def interaction_notifications(request):
+    """Afficher les notifications d'interactions en retard ou proches de l'échéance"""
+    # Interactions en retard
+    overdue_interactions = Interaction.objects.filter(
+        due_date__lt=timezone.now(),
+        status__in=['in_progress', 'pending']
+    ).select_related('personnel', 'adherent', 'auteur').order_by('due_date')
+    
+    # Interactions dont l'échéance approche (7 jours)
+    from datetime import timedelta
+    seven_days_from_now = timezone.now() + timedelta(days=7)
+    due_soon_interactions = Interaction.objects.filter(
+        due_date__gte=timezone.now(),
+        due_date__lte=seven_days_from_now,
+        status__in=['in_progress', 'pending']
+    ).select_related('personnel', 'adherent', 'auteur').order_by('due_date')
+    
+    # Filtrer selon le rôle de l'utilisateur
+    if request.user.role == 'agent':
+        overdue_interactions = overdue_interactions.filter(
+            Q(personnel=request.user) | Q(auteur=request.user)
+            )
+        due_soon_interactions = due_soon_interactions.filter(
+            Q(personnel=request.user) | Q(auteur=request.user)
+            )
+    elif request.user.role == 'superviseur':
+        # Les superviseurs voient les interactions de leurs agents
+        overdue_interactions = overdue_interactions.filter(
+            Q(personnel=request.user) | Q(auteur=request.user) |
+            Q(personnel__created_by=request.user)
+        )
+        due_soon_interactions = due_soon_interactions.filter(
+            Q(personnel=request.user) | Q(auteur=request.user) |
+            Q(personnel__created_by=request.user)
+        )
+    
+    context = {
+        'overdue_interactions': overdue_interactions,
+        'due_soon_interactions': due_soon_interactions,
+        'total_overdue': overdue_interactions.count(),
+        'total_due_soon': due_soon_interactions.count(),
+        'now': timezone.now(),
+    }
+    return render(request, 'core/interactions/interaction_notifications.html', context)
 
 # ==================== CRUD ADHÉRENTS ====================
 
@@ -617,7 +804,7 @@ def interaction_create(request):
         form = InteractionForm(request.POST, user=request.user)
         if form.is_valid():
             interaction = form.save(commit=False)
-            interaction.personnel = request.user
+            interaction.auteur = request.user
             interaction.save()
             messages.success(request, 'Interaction créée avec succès.')
             return redirect('core:interaction_detail', interaction_id=interaction.id)
@@ -635,7 +822,7 @@ def interaction_update(request, interaction_id):
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
     # Vérifier que le superviseur ne peut modifier que ses propres interactions
-    if is_agent(request.user) and interaction.personnel != request.user:
+    if is_agent(request.user) :
         return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
@@ -658,7 +845,7 @@ def interaction_delete(request, interaction_id):
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
     # Vérifier que le superviseur ne peut supprimer que ses propres interactions
-    if is_agent(request.user) and interaction.personnel != request.user:
+    if is_agent(request.user) :
         return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':

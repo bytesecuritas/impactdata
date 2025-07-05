@@ -18,6 +18,21 @@
         </div>
     </div>
 
+    <!-- Notifications -->
+    {% if notifications %}
+        <div class="row mb-4">
+            {% for notification in notifications %}
+                <div class="col-md-6">
+                    <div class="alert alert-{{ notification.type }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>{{ notification.message }}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <!-- Statistiques -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -31,18 +46,199 @@
         <div class="col-md-3">
             <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
                 <div class="text-center">
-                    <h3>{{ interactions|length }}</h3>
-                    <p>Interactions affichées</p>
+                    <h3>{{ filtered_count }}</h3>
+                    <p>Interactions filtrées</p>
                 </div>
             </div>
         </div>
+        {% if overdue_interactions %}
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <div class="text-center">
+                    <h3>{{ overdue_interactions|length }}</h3>
+                    <p>En retard</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if due_soon_interactions %}
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <div class="text-center">
+                    <h3>{{ due_soon_interactions|length }}</h3>
+                    <p>Échéance proche</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
+
+    <!-- Formulaire de recherche avancée optimisé -->
+    <div class="search-card mb-4">
+        <div class="search-header">
+            <div class="search-title">
+                <i class="fas fa-search search-icon"></i>
+                <h6 class="mb-0">Recherche avancée</h6>
+            </div>
+            <div class="search-controls">
+                <span class="filter-count" id="activeFilters">0 filtres actifs</span>
+                <button class="btn btn-sm btn-ghost toggle-search" type="button" data-bs-toggle="collapse" data-bs-target="#searchForm">
+                    <i class="fas fa-chevron-down transition-icon"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="collapse show" id="searchForm">
+            <div class="search-body">
+                <form method="get" class="search-form">
+                    <!-- Recherche rapide -->
+                    <div class="quick-search-section">
+                        <div class="quick-search-row">
+                            <div class="search-field">
+                                <label class="form-label" for="{{ search_form.keywords.id_for_label }}">
+                                    <i class="fas fa-search"></i>Mots-clés
+                                </label>
+                                {{ search_form.keywords }}
+                            </div>
+                            <div class="search-field-sm">
+                                <label class="form-label" for="{{ search_form.status.id_for_label }}">
+                                    <i class="fas fa-flag"></i>Statut
+                                </label>
+                                {{ search_form.status }}
+                            </div>
+                            <div class="search-actions">
+                                <button type="submit" class="btn btn-primary search-btn">
+                                    <i class="fas fa-search"></i>
+                                    <span>Rechercher</span>
+                                </button>
+                                <a href="{% url 'core:interaction_list' %}" class="btn btn-outline-secondary clear-btn">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtres avancés -->
+                    <div class="advanced-filters">
+                        <div class="filter-section">
+                            <h6 class="filter-section-title">
+                                <i class="fas fa-users"></i>Personnes
+                            </h6>
+                            <div class="filter-row">
+                                <div class="filter-field">
+                                    <label class="form-label" for="{{ search_form.personnel.id_for_label }}">
+                                        <i class="fas fa-user-tie"></i>Personnel
+                                    </label>
+                                    {{ search_form.personnel }}
+                                </div>
+                                <div class="filter-field">
+                                    <label class="form-label" for="{{ search_form.adherent.id_for_label }}">
+                                        <i class="fas fa-user"></i>Adhérent
+                                    </label>
+                                    {{ search_form.adherent }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <h6 class="filter-section-title">
+                                <i class="fas fa-calendar-alt"></i>Échéances
+                            </h6>
+                            <div class="filter-row">
+                                <div class="filter-field-sm">
+                                    <label class="form-label" for="{{ search_form.due_date_from.id_for_label }}">
+                                        <i class="fas fa-calendar-check"></i>Date début
+                                    </label>
+                                    {{ search_form.due_date_from }}
+                                </div>
+                                <div class="filter-field-sm">
+                                    <label class="form-label" for="{{ search_form.due_date_to.id_for_label }}">
+                                        <i class="fas fa-calendar-times"></i>Date fin
+                                    </label>
+                                    {{ search_form.due_date_to }}
+                                </div>
+                                <div class="filter-field">
+                                    <label class="form-label">Options</label>
+                                    <div class="checkbox-group">
+                                        <div class="form-check custom-checkbox">
+                                            {{ search_form.overdue_only }}
+                                            <label class="form-check-label" for="{{ search_form.overdue_only.id_for_label }}">
+                                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                                                En retard
+                                            </label>
+                                        </div>
+                                        <div class="form-check custom-checkbox">
+                                            {{ search_form.due_soon }}
+                                            <label class="form-check-label" for="{{ search_form.due_soon.id_for_label }}">
+                                                <i class="fas fa-clock text-warning"></i>
+                                                Échéance proche
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactions en retard (si il y en a) -->
+    {% if overdue_interactions %}
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle"></i> Interactions en retard
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Identifiant</th>
+                            <th>Personnel</th>
+                            <th>Adhérent</th>
+                            <th>Échéance</th>
+                            <th>Retard</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for interaction in overdue_interactions %}
+                        <tr class="table-danger">
+                            <td><strong>{{ interaction.identifiant }}</strong></td>
+                            <td>{{ interaction.personnel.get_full_name }}</td>
+                            <td>{{ interaction.adherent.full_name }}</td>
+                            <td>{{ interaction.due_date|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-danger">
+                                    {{ interaction.due_date|timesince }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'core:interaction_detail' interaction.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Liste des interactions -->
     <div class="card">
         <div class="card-header">
             <h5 class="mb-0">
                 <i class="fas fa-list"></i> Interactions ({{ interactions|length }})
+                {% if filtered_count != total_interactions %}
+                    <small class="text-muted">sur {{ total_interactions }} total</small>
+                {% endif %}
             </h5>
         </div>
         <div class="card-body">
@@ -51,25 +247,47 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>Actions</th>
                                 <th>Identifiant</th>
                                 <th>Personnel</th>
                                 <th>Adhérent</th>
                                 <th>Statut</th>
                                 <th>Date d'échéance</th>
-                                <th>Créée le</th>
-                                <th>Actions</th>
+                                <th>Créée par</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for interaction in interactions %}
-                            <tr>
+                            <tr {% if interaction.due_date < now %}class="table-warning"{% endif %}>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'core:interaction_detail' interaction.id %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.role == 'admin' or user.role == 'superviseur' %}
+                                        <a href="{% url 'core:interaction_update' interaction.id %}" 
+                                           class="btn btn-sm btn-outline-warning" 
+                                           title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'core:interaction_delete' interaction.id %}" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           title="Supprimer"
+                                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette interaction ?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
                                 <td>
                                     <strong>{{ interaction.identifiant }}</strong>
                                 </td>
                                 <td>
-                                    <strong>{{ interaction.personnel.name }}</strong>
+                                    <strong>{{ interaction.personnel.get_full_name }}</strong>
                                     <br>
-                                    <small class="text-muted">{{ interaction.personnel.role }}</small>
+                                    <small class="text-muted">{{ interaction.personnel.get_role_display }}</small>
                                 </td>
                                 <td>
                                     <strong>{{ interaction.adherent.full_name }}</strong>
@@ -89,41 +307,78 @@
                                     {{ interaction.due_date|date:"d/m/Y H:i" }}
                                     {% if interaction.due_date < now %}
                                         <br><small class="text-danger">En retard</small>
+                                    {% elif interaction.due_date|date:"U" < now|date:"U"|add:"604800" %}
+                                        <br><small class="text-warning">Échéance proche</small>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {{ interaction.created_at|date:"d/m/Y" }}
+                                    <strong>{{ interaction.auteur.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">le {{ interaction.created_at|date:"d/m/Y H:i" }}</small>
                                 </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'core:interaction_detail' interaction.id %}" 
-                                           class="btn btn-sm btn-outline-primary" 
-                                           title="Voir détails">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{% url 'core:interaction_update' interaction.id %}" 
-                                           class="btn btn-sm btn-outline-warning" 
-                                           title="Modifier">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'core:interaction_delete' interaction.id %}" 
-                                           class="btn btn-sm btn-outline-danger" 
-                                           title="Supprimer"
-                                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette interaction ?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
+                                
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination -->
+                {% if interactions.has_other_pages %}
+                <nav aria-label="Pagination des interactions">
+                    <ul class="pagination justify-content-center">
+                        {% if interactions.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ interactions.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in interactions.paginator.page_range %}
+                            {% if interactions.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > interactions.number|add:'-3' and num < interactions.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if interactions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ interactions.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ interactions.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
             {% else %}
                 <div class="text-center py-5">
                     <i class="fas fa-comments fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">Aucune interaction trouvée</h5>
-                    <p class="text-muted">Aucune interaction n'est enregistrée pour le moment.</p>
+                    <p class="text-muted">
+                        {% if filtered_count != total_interactions %}
+                            Aucune interaction ne correspond à vos critères de recherche.
+                        {% else %}
+                            Aucune interaction n'est enregistrée pour le moment.
+                        {% endif %}
+                    </p>
                     <a href="{% url 'core:interaction_create' %}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Ajouter une interaction
                     </a>
@@ -132,4 +387,422 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+
+<style>
+/* Cartes de statistiques */
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stats-card h3 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.stats-card p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+/* Formulaire de recherche compact */
+.search-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.search-card:hover {
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+}
+
+.search-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 12px 20px;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-title h6 {
+    margin: 0;
+    font-weight: 600;
+    color: #495057;
+}
+
+.search-icon {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.search-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filter-count {
+    font-size: 0.8rem;
+    color: #6c757d;
+    padding: 2px 8px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.btn-ghost {
+    background: transparent;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    border-radius: 6px;
+    padding: 4px 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-ghost:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.search-body {
+    padding: 16px 20px;
+}
+
+/* Recherche rapide compacte */
+.quick-search-section {
+    margin-bottom: 0;
+}
+
+.quick-search-row {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.search-field {
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-field-sm {
+    flex: 0 0 140px;
+}
+
+.search-actions {
+    display: flex;
+    gap: 6px;
+    align-items: end;
+}
+
+/* Filtres avancés compacts */
+.advanced-filters {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e9ecef;
+}
+
+.filter-row {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.filter-row:last-child {
+    margin-bottom: 0;
+}
+
+.filter-field {
+    flex: 1;
+    min-width: 180px;
+}
+
+.filter-field-sm {
+    flex: 0 0 120px;
+}
+
+.filter-section {
+    margin-bottom: 16px;
+}
+
+.filter-section:last-child {
+    margin-bottom: 0;
+}
+
+.filter-section-title {
+    color: #495057;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Champs de formulaire compacts */
+.form-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-control,
+.form-select {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    background-color: #fff;
+    height: 34px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.1);
+    outline: none;
+}
+
+.form-control::placeholder {
+    color: #6c757d;
+    opacity: 0.7;
+    font-size: 0.82rem;
+}
+
+/* Boutons compacts */
+.search-btn {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    height: 34px;
+}
+
+.search-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
+}
+
+.clear-btn {
+    border-radius: 6px;
+    padding: 7px 12px;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    height: 34px;
+}
+
+.clear-btn:hover {
+    background: #dc3545;
+    color: white;
+}
+
+/* Checkboxes compactes */
+.checkbox-group {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.custom-checkbox .form-check-input {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 3px;
+    border: 1px solid #ced4da;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.custom-checkbox .form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.custom-checkbox .form-check-label {
+    font-size: 0.8rem;
+    color: #495057;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Icônes plus petites */
+.form-label i {
+    font-size: 0.75rem;
+}
+
+.filter-section-title i {
+    font-size: 0.8rem;
+}
+
+/* Animation pour l'icône de toggle */
+.transition-icon {
+    transition: transform 0.3s ease;
+}
+
+[data-bs-toggle="collapse"][aria-expanded="false"] .transition-icon {
+    transform: rotate(0deg);
+}
+
+[data-bs-toggle="collapse"][aria-expanded="true"] .transition-icon {
+    transform: rotate(180deg);
+}
+
+/* Cartes générales */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    padding: 16px 20px;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .search-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .search-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .quick-search-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .search-field,
+    .search-field-sm {
+        flex: 1;
+        min-width: auto;
+    }
+    
+    .search-actions {
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .filter-field,
+    .filter-field-sm {
+        flex: 1;
+        min-width: auto;
+    }
+    
+    .checkbox-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Compter les filtres actifs
+    function updateFilterCount() {
+        const form = document.querySelector('.search-form');
+        const inputs = form.querySelectorAll('input, select');
+        let activeCount = 0;
+        
+        inputs.forEach(input => {
+            if (input.type === 'checkbox' && input.checked) {
+                activeCount++;
+            } else if (input.type !== 'checkbox' && input.value && input.value.trim() !== '') {
+                activeCount++;
+            }
+        });
+        
+        const filterCountElement = document.getElementById('activeFilters');
+        filterCountElement.textContent = activeCount === 0 ? 'Aucun filtre actif' : 
+                                        activeCount === 1 ? '1 filtre actif' : 
+                                        `${activeCount} filtres actifs`;
+    }
+    
+    // Écouter les changements dans le formulaire
+    const form = document.querySelector('.search-form');
+    if (form) {
+        form.addEventListener('input', updateFilterCount);
+        form.addEventListener('change', updateFilterCount);
+        updateFilterCount(); // Initialiser le compteur
+    }
+    
+    // Animation pour le bouton de toggle
+    const toggleBtn = document.querySelector('.toggle-search');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            this.setAttribute('aria-expanded', !isExpanded);
+        });
+    }
+});
+</script>
+{% endblock %}

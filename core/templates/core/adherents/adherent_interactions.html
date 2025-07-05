@@ -1,0 +1,256 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Interactions de {{ adherent.full_name }} - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-comments"></i> Interactions de {{ adherent.full_name }}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'core:adherent_detail' adherent.id %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour au profil
+                </a>
+                <a href="{% url 'core:interaction_create' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Nouvelle interaction
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations de l'adhérent -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-user"></i> Informations de l'adhérent
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Nom complet:</strong> {{ adherent.full_name }}</p>
+                    <p><strong>Identifiant:</strong> {{ adherent.identifiant }}</p>
+                    <p><strong>Organisation:</strong> {{ adherent.organisation.name }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Téléphone:</strong> {{ adherent.phone1 }}</p>
+                    <p><strong>Email:</strong> {{ adherent.email|default:"Non renseigné" }}</p>
+                    <p><strong>Date d'adhésion:</strong> {{ adherent.join_date|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques des interactions -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="text-center">
+                    <h3>{{ total_interactions }}</h3>
+                    <p>Total interactions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                <div class="text-center">
+                    <h3>{{ completed_interactions }}</h3>
+                    <p>Terminées</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <div class="text-center">
+                    <h3>{{ in_progress_interactions }}</h3>
+                    <p>En cours</p>
+                </div>
+            </div>
+        </div>
+        {% if overdue_interactions > 0 %}
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <div class="text-center">
+                    <h3>{{ overdue_interactions }}</h3>
+                    <p>En retard</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Liste des interactions -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i> Historique des interactions ({{ total_interactions }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if interactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Identifiant</th>
+                                <th>Personnel assigné</th>
+                                <th>Statut</th>
+                                <th>Date d'échéance</th>
+                                <th>Créée par</th>
+                                <th>Date de création</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for interaction in interactions %}
+                            <tr {% if interaction.due_date < now %}class="table-warning"{% endif %}>
+                                <td>
+                                    <strong>{{ interaction.identifiant }}</strong>
+                                </td>
+                                <td>
+                                    <strong>{{ interaction.personnel.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ interaction.personnel.get_role_display }}</small>
+                                </td>
+                                <td>
+                                    {% if interaction.status == 'completed' %}
+                                        <span class="badge bg-success">Terminé</span>
+                                    {% elif interaction.status == 'in_progress' %}
+                                        <span class="badge bg-warning">En cours</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Annulé</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ interaction.due_date|date:"d/m/Y H:i" }}
+                                    {% if interaction.due_date < now %}
+                                        <br><small class="text-danger">En retard</small>
+                                    {% elif interaction.due_date|date:"U" < now|date:"U"|add:"604800" %}
+                                        <br><small class="text-warning">Échéance proche</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ interaction.auteur.get_full_name }}</strong>
+                                </td>
+                                <td>
+                                    {{ interaction.created_at|date:"d/m/Y H:i" }}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'core:interaction_detail' interaction.id %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'core:interaction_update' interaction.id %}" 
+                                           class="btn btn-sm btn-outline-warning" 
+                                           title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'core:interaction_delete' interaction.id %}" 
+                                           class="btn btn-sm btn-outline-danger" 
+                                           title="Supprimer"
+                                           onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette interaction ?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if interactions.has_other_pages %}
+                <nav aria-label="Pagination des interactions">
+                    <ul class="pagination justify-content-center">
+                        {% if interactions.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ interactions.previous_page_number }}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in interactions.paginator.page_range %}
+                            {% if interactions.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > interactions.number|add:'-3' and num < interactions.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if interactions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ interactions.next_page_number }}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ interactions.paginator.num_pages }}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucune interaction trouvée</h5>
+                    <p class="text-muted">Cet adhérent n'a pas encore d'interactions enregistrées.</p>
+                    <a href="{% url 'core:interaction_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Créer une interaction
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.stats-card h3 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+.stats-card p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+</style>
+{% endblock %} 

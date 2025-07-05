@@ -28,7 +28,7 @@
                             <h6 class="text-primary">Informations de l'interaction :</h6>
                             <ul class="list-unstyled">
                                 <li><strong>Identifiant :</strong> {{ interaction.identifiant }}</li>
-                                <li><strong>Personnel :</strong> {{ interaction.personnel.name }}</li>
+                                <li><strong>Personnel :</strong> {{ interaction.personnel.get_full_name }}</li>
                                 <li><strong>Adhérent :</strong> {{ interaction.adherent.full_name }}</li>
                                 <li><strong>Statut :</strong> {{ interaction.get_status_display }}</li>
                                 <li><strong>Date d'échéance :</strong> {{ interaction.due_date|date:"d/m/Y H:i" }}</li>

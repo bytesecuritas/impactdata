@@ -11,6 +11,12 @@ urlpatterns = [
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('profile/change-password/', views.change_password, name='change_password'),
     
+    # Password Reset URLs
+    path('password-reset/', views.password_reset_request, name='password_reset_request'),
+    path('password-reset/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
+    path('password-reset/done/', views.password_reset_done, name='password_reset_done'),
+    path('password-reset/complete/', views.password_reset_complete, name='password_reset_complete'),
+    
     # Tableaux de bord
     path('', views.dashboard, name='dashboard'),
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
@@ -21,6 +27,7 @@ urlpatterns = [
     path('adherents/', views.adherent_list, name='adherent_list'),
     path('adherents/create/', views.adherent_create, name='adherent_create'),
     path('adherents/<int:adherent_id>/', views.adherent_detail, name='adherent_detail'),
+    path('adherents/<int:adherent_id>/interactions/', views.adherent_interactions, name='adherent_interactions'),
     path('adherents/<int:adherent_id>/edit/', views.adherent_update, name='adherent_update'),
     path('adherents/<int:adherent_id>/delete/', views.adherent_delete, name='adherent_delete'),
     
@@ -43,6 +50,7 @@ urlpatterns = [
     path('interactions/<int:interaction_id>/', views.interaction_detail, name='interaction_detail'),
     path('interactions/<int:interaction_id>/edit/', views.interaction_update, name='interaction_update'),
     path('interactions/<int:interaction_id>/delete/', views.interaction_delete, name='interaction_delete'),
+    path('interactions/notifications/', views.interaction_notifications, name='interaction_notifications'),
     
     # User Management URLs
     path('users/', views.UserListView.as_view(), name='user_list'),

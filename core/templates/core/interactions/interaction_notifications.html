@@ -1,0 +1,251 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Notifications d'Interactions - Impact Data{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-bell"></i> Notifications d'Interactions
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'core:interaction_list' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+                <a href="{% url 'core:interaction_create' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Nouvelle interaction
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        {% if total_overdue > 0 %}
+        <div class="col-md-6">
+            <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <div class="text-center">
+                    <h3>{{ total_overdue }}</h3>
+                    <p>Interactions en retard</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if total_due_soon > 0 %}
+        <div class="col-md-6">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                <div class="text-center">
+                    <h3>{{ total_due_soon }}</h3>
+                    <p>Échéances proches</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Interactions en retard -->
+    {% if overdue_interactions %}
+    <div class="card mb-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle"></i> Interactions en retard ({{ total_overdue }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Identifiant</th>
+                            <th>Personnel</th>
+                            <th>Adhérent</th>
+                            <th>Échéance</th>
+                            <th>Retard</th>
+                            <th>Statut</th>
+                            <th>Auteur</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for interaction in overdue_interactions %}
+                        <tr class="table-danger">
+                            <td>
+                                <strong>{{ interaction.identifiant }}</strong>
+                            </td>
+                            <td>
+                                <strong>{{ interaction.personnel.get_full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ interaction.personnel.get_role_display }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ interaction.adherent.full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ interaction.adherent.organisation.name }}</small>
+                            </td>
+                            <td>
+                                {{ interaction.due_date|date:"d/m/Y H:i" }}
+                            </td>
+                            <td>
+                                <span class="badge bg-danger">
+                                    {{ interaction.due_date|timesince }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if interaction.status == 'in_progress' %}
+                                    <span class="badge bg-warning">En cours</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">En attente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ interaction.auteur.get_full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ interaction.auteur.get_role_display }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'core:interaction_detail' interaction.id %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'core:interaction_update' interaction.id %}" 
+                                       class="btn btn-sm btn-outline-warning" 
+                                       title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Interactions avec échéance proche -->
+    {% if due_soon_interactions %}
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-clock"></i> Échéances proches ({{ total_due_soon }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Identifiant</th>
+                            <th>Personnel</th>
+                            <th>Adhérent</th>
+                            <th>Échéance</th>
+                            <th>Temps restant</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for interaction in due_soon_interactions %}
+                        <tr class="table-warning">
+                            <td>
+                                <strong>{{ interaction.identifiant }}</strong>
+                            </td>
+                            <td>
+                                <strong>{{ interaction.personnel.get_full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ interaction.personnel.get_role_display }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ interaction.adherent.full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ interaction.adherent.organisation.name }}</small>
+                            </td>
+                            <td>
+                                {{ interaction.due_date|date:"d/m/Y H:i" }}
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">
+                                    {{ interaction.due_date|timeuntil }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if interaction.status == 'in_progress' %}
+                                    <span class="badge bg-warning">En cours</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">En attente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'core:interaction_detail' interaction.id %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'core:interaction_update' interaction.id %}" 
+                                       class="btn btn-sm btn-outline-warning" 
+                                       title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Aucune notification -->
+    {% if not overdue_interactions and not due_soon_interactions %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h5 class="text-success">Aucune notification</h5>
+            <p class="text-muted">Toutes vos interactions sont à jour !</p>
+            <a href="{% url 'core:interaction_list' %}" class="btn btn-primary">
+                <i class="fas fa-list"></i> Voir toutes les interactions
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.stats-card h3 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+.stats-card p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+</style>
+{% endblock %} 

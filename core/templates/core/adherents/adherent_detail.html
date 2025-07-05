@@ -350,6 +350,9 @@
                         <a href="{% url 'core:adherent_update' adherent.pk %}" class="btn btn-outline-warning">
                             <i class="fas fa-edit"></i> Modifier l'adhérent
                         </a>
+                        <a href="{% url 'core:adherent_interactions' adherent.pk %}" class="btn btn-outline-info">
+                            <i class="fas fa-history"></i> Voir toutes les interactions
+                        </a>
                         <a href="{% url 'core:interaction_create' %}" class="btn btn-outline-primary">
                             <i class="fas fa-comments"></i> Nouvelle Interaction
                         </a>

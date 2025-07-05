@@ -416,3 +416,47 @@ class UserObjectiveForm(forms.ModelForm):
         label="Description"
     )
 
+class InteractionSearchForm(forms.Form):
+    """Formulaire de recherche avancée pour les interactions"""
+    personnel = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='agent').order_by('first_name', 'last_name'),
+        required=False,
+        empty_label="Tous les personnels",
+        label="Personnel"
+    )
+    adherent = forms.ModelChoiceField(
+        queryset=Adherent.objects.all().order_by('first_name', 'last_name'),
+        required=False,
+        empty_label="Tous les adhérents",
+        label="Adhérent"
+    )
+    status = forms.ChoiceField(
+        choices=[('', 'Tous les statuts')] + list(Interaction.STATUS_CHOICES),
+        required=False,
+        label="Statut"
+    )
+    due_date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date d'échéance (du)"
+    )
+    due_date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Date d'échéance (au)"
+    )
+    keywords = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Mots-clés dans le rapport...'}),
+        label="Mots-clés"
+    )
+    overdue_only = forms.BooleanField(
+        required=False,
+        label="En retard uniquement"
+    )
+    due_soon = forms.BooleanField(
+        required=False,
+        label="Échéance proche (7 jours)"
+    )
+

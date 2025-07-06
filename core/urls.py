@@ -13,9 +13,44 @@ urlpatterns = [
     
     # Password Reset URLs
     path('password-reset/', views.password_reset_request, name='password_reset_request'),
-    path('password-reset/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
     path('password-reset/done/', views.password_reset_done, name='password_reset_done'),
+    path('password-reset/confirm/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
     path('password-reset/complete/', views.password_reset_complete, name='password_reset_complete'),
+    
+    # ==================== PARAMÈTRES DE L'APPLICATION ====================
+    
+    # Tableau de bord des paramètres
+    path('settings/', views.settings_dashboard, name='settings_dashboard'),
+    
+    # Gestion des rôles et permissions
+    path('settings/roles/', views.role_permissions_list, name='role_permissions_list'),
+    path('settings/roles/create/', views.role_permission_create, name='role_permission_create'),
+    path('settings/roles/<int:permission_id>/update/', views.role_permission_update, name='role_permission_update'),
+    path('settings/roles/<int:permission_id>/delete/', views.role_permission_delete, name='role_permission_delete'),
+    path('settings/roles/bulk/', views.bulk_role_permissions, name='bulk_role_permissions'),
+    
+    # Gestion des valeurs de référence
+    path('settings/references/', views.reference_values_list, name='reference_values_list'),
+    path('settings/references/create/', views.reference_value_create, name='reference_value_create'),
+    path('settings/references/<int:reference_id>/update/', views.reference_value_update, name='reference_value_update'),
+    path('settings/references/<int:reference_id>/delete/', views.reference_value_delete, name='reference_value_delete'),
+    path('settings/references/import/', views.reference_value_import, name='reference_value_import'),
+    
+    # Gestion des paramètres généraux
+    path('settings/parameters/', views.general_parameters_list, name='general_parameters_list'),
+    path('settings/parameters/create/', views.general_parameter_create, name='general_parameter_create'),
+    path('settings/parameters/<int:parameter_id>/update/', views.general_parameter_update, name='general_parameter_update'),
+    path('settings/parameters/<int:parameter_id>/delete/', views.general_parameter_delete, name='general_parameter_delete'),
+    
+    # Gestion des journaux système
+    path('settings/logs/', views.system_logs_list, name='system_logs_list'),
+    path('settings/logs/<int:log_id>/', views.system_log_detail, name='system_log_detail'),
+    path('settings/logs/export/', views.system_logs_export, name='system_logs_export'),
+    path('settings/logs/clear/', views.system_logs_clear, name='system_logs_clear'),
+    
+    # Sauvegarde et restauration
+    path('settings/backup/', views.settings_backup, name='settings_backup'),
+    path('settings/restore/', views.settings_restore, name='settings_restore'),
     
     # Tableaux de bord
     path('', views.dashboard, name='dashboard'),
@@ -58,6 +93,7 @@ urlpatterns = [
     path('users/<int:pk>/', views.UserDetailView.as_view(), name='user_detail'),
     path('users/<int:pk>/update/', views.UserUpdateView.as_view(), name='user_update'),
     path('users/<int:pk>/delete/', views.UserDeleteView.as_view(), name='user_delete'),
+    path('users/<int:user_id>/permissions/', views.user_permissions, name='user_permissions'),
     
     # Objective Management URLs (Superviseur)
     path('objectives/', views.ObjectiveListView.as_view(), name='objective_list'),

@@ -1,0 +1,266 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Détail du Journal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-alt text-info"></i>
+                        Détail du Journal Système
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informations Générales</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Horodatage :</strong></td>
+                                    <td>{{ log.timestamp|date:"d/m/Y H:i:s" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Niveau :</strong></td>
+                                    <td>
+                                        {% if log.level == 'ERROR' or log.level == 'CRITICAL' %}
+                                        <span class="badge bg-danger">{{ log.get_level_display }}</span>
+                                        {% elif log.level == 'WARNING' %}
+                                        <span class="badge bg-warning text-dark">{{ log.get_level_display }}</span>
+                                        {% elif log.level == 'INFO' %}
+                                        <span class="badge bg-info">{{ log.get_level_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ log.get_level_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Catégorie :</strong></td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ log.get_category_display }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Utilisateur :</strong></td>
+                                    <td>
+                                        {% if log.user %}
+                                        {{ log.user.get_full_name }} ({{ log.user.email }})
+                                        {% else %}
+                                        <span class="text-muted">Système</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Adresse IP :</strong></td>
+                                    <td>
+                                        {% if log.ip_address %}
+                                        <code>{{ log.ip_address }}</code>
+                                        {% else %}
+                                        <span class="text-muted">Non disponible</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Message</h6>
+                            <div class="alert alert-light border">
+                                <p class="mb-0">{{ log.message }}</p>
+                            </div>
+                            
+                            {% if log.user_agent %}
+                            <h6>User Agent</h6>
+                            <div class="alert alert-light border">
+                                <small class="text-muted">{{ log.user_agent }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if log.details %}
+                    <div class="mt-4">
+                        <h6>Détails Techniques</h6>
+                        <div class="alert alert-light border">
+                            <pre class="mb-0"><code>{{ log.details|pprint }}</code></pre>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'core:system_logs_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour à la Liste
+                        </a>
+                        <div>
+                            <a href="{% url 'core:system_logs_export' %}?log_id={{ log.id }}" class="btn btn-outline-primary">
+                                <i class="fas fa-download"></i> Exporter
+                            </a>
+                            <button type="button" class="btn btn-outline-info" onclick="copyToClipboard()">
+                                <i class="fas fa-copy"></i> Copier
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs similaires -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-list"></i>
+                        Logs Similaires
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Horodatage</th>
+                                    <th>Niveau</th>
+                                    <th>Message</th>
+                                    <th>Utilisateur</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for similar_log in similar_logs %}
+                                <tr>
+                                    <td>{{ similar_log.timestamp|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if similar_log.level == 'ERROR' or similar_log.level == 'CRITICAL' %}
+                                        <span class="badge bg-danger">{{ similar_log.get_level_display }}</span>
+                                        {% elif similar_log.level == 'WARNING' %}
+                                        <span class="badge bg-warning text-dark">{{ similar_log.get_level_display }}</span>
+                                        {% elif similar_log.level == 'INFO' %}
+                                        <span class="badge bg-info">{{ similar_log.get_level_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ similar_log.get_level_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ similar_log.message|truncatechars:50 }}</td>
+                                    <td>
+                                        {% if similar_log.user %}
+                                        {{ similar_log.user.get_full_name }}
+                                        {% else %}
+                                        <span class="text-muted">Système</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'core:system_log_detail' similar_log.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        Aucun log similaire trouvé
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+
+pre {
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    font-size: 0.875rem;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    color: #e83e8c;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+</style>
+
+<script>
+function copyToClipboard() {
+    const logData = {
+        timestamp: '{{ log.timestamp|date:"d/m/Y H:i:s" }}',
+        level: '{{ log.get_level_display }}',
+        category: '{{ log.get_category_display }}',
+        message: '{{ log.message }}',
+        user: '{% if log.user %}{{ log.user.get_full_name }}{% else %}Système{% endif %}',
+        ip_address: '{{ log.ip_address|default:"Non disponible" }}'
+    };
+    
+    const text = `Journal Système:
+Horodatage: ${logData.timestamp}
+Niveau: ${logData.level}
+Catégorie: ${logData.category}
+Message: ${logData.message}
+Utilisateur: ${logData.user}
+Adresse IP: ${logData.ip_address}`;
+    
+    navigator.clipboard.writeText(text).then(function() {
+        // Afficher une notification de succès
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copié';
+        button.classList.remove('btn-outline-info');
+        button.classList.add('btn-success');
+        
+        setTimeout(function() {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-info');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Erreur lors de la copie: ', err);
+        alert('Erreur lors de la copie dans le presse-papiers');
+    });
+}
+
+// Améliorer l'affichage des détails JSON
+document.addEventListener('DOMContentLoaded', function() {
+    const detailsElement = document.querySelector('pre code');
+    if (detailsElement) {
+        try {
+            const details = JSON.parse('{{ log.details|escapejs }}');
+            detailsElement.textContent = JSON.stringify(details, null, 2);
+        } catch (e) {
+            // Si ce n'est pas du JSON valide, garder le contenu original
+        }
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,316 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Paramètres Généraux{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-sliders-h text-warning"></i>
+                    Paramètres Généraux
+                </h1>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'core:general_parameter_create' %}" class="btn btn-warning">
+                        <i class="fas fa-plus"></i> Nouveau Paramètre
+                    </a>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ total_parameters }}</h4>
+                    <p class="mb-0">Total des Paramètres</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ system_parameters }}</h4>
+                    <p class="mb-0">Paramètres Système</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ categories_count }}</h4>
+                    <p class="mb-0">Catégories</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ critical_parameters_count }}</h4>
+                    <p class="mb-0">Critiques</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paramètres par catégorie -->
+    {% for category_name, category_data in parameters_data.items %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-folder"></i>
+                {{ category_name }}
+                <span class="badge bg-warning ms-2">{{ category_data|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Clé</th>
+                            <th>Valeur</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parameter in category_data %}
+                        <tr>
+                            <td>
+                                <code>{{ parameter.parameter_key }}</code>
+                                {% if parameter.is_system %}
+                                <span class="badge bg-warning ms-1">Système</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if parameter.parameter_type == 'boolean' %}
+                                    {% if parameter.value == 'True' %}
+                                        <span class="badge bg-success">Oui</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Non</span>
+                                    {% endif %}
+                                {% elif parameter.parameter_type == 'integer' %}
+                                    <strong>{{ parameter.value }}</strong>
+                                {% elif parameter.parameter_type == 'float' %}
+                                    <strong>{{ parameter.value }}</strong>
+                                {% elif parameter.parameter_type == 'json' %}
+                                    <code class="small">{{ parameter.value|truncatechars:30 }}</code>
+                                {% else %}
+                                    <span title="{{ parameter.value }}">{{ parameter.value|truncatechars:50 }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ parameter.get_parameter_type_display }}</span>
+                            </td>
+                            <td>
+                                {% if parameter.description %}
+                                    {{ parameter.description|truncatechars:60 }}
+                                {% else %}
+                                    <span class="text-muted">Aucune description</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if parameter.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'core:general_parameter_update' parameter.id %}" 
+                                       class="btn btn-outline-warning" 
+                                       title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if not parameter.is_system %}
+                                    <a href="{% url 'core:general_parameter_delete' parameter.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Supprimer"
+                                       onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce paramètre ?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Paramètres critiques -->
+    {% if critical_parameters %}
+    <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+            <h6 class="mb-0">
+                <i class="fas fa-exclamation-triangle"></i>
+                Paramètres Critiques
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-info-circle"></i>
+                Ces paramètres sont essentiels au fonctionnement de l'application. Modifiez-les avec précaution.
+            </div>
+            <div class="row">
+                {% for parameter in critical_parameters %}
+                <div class="col-md-6 mb-3">
+                    <div class="border border-danger rounded p-3">
+                        <h6 class="text-danger">{{ parameter.get_parameter_key_display }}</h6>
+                        <p class="mb-1"><strong>Valeur:</strong> 
+                            {% if parameter.parameter_type == 'boolean' %}
+                                {% if parameter.value == 'True' %}Oui{% else %}Non{% endif %}
+                            {% else %}
+                                {{ parameter.value|truncatechars:50 }}
+                            {% endif %}
+                        </p>
+                        <p class="mb-1"><small class="text-muted">Type: {{ parameter.get_parameter_type_display }}</small></p>
+                        {% if parameter.description %}
+                        <p class="mb-2"><small>{{ parameter.description }}</small></p>
+                        {% endif %}
+                        <a href="{% url 'core:general_parameter_update' parameter.id %}" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Légende -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-info-circle"></i>
+                Légende des Catégories
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Informations de l'organisation</h6>
+                    <ul class="list-unstyled">
+                        <li><code>organization_name</code> - Nom de l'organisation</li>
+                        <li><code>organization_address</code> - Adresse</li>
+                        <li><code>organization_phone</code> - Téléphone</li>
+                        <li><code>organization_email</code> - Email de contact</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Configuration email</h6>
+                    <ul class="list-unstyled">
+                        <li><code>email_host</code> - Serveur SMTP</li>
+                        <li><code>email_port</code> - Port SMTP</li>
+                        <li><code>email_username</code> - Nom d'utilisateur</li>
+                        <li><code>email_use_tls</code> - Utiliser TLS</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Configuration système</h6>
+                    <ul class="list-unstyled">
+                        <li><code>timezone</code> - Fuseau horaire</li>
+                        <li><code>date_format</code> - Format de date</li>
+                        <li><code>language</code> - Langue par défaut</li>
+                        <li><code>currency</code> - Devise</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <h6>Configuration sécurité</h6>
+                    <ul class="list-unstyled">
+                        <li><code>password_min_length</code> - Longueur min. mot de passe</li>
+                        <li><code>session_timeout</code> - Timeout de session</li>
+                        <li><code>max_login_attempts</code> - Tentatives max. de connexion</li>
+                        <li><code>account_lockout_duration</code> - Durée de verrouillage</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Configuration interface</h6>
+                    <ul class="list-unstyled">
+                        <li><code>enable_notifications</code> - Activer les notifications</li>
+                        <li><code>items_per_page</code> - Éléments par page</li>
+                        <li><code>enable_advanced_search</code> - Recherche avancée</li>
+                        <li><code>enable_export</code> - Exports</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Configuration métier</h6>
+                    <ul class="list-unstyled">
+                        <li><code>default_interaction_status</code> - Statut par défaut</li>
+                        <li><code>interaction_reminder_days</code> - Jours de rappel</li>
+                        <li><code>badge_expiry_days</code> - Expiration badges</li>
+                        <li><code>objective_default_duration</code> - Durée par défaut objectifs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    color: #e83e8c;
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.border-danger {
+    border-width: 2px !important;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+</style>
+{% endblock %} 

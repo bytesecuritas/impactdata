@@ -103,8 +103,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     # Validators
     phone_validator = RegexValidator(
-        regex=r'^\+?1?\d{8,15}$',
-        message="Le numéro de téléphone doit contenir entre 8 et 15 chiffres et peut commencer par +"
+        # Le numéro de téléphone doit contenir 9 chiffres et doit commencer par un 6
+        regex=r'^(6)\d{8}$',
+        message="Le numéro de téléphone doit contenir 9 chiffres et doit commencer par un 6"
     )
     
     matricule_validator = RegexValidator(
@@ -279,8 +280,68 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.account_locked_until = None
         self.failed_login_attempts = 0
         if reason:
-            self.notes = f"{self.notes}\n[{timezone.now()}] Activé par {admin_user.name}: {reason}"
+            self.notes = f"{self.notes}\n[{timezone.now()}] Activé par {admin_user.get_full_name()}: {reason}"
         self.save()
+    
+    def lock_account(self, duration_hours=24):
+        """Verrouille le compte pour une durée spécifiée"""
+        from datetime import timedelta
+        self.account_locked_until = timezone.now() + timedelta(hours=duration_hours)
+        self.save(update_fields=['account_locked_until'])
+    
+    def unlock_account(self):
+        """Déverrouille le compte manuellement"""
+        self.account_locked_until = None
+        self.failed_login_attempts = 0
+        self.save(update_fields=['account_locked_until', 'failed_login_attempts'])
+    
+    def increment_failed_login(self):
+        """Incrémente le compteur de tentatives échouées"""
+        current_attempts = self.failed_login_attempts or 0
+        self.failed_login_attempts = current_attempts + 1
+        if self.failed_login_attempts >= 5:  # Verrouillage après 5 tentatives
+            self.lock_account()
+        else:
+            self.save(update_fields=['failed_login_attempts'])
+    
+    def reset_failed_login(self):
+        """Remet à zéro le compteur de tentatives échouées"""
+        if self.failed_login_attempts > 0:
+            self.failed_login_attempts = 0
+            self.save(update_fields=['failed_login_attempts'])
+    
+    def can_manage_users(self):
+        """Vérifie si l'utilisateur peut gérer d'autres utilisateurs"""
+        return self.is_active and (self.role == 'admin' or self.role == 'superviseur') and not self.is_account_locked()
+    
+    def can_access_data(self, data_type='read'):
+        """Vérifie les permissions d'accès aux données selon le rôle"""
+        if not self.is_active or self.is_account_locked():
+            return False
+        
+        if self.role == 'admin':
+            return True
+        elif self.role == 'superviseur':
+            # Gestionnaire des adhérents : lecture et saisie seulement
+            return data_type in ['read', 'create', 'update_own']
+        elif self.role == 'agent':
+            # Agent de collecte : lecture seulement
+            return data_type in ['read']
+        
+        return False
+    
+    def require_password_change(self):
+        """Force le changement de mot de passe à la prochaine connexion"""
+        self.password_change_required = True
+        self.save(update_fields=['password_change_required'])
+    
+    def set_password(self, raw_password):
+        """Override pour traquer les changements de mot de passe"""
+        super().set_password(raw_password)
+        self.password_last_changed = timezone.now()
+        self.password_change_required = False
+        self.failed_login_attempts = 0
+        self.account_locked_until = None
 
 
 # Modèle pour le suivi des sessions utilisateurs
@@ -304,7 +365,7 @@ class UserSession(models.Model):
         ordering = ['-login_time']
     
     def __str__(self):
-        return f"Session de {self.user.first_name} {self.last_name} - {self.login_time}"
+        return f"Session de {self.user} - {self.login_time}"
 
 
 # Modèle pour l'historique des actions utilisateurs (audit trail)
@@ -364,66 +425,7 @@ class UserActionLog(models.Model):
     
     def __str__(self):
         status = "✓" if self.success else "✗"
-        return f"{status} {self.user.first_name} {self.user.last_name} - {self.get_action_display()} - {self.timestamp}"
-
-    def lock_account(self, duration_hours=24):
-        """Verrouille le compte pour une durée spécifiée"""
-        from datetime import timedelta
-        self.account_locked_until = timezone.now() + timedelta(hours=duration_hours)
-        self.save(update_fields=['account_locked_until'])
-    
-    def unlock_account(self):
-        """Déverrouille le compte manuellement"""
-        self.account_locked_until = None
-        self.failed_login_attempts = 0
-        self.save(update_fields=['account_locked_until', 'failed_login_attempts'])
-    
-    def increment_failed_login(self):
-        """Incrémente le compteur de tentatives échouées"""
-        self.failed_login_attempts += 1
-        if self.failed_login_attempts >= 5:  # Verrouillage après 5 tentatives
-            self.lock_account()
-        else:
-            self.save(update_fields=['failed_login_attempts'])
-    
-    def reset_failed_login(self):
-        """Remet à zéro le compteur de tentatives échouées"""
-        if self.failed_login_attempts > 0:
-            self.failed_login_attempts = 0
-            self.save(update_fields=['failed_login_attempts'])
-    
-    def can_manage_users(self):
-        """Vérifie si l'utilisateur peut gérer d'autres utilisateurs"""
-        return self.is_active and self.role == 'admin' or self.role == 'superviseur' and not self.is_account_locked()
-    
-    def can_access_data(self, data_type='read'):
-        """Vérifie les permissions d'accès aux données selon le rôle"""
-        if not self.is_active or self.is_account_locked():
-            return False
-        
-        if self.role == 'admin':
-            return True
-        elif self.role == 'superviseur':
-            # Gestionnaire des adhérents : lecture et saisie seulement
-            return data_type in ['read', 'create', 'update_own']
-        elif self.role == 'agent':
-            # Agent de collecte : lecture seulement
-            return data_type in ['read']
-        
-        return False
-    
-    def require_password_change(self):
-        """Force le changement de mot de passe à la prochaine connexion"""
-        self.password_change_required = True
-        self.save(update_fields=['password_change_required'])
-    
-    def set_password(self, raw_password):
-        """Override pour traquer les changements de mot de passe"""
-        super().set_password(raw_password)
-        self.password_last_changed = timezone.now()
-        self.password_change_required = False
-        self.failed_login_attempts = 0
-        self.account_locked_until = None
+        return f"{status} {self.user} - {self.action} - {self.timestamp}"
 
 
 # Category Model
@@ -446,7 +448,8 @@ class Category(models.Model):
 class Organization(models.Model):
     identifiant = models.IntegerField(
         unique=True, 
-        verbose_name="Identifiant de l'organisation"
+        verbose_name="Identifiant de l'organisation",
+        editable=False
     )
     name = models.CharField(max_length=150, verbose_name="Nom de l'organisation")
     monthly_revenue = models.DecimalField(
@@ -510,6 +513,12 @@ class Organization(models.Model):
         verbose_name = 'Organisation'
         verbose_name_plural = 'Organisations'
         ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.identifiant:
+            last = Organization.objects.order_by('-identifiant').first()
+            self.identifiant = (last.identifiant + 1) if last and last.identifiant >= 100 else 100
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.name} ({self.identifiant})"
@@ -716,13 +725,15 @@ class Adherent(models.Model):
     def get_age_membership(self):
         """Calcule l'âge d'adhésion en jours"""
         if self.join_date:
-            return (timezone.now().date() - self.join_date).days
+            from datetime import date
+            return (date.today() - self.join_date).days
         return 0
     
     def get_age(self):
         """Calcule l'âge de l'adhérent en années"""
         if self.birth_date:
-            return (timezone.now().date() - self.birth_date).days // 365
+            from datetime import date
+            return (date.today() - self.birth_date).days // 365
         return None
 
 
@@ -733,10 +744,10 @@ class Interaction(models.Model):
         ('completed', 'Terminé'),
         ('cancelled', 'Annulé'),
     )
-    identifiant = models.CharField(
-        max_length=20,
+    identifiant = models.IntegerField(
         unique=True,
-        verbose_name="Identifiant"
+        verbose_name="Identifiant",
+        editable=False
     )
     date_enregistrement = models.DateTimeField(
         auto_now_add=True,
@@ -792,6 +803,12 @@ class Interaction(models.Model):
             raise ValidationError({
                 'due_date': 'La date d\'échéance ne peut pas être dans le passé.'
             })
+    
+    def save(self, *args, **kwargs):
+        if not self.identifiant:
+            last = Interaction.objects.order_by('-identifiant').first()
+            self.identifiant = (last.identifiant + 1) if last and int(last.identifiant) >= 100 else 100
+        super().save(*args, **kwargs)
 
 
 # Badge Model
@@ -879,9 +896,10 @@ class Badge(models.Model):
                 return badge_number
     @property
     def is_valid(self):
+        from datetime import date
         return (
             self.status == 'active' and 
-            self.adherent.badge_validity >= timezone.now().date()
+            self.adherent.badge_validity >= date.today()
         )
     def revoke(self, reason="", revoked_by=None):
         self.status = 'revoked'
@@ -954,7 +972,9 @@ class UserObjective(models.Model):
         if not self.pk:  # Nouvel objectif
             self.calculate_base_value()
             # La valeur cible devient : base_value + target_value (ce qui était saisi)
-            self.target_value = self.base_value + self.target_value
+            base_val = self.base_value or 0
+            target_val = self.target_value or 0
+            self.target_value = base_val + target_val
         super().save(*args, **kwargs)
     
     def calculate_base_value(self):
@@ -980,10 +1000,12 @@ class UserObjective(models.Model):
             total_count = Interaction.objects.filter(personnel=self.user).count()
         
         # La valeur actuelle est ce qui a été créé après l'assignation de l'objectif
-        self.current_value = max(0, total_count - self.base_value)
+        base_val = self.base_value or 0
+        self.current_value = max(0, total_count - base_val)
         
         # Mettre à jour le statut
-        if self.current_value >= (self.target_value - self.base_value):
+        target_increment = (self.target_value or 0) - base_val
+        if self.current_value >= target_increment:
             self.status = 'completed'
         elif timezone.now().date() > self.deadline:
             self.status = 'failed'
@@ -1036,7 +1058,9 @@ class UserObjective(models.Model):
     @property
     def progress_percentage(self):
         """Calcule le pourcentage de progression"""
-        target_increment = self.target_value - self.base_value
+        base_val = self.base_value or 0
+        target_val = self.target_value or 0
+        target_increment = target_val - base_val
         if target_increment == 0:
             return 0
         return min(100, (self.current_value / target_increment) * 100)
@@ -1044,12 +1068,15 @@ class UserObjective(models.Model):
     @property
     def is_overdue(self):
         """Vérifie si l'objectif est en retard"""
-        return timezone.now().date() > self.deadline and self.status != 'completed'
+        from datetime import date
+        return date.today() > self.deadline and self.status != 'completed'
     
     @property
     def target_increment(self):
         """Retourne l'incrément cible (ce qui doit être ajouté)"""
-        return self.target_value - self.base_value
+        base_val = self.base_value or 0
+        target_val = self.target_value or 0
+        return target_val - base_val
 
 class SupervisorStats(models.Model):
     """Modèle pour stocker les statistiques des superviseurs"""
@@ -1168,4 +1195,445 @@ def update_objectives_on_interaction_delete(sender, instance, **kwargs):
         )
         for objective in objectives:
             objective.update_progress()
+
+
+# ==================== MODÈLES POUR LES PARAMÈTRES DE L'APPLICATION ====================
+
+class RolePermission(models.Model):
+    """Modèle pour définir les permissions spécifiques à chaque rôle"""
+    PERMISSION_CHOICES = [
+        # Gestion des utilisateurs
+        ('user_create', 'Créer des utilisateurs'),
+        ('user_edit', 'Modifier des utilisateurs'),
+        ('user_delete', 'Supprimer des utilisateurs'),
+        ('user_view', 'Voir les utilisateurs'),
+        ('user_activate', 'Activer/Désactiver des utilisateurs'),
+        
+        # Gestion des adhérents
+        ('adherent_create', 'Créer des adhérents'),
+        ('adherent_edit', 'Modifier des adhérents'),
+        ('adherent_delete', 'Supprimer des adhérents'),
+        ('adherent_view', 'Voir les adhérents'),
+        
+        # Gestion des organisations
+        ('organization_create', 'Créer des organisations'),
+        ('organization_edit', 'Modifier des organisations'),
+        ('organization_delete', 'Supprimer des organisations'),
+        ('organization_view', 'Voir les organisations'),
+        
+        # Gestion des interactions
+        ('interaction_create', 'Créer des interactions'),
+        ('interaction_edit', 'Modifier des interactions'),
+        ('interaction_delete', 'Supprimer des interactions'),
+        ('interaction_view', 'Voir les interactions'),
+        
+        # Gestion des badges
+        ('badge_create', 'Créer des badges'),
+        ('badge_edit', 'Modifier des badges'),
+        ('badge_delete', 'Supprimer des badges'),
+        ('badge_view', 'Voir les badges'),
+        ('badge_revoke', 'Révoquer des badges'),
+        
+        # Gestion des objectifs
+        ('objective_create', 'Créer des objectifs'),
+        ('objective_edit', 'Modifier des objectifs'),
+        ('objective_delete', 'Supprimer des objectifs'),
+        ('objective_view', 'Voir les objectifs'),
+        
+        # Gestion des paramètres
+        ('settings_view', 'Voir les paramètres'),
+        ('settings_edit', 'Modifier les paramètres'),
+        ('settings_roles', 'Gérer les rôles'),
+        ('settings_references', 'Gérer les valeurs de référence'),
+        
+        # Rapports et statistiques
+        ('reports_view', 'Voir les rapports'),
+        ('reports_export', 'Exporter les rapports'),
+        ('stats_view', 'Voir les statistiques'),
+        
+        # Administration système
+        ('system_admin', 'Administration système'),
+        ('data_backup', 'Sauvegarde des données'),
+        ('data_restore', 'Restauration des données'),
+    ]
+    
+    role = models.CharField(
+        max_length=20,
+        choices=User.ROLE_CHOICES,
+        verbose_name="Rôle"
+    )
+    permission = models.CharField(
+        max_length=50,
+        choices=PERMISSION_CHOICES,
+        verbose_name="Permission"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Actif"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Permission de Rôle'
+        verbose_name_plural = 'Permissions de Rôles'
+        unique_together = ['role', 'permission']
+        ordering = ['role', 'permission']
+    
+    def __str__(self):
+        role_display = dict(User.ROLE_CHOICES).get(self.role, self.role)
+        permission_display = dict(self.PERMISSION_CHOICES).get(self.permission, self.permission)
+        return f"{role_display} - {permission_display}"
+
+
+class ReferenceValue(models.Model):
+    """Modèle pour gérer les valeurs de référence (listes déroulantes)"""
+    CATEGORY_CHOICES = [
+        ('interaction_status', 'Statuts d\'interaction'),
+        ('profession_types', 'Types de profession'),
+        ('adherent_types', 'Types d\'adhérent'),
+        ('organization_categories', 'Catégories d\'organisation'),
+        ('badge_status', 'Statuts de badge'),
+        ('objective_status', 'Statuts d\'objectif'),
+        ('user_roles', 'Rôles utilisateur'),
+        ('phone_types', 'Types de téléphone'),
+        ('emergency_types', 'Types d\'urgence'),
+        ('medical_info_types', 'Types d\'informations médicales'),
+        ('formation_types', 'Types de formation'),
+        ('distinction_types', 'Types de distinction'),
+        ('language_types', 'Types de langue'),
+        ('activity_types', 'Types d\'activité'),
+    ]
+    
+    category = models.CharField(
+        max_length=50,
+        choices=CATEGORY_CHOICES,
+        verbose_name="Catégorie"
+    )
+    code = models.CharField(
+        max_length=20,
+        verbose_name="Code"
+    )
+    label = models.CharField(
+        max_length=100,
+        verbose_name="Libellé"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Description"
+    )
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ordre de tri"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Actif"
+    )
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name="Valeur par défaut"
+    )
+    is_system = models.BooleanField(
+        default=False,
+        verbose_name="Valeur système"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_references',
+        verbose_name="Créé par"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Valeur de Référence'
+        verbose_name_plural = 'Valeurs de Référence'
+        unique_together = ['category', 'code']
+        ordering = ['category', 'sort_order', 'label']
+    
+    def __str__(self):
+        category_display = dict(self.CATEGORY_CHOICES).get(self.category, self.category)
+        return f"{category_display} - {self.label}"
+    
+    def save(self, *args, **kwargs):
+        # Si c'est la valeur par défaut, désactiver les autres valeurs par défaut de la même catégorie
+        if self.is_default:
+            ReferenceValue.objects.filter(
+                category=self.category,
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_choices_for_category(cls, category):
+        """Retourne les choix pour une catégorie donnée"""
+        return cls.objects.filter(
+            category=category,
+            is_active=True
+        ).order_by('sort_order', 'label').values_list('code', 'label')
+
+
+class GeneralParameter(models.Model):
+    """Modèle pour les paramètres généraux de l'application"""
+    PARAMETER_CHOICES = [
+        # Informations de l'organisation
+        ('organization_name', 'Nom de l\'organisation'),
+        ('organization_address', 'Adresse de l\'organisation'),
+        ('organization_phone', 'Téléphone de l\'organisation'),
+        ('organization_email', 'Email de l\'organisation'),
+        ('organization_website', 'Site web de l\'organisation'),
+        ('organization_logo', 'Logo de l\'organisation'),
+        
+        # Configuration système
+        ('timezone', 'Fuseau horaire'),
+        ('date_format', 'Format de date'),
+        ('time_format', 'Format d\'heure'),
+        ('language', 'Langue par défaut'),
+        ('currency', 'Devise'),
+        ('currency_symbol', 'Symbole de devise'),
+        
+        # Configuration email
+        ('email_host', 'Serveur SMTP'),
+        ('email_port', 'Port SMTP'),
+        ('email_username', 'Nom d\'utilisateur email'),
+        ('email_password', 'Mot de passe email'),
+        ('email_use_tls', 'Utiliser TLS'),
+        ('email_from_address', 'Adresse email d\'expédition'),
+        ('email_from_name', 'Nom d\'expédition email'),
+        
+        # Configuration sécurité
+        ('password_min_length', 'Longueur minimale des mots de passe'),
+        ('password_require_special', 'Mots de passe avec caractères spéciaux'),
+        ('session_timeout', 'Délai d\'expiration de session (minutes)'),
+        ('max_login_attempts', 'Nombre maximum de tentatives de connexion'),
+        ('account_lockout_duration', 'Durée de verrouillage de compte (heures)'),
+        
+        # Configuration interface
+        ('items_per_page', 'Nombre d\'éléments par page'),
+        ('enable_notifications', 'Activer les notifications'),
+        ('enable_audit_log', 'Activer le journal d\'audit'),
+        ('enable_backup', 'Activer la sauvegarde automatique'),
+        ('backup_frequency', 'Fréquence de sauvegarde (jours)'),
+        
+        # Configuration métier
+        ('default_interaction_duration', 'Durée par défaut des interactions (heures)'),
+        ('interaction_reminder_days', 'Rappel d\'interaction (jours avant échéance)'),
+        ('badge_validity_days', 'Validité par défaut des badges (jours)'),
+        ('max_organizations_per_agent', 'Nombre maximum d\'organisations par agent'),
+        ('max_adherents_per_organization', 'Nombre maximum d\'adhérents par organisation'),
+    ]
+    
+    PARAMETER_TYPES = [
+        ('text', 'Texte'),
+        ('number', 'Nombre'),
+        ('boolean', 'Booléen'),
+        ('email', 'Email'),
+        ('url', 'URL'),
+        ('file', 'Fichier'),
+        ('select', 'Liste déroulante'),
+        ('textarea', 'Zone de texte'),
+        ('date', 'Date'),
+        ('time', 'Heure'),
+        ('datetime', 'Date et heure'),
+    ]
+    
+    parameter_key = models.CharField(
+        max_length=50,
+        choices=PARAMETER_CHOICES,
+        unique=True,
+        verbose_name="Clé du paramètre"
+    )
+    parameter_type = models.CharField(
+        max_length=20,
+        choices=PARAMETER_TYPES,
+        verbose_name="Type de paramètre"
+    )
+    value = models.TextField(
+        verbose_name="Valeur"
+    )
+    default_value = models.TextField(
+        blank=True,
+        verbose_name="Valeur par défaut"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Description"
+    )
+    is_required = models.BooleanField(
+        default=False,
+        verbose_name="Obligatoire"
+    )
+    is_system = models.BooleanField(
+        default=False,
+        verbose_name="Paramètre système"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_parameters',
+        verbose_name="Créé par"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Paramètre Général'
+        verbose_name_plural = 'Paramètres Généraux'
+        ordering = ['parameter_key']
+    
+    def __str__(self):
+        parameter_display = dict(self.PARAMETER_CHOICES).get(self.parameter_key, self.parameter_key)
+        return f"{parameter_display}: {self.value}"
+    
+    def get_typed_value(self):
+        """Retourne la valeur avec le bon type"""
+        value_str = str(self.value)
+        if self.parameter_type == 'boolean':
+            return value_str.lower() in ('true', '1', 'yes', 'on')
+        elif self.parameter_type == 'number':
+            try:
+                return int(value_str) if '.' not in value_str else float(value_str)
+            except ValueError:
+                return 0
+        elif self.parameter_type == 'date':
+            try:
+                from datetime import datetime
+                return datetime.strptime(value_str, '%Y-%m-%d').date()
+            except ValueError:
+                return None
+        elif self.parameter_type == 'time':
+            try:
+                from datetime import datetime
+                return datetime.strptime(value_str, '%H:%M:%S').time()
+            except ValueError:
+                return None
+        elif self.parameter_type == 'datetime':
+            try:
+                from datetime import datetime
+                return datetime.strptime(value_str, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                return None
+        else:
+            return value_str
+    
+    @classmethod
+    def get_value(cls, key, default=None):
+        """Récupère la valeur d'un paramètre"""
+        try:
+            param = cls.objects.get(parameter_key=key)
+            return param.get_typed_value()
+        except cls.DoesNotExist:
+            return default
+    
+    @classmethod
+    def set_value(cls, key, value, created_by=None):
+        """Définit la valeur d'un paramètre"""
+        param, created = cls.objects.get_or_create(
+            parameter_key=key,
+            defaults={
+                'parameter_type': 'text',
+                'value': str(value),
+                'created_by': created_by
+            }
+        )
+        if not created:
+            param.value = str(value)
+            param.save()
+        return param
+
+
+class SystemLog(models.Model):
+    """Modèle pour le journal système (audit trail)"""
+    LOG_LEVELS = [
+        ('DEBUG', 'Debug'),
+        ('INFO', 'Information'),
+        ('WARNING', 'Avertissement'),
+        ('ERROR', 'Erreur'),
+        ('CRITICAL', 'Critique'),
+    ]
+    
+    LOG_CATEGORIES = [
+        ('user_management', 'Gestion des utilisateurs'),
+        ('data_management', 'Gestion des données'),
+        ('system_config', 'Configuration système'),
+        ('security', 'Sécurité'),
+        ('backup', 'Sauvegarde'),
+        ('email', 'Email'),
+        ('api', 'API'),
+        ('general', 'Général'),
+    ]
+    
+    timestamp = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Horodatage"
+    )
+    level = models.CharField(
+        max_length=10,
+        choices=LOG_LEVELS,
+        verbose_name="Niveau"
+    )
+    category = models.CharField(
+        max_length=20,
+        choices=LOG_CATEGORIES,
+        verbose_name="Catégorie"
+    )
+    message = models.TextField(
+        verbose_name="Message"
+    )
+    details = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="Détails"
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Utilisateur"
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        verbose_name="Adresse IP"
+    )
+    user_agent = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="User Agent"
+    )
+    
+    class Meta:
+        verbose_name = 'Journal Système'
+        verbose_name_plural = 'Journaux Système'
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['level']),
+            models.Index(fields=['category']),
+            models.Index(fields=['user']),
+        ]
+    
+    def __str__(self):
+        message_preview = str(self.message)[:50] if self.message else ""
+        return f"[{self.level}] {self.category}: {message_preview}"
+    
+    @classmethod
+    def log(cls, level, category, message, user=None, details=None, ip_address=None, user_agent=None):
+        """Méthode utilitaire pour créer une entrée de journal"""
+        return cls.objects.create(
+            level=level,
+            category=category,
+            message=message,
+            user=user,
+            details=details,
+            ip_address=ip_address,
+            user_agent=user_agent or ''
+        )
 

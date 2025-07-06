@@ -1,0 +1,389 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Journaux Système{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-clipboard-list text-info"></i>
+                    Journaux Système
+                </h1>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'core:system_logs_export' %}" class="btn btn-info">
+                        <i class="fas fa-download"></i> Exporter
+                    </a>
+                    <a href="{% url 'core:system_logs_clear' %}" class="btn btn-outline-danger" 
+                       onclick="return confirm('Êtes-vous sûr de vouloir supprimer tous les logs ? Cette action est irréversible.')">
+                        <i class="fas fa-trash"></i> Nettoyer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ total_logs }}</h4>
+                    <p class="mb-0">Total des Logs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h4>{{ error_logs }}</h4>
+                    <p class="mb-0">Erreurs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ warning_logs }}</h4>
+                    <p class="mb-0">Avertissements</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ info_logs }}</h4>
+                    <p class="mb-0">Informations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-filter"></i>
+                Filtres
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="level" class="form-label">Niveau</label>
+                    <select name="level" id="level" class="form-select">
+                        <option value="">Tous les niveaux</option>
+                        <option value="DEBUG" {% if request.GET.level == 'DEBUG' %}selected{% endif %}>Debug</option>
+                        <option value="INFO" {% if request.GET.level == 'INFO' %}selected{% endif %}>Information</option>
+                        <option value="WARNING" {% if request.GET.level == 'WARNING' %}selected{% endif %}>Avertissement</option>
+                        <option value="ERROR" {% if request.GET.level == 'ERROR' %}selected{% endif %}>Erreur</option>
+                        <option value="CRITICAL" {% if request.GET.level == 'CRITICAL' %}selected{% endif %}>Critique</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="category" class="form-label">Catégorie</label>
+                    <select name="category" id="category" class="form-select">
+                        <option value="">Toutes les catégories</option>
+                        <option value="AUTH" {% if request.GET.category == 'AUTH' %}selected{% endif %}>Authentification</option>
+                        <option value="USER" {% if request.GET.category == 'USER' %}selected{% endif %}>Utilisateur</option>
+                        <option value="ADHERENT" {% if request.GET.category == 'ADHERENT' %}selected{% endif %}>Adhérent</option>
+                        <option value="INTERACTION" {% if request.GET.category == 'INTERACTION' %}selected{% endif %}>Interaction</option>
+                        <option value="BADGE" {% if request.GET.category == 'BADGE' %}selected{% endif %}>Badge</option>
+                        <option value="OBJECTIVE" {% if request.GET.category == 'OBJECTIVE' %}selected{% endif %}>Objectif</option>
+                        <option value="SETTINGS" {% if request.GET.category == 'SETTINGS' %}selected{% endif %}>Paramètres</option>
+                        <option value="SYSTEM" {% if request.GET.category == 'SYSTEM' %}selected{% endif %}>Système</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="user" class="form-label">Utilisateur</label>
+                    <select name="user" id="user" class="form-select">
+                        <option value="">Tous les utilisateurs</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {% if request.GET.user == user.id|stringformat:"s" %}selected{% endif %}>
+                            {{ user.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">Date de début</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" 
+                           value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">Date de fin</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" 
+                           value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Recherche</label>
+                    <input type="text" name="search" id="search" class="form-control" 
+                           placeholder="Rechercher dans les messages..." 
+                           value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="btn-group w-100" role="group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Filtrer
+                        </button>
+                        <a href="{% url 'core:system_logs_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Réinitialiser
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des logs -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="fas fa-list"></i>
+                Logs ({{ logs.count }} résultat{{ logs.count|pluralize }})
+            </h6>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-info" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Horodatage</th>
+                            <th>Niveau</th>
+                            <th>Catégorie</th>
+                            <th>Utilisateur</th>
+                            <th>Message</th>
+                            <th>Détails</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="{% if log.level == 'ERROR' or log.level == 'CRITICAL' %}table-danger{% elif log.level == 'WARNING' %}table-warning{% endif %}">
+                            <td>
+                                <small>{{ log.timestamp|date:"d/m/Y H:i:s" }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if log.level == 'ERROR' or log.level == 'CRITICAL' %}bg-danger{% elif log.level == 'WARNING' %}bg-warning{% elif log.level == 'INFO' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ log.get_level_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ log.get_category_display }}</span>
+                            </td>
+                            <td>
+                                {% if log.user %}
+                                    <small>{{ log.user.get_full_name }}</small>
+                                {% else %}
+                                    <small class="text-muted">Système</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span title="{{ log.message }}">{{ log.message|truncatechars:80 }}</span>
+                            </td>
+                            <td>
+                                {% if log.details %}
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#logModal{{ log.id }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if logs.has_other_pages %}
+            <nav aria-label="Pagination des logs">
+                <ul class="pagination justify-content-center">
+                    {% if logs.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ logs.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in logs.paginator.page_range %}
+                        {% if logs.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ logs.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Aucun log trouvé</h6>
+                <p class="text-muted">Aucun log ne correspond aux critères de recherche.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modals pour les détails des logs -->
+{% for log in logs %}
+{% if log.details %}
+<div class="modal fade" id="logModal{{ log.id }}" tabindex="-1" aria-labelledby="logModalLabel{{ log.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logModalLabel{{ log.id }}">
+                    Détails du Log - {{ log.timestamp|date:"d/m/Y H:i:s" }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Informations générales</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Niveau:</strong> {{ log.get_level_display }}</li>
+                            <li><strong>Catégorie:</strong> {{ log.get_category_display }}</li>
+                            <li><strong>Utilisateur:</strong> {{ log.user.get_full_name|default:"Système" }}</li>
+                            <li><strong>IP:</strong> {{ log.ip_address|default:"Non disponible" }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Message</h6>
+                        <p>{{ log.message }}</p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Détails techniques</h6>
+                        <pre class="bg-light p-3 rounded"><code>{{ log.details }}</code></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<style>
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.table-danger {
+    background-color: #f8d7da !important;
+}
+
+.table-warning {
+    background-color: #fff3cd !important;
+}
+
+pre {
+    font-size: 0.85rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.pagination .page-link {
+    color: #0d6efd;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>
+
+<script>
+function refreshLogs() {
+    location.reload();
+}
+
+// Auto-refresh toutes les 30 secondes
+setInterval(function() {
+    // Vérifier si l'utilisateur est actif
+    if (!document.hidden) {
+        refreshLogs();
+    }
+}, 30000);
+
+// Améliorer l'expérience utilisateur
+document.addEventListener('DOMContentLoaded', function() {
+    // Focus sur le champ de recherche
+    const searchField = document.getElementById('search');
+    if (searchField) {
+        searchField.focus();
+    }
+    
+    // Validation des dates
+    const dateFrom = document.getElementById('date_from');
+    const dateTo = document.getElementById('date_to');
+    
+    if (dateFrom && dateTo) {
+        dateFrom.addEventListener('change', function() {
+            if (dateTo.value && this.value > dateTo.value) {
+                dateTo.value = this.value;
+            }
+        });
+        
+        dateTo.addEventListener('change', function() {
+            if (dateFrom.value && this.value < dateFrom.value) {
+                dateFrom.value = this.value;
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Supprimer le Paramètre{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Confirmer la Suppression
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attention :</strong> Vous êtes sur le point de supprimer un paramètre général.
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Détails du paramètre :</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Clé :</strong><br>
+                                <code>{{ parameter.parameter_key }}</code>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Type :</strong><br>
+                                <span class="badge bg-info">{{ parameter.get_parameter_type_display }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <strong>Libellé :</strong><br>
+                            <span class="fw-bold">{{ parameter.get_parameter_key_display }}</span>
+                        </div>
+                        <div class="mt-2">
+                            <strong>Valeur actuelle :</strong><br>
+                            <span class="text-muted">{{ parameter.value|truncatechars:50 }}</span>
+                        </div>
+                        {% if parameter.description %}
+                        <div class="mt-2">
+                            <strong>Description :</strong><br>
+                            <span class="text-muted">{{ parameter.description }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="mt-2">
+                            <strong>Statut :</strong>
+                            {% if parameter.is_required %}
+                            <span class="badge bg-warning text-dark">Obligatoire</span>
+                            {% endif %}
+                            {% if parameter.is_system %}
+                            <span class="badge bg-danger">Système</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if parameter.is_system %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Paramètre système :</strong> Ce paramètre est critique pour le fonctionnement de l'application. 
+                        Sa suppression peut causer des problèmes.
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Impact :</strong> Cette suppression peut affecter le comportement de l'application.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:general_parameters_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-danger" {% if parameter.is_system %}disabled{% endif %}>
+                                <i class="fas fa-trash"></i> Confirmer la Suppression
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    color: #e83e8c;
+}
+</style>
+{% endblock %} 

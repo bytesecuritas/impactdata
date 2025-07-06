@@ -1,0 +1,29 @@
+{% comment %}
+Template partiel pour les boutons d'action spécifiques
+Usage: {% include 'core/includes/action_buttons.html' with object=badge %}
+{% endcomment %}
+
+{% if can_revoke and object and object.status == 'active' %}
+<a href="{% url 'core:badge_revoke' object.id %}" class="btn btn-warning btn-sm" 
+   onclick="return confirm('Êtes-vous sûr de vouloir révoquer ce badge ?')">
+    <i class="fas fa-ban"></i> Révoquer
+</a>
+{% endif %}
+
+{% if can_reactivate and object and object.status == 'revoked' %}
+<a href="{% url 'core:badge_reactivate' object.id %}" class="btn btn-success btn-sm">
+    <i class="fas fa-check"></i> Réactiver
+</a>
+{% endif %}
+
+{% if can_download and object %}
+<a href="{% url 'core:badge_download_pdf' object.id %}" class="btn btn-info btn-sm">
+    <i class="fas fa-download"></i> Télécharger PDF
+</a>
+{% endif %}
+
+{% if can_scan %}
+<a href="{% url 'core:badge_scan' %}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-qrcode"></i> Scanner Badge
+</a>
+{% endif %} 

@@ -1,0 +1,279 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Rôles et Permissions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-shield-alt text-primary"></i>
+                    Gestion des Rôles et Permissions
+                </h1>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'core:role_permission_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nouvelle Permission
+                    </a>
+                    <a href="{% url 'core:bulk_role_permissions' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-tasks"></i> Assignation en masse
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ total_permissions }}</h4>
+                    <p class="mb-0">Total des Permissions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ active_permissions }}</h4>
+                    <p class="mb-0">Permissions Actives</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ total_permissions|add:"-"|add:active_permissions|add:"0" }}</h4>
+                    <p class="mb-0">Permissions Inactives</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permissions par rôle -->
+    {% for role_name, role_data in roles_data.items %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-user-tag"></i>
+                {{ role_name }}
+                <span class="badge bg-primary ms-2">{{ role_data.total_count }}</span>
+            </h5>
+            <div>
+                <span class="badge bg-success me-2">{{ role_data.active_count }} actives</span>
+                <span class="badge bg-secondary">{{ role_data.total_count|add:"-"|add:role_data.active_count|add:"0" }} inactives</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if role_data.permissions %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Permission</th>
+                            <th>Description</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for permission in role_data.permissions %}
+                        <tr>
+                            <td>
+                                <strong>{{ permission.get_permission_display }}</strong>
+                                <br>
+                                <small class="text-muted">{{ permission.permission }}</small>
+                            </td>
+                            <td>
+                                {% if permission.permission == 'user_create' %}
+                                    Permet de créer de nouveaux utilisateurs
+                                {% elif permission.permission == 'user_edit' %}
+                                    Permet de modifier les utilisateurs existants
+                                {% elif permission.permission == 'user_delete' %}
+                                    Permet de supprimer des utilisateurs
+                                {% elif permission.permission == 'user_view' %}
+                                    Permet de voir la liste des utilisateurs
+                                {% elif permission.permission == 'adherent_create' %}
+                                    Permet de créer de nouveaux adhérents
+                                {% elif permission.permission == 'adherent_edit' %}
+                                    Permet de modifier les adhérents existants
+                                {% elif permission.permission == 'adherent_delete' %}
+                                    Permet de supprimer des adhérents
+                                {% elif permission.permission == 'adherent_view' %}
+                                    Permet de voir la liste des adhérents
+                                {% elif permission.permission == 'organization_create' %}
+                                    Permet de créer de nouvelles organisations
+                                {% elif permission.permission == 'organization_edit' %}
+                                    Permet de modifier les organisations existantes
+                                {% elif permission.permission == 'organization_delete' %}
+                                    Permet de supprimer des organisations
+                                {% elif permission.permission == 'organization_view' %}
+                                    Permet de voir la liste des organisations
+                                {% elif permission.permission == 'interaction_create' %}
+                                    Permet de créer de nouvelles interactions
+                                {% elif permission.permission == 'interaction_edit' %}
+                                    Permet de modifier les interactions existantes
+                                {% elif permission.permission == 'interaction_delete' %}
+                                    Permet de supprimer des interactions
+                                {% elif permission.permission == 'interaction_view' %}
+                                    Permet de voir la liste des interactions
+                                {% elif permission.permission == 'badge_create' %}
+                                    Permet de créer de nouveaux badges
+                                {% elif permission.permission == 'badge_edit' %}
+                                    Permet de modifier les badges existants
+                                {% elif permission.permission == 'badge_delete' %}
+                                    Permet de supprimer des badges
+                                {% elif permission.permission == 'badge_view' %}
+                                    Permet de voir la liste des badges
+                                {% elif permission.permission == 'badge_revoke' %}
+                                    Permet de révoquer des badges
+                                {% elif permission.permission == 'objective_create' %}
+                                    Permet de créer de nouveaux objectifs
+                                {% elif permission.permission == 'objective_edit' %}
+                                    Permet de modifier les objectifs existants
+                                {% elif permission.permission == 'objective_delete' %}
+                                    Permet de supprimer des objectifs
+                                {% elif permission.permission == 'objective_view' %}
+                                    Permet de voir la liste des objectifs
+                                {% elif permission.permission == 'settings_view' %}
+                                    Permet de voir les paramètres de l'application
+                                {% elif permission.permission == 'settings_edit' %}
+                                    Permet de modifier les paramètres de l'application
+                                {% elif permission.permission == 'settings_roles' %}
+                                    Permet de gérer les rôles et permissions
+                                {% elif permission.permission == 'settings_references' %}
+                                    Permet de gérer les valeurs de référence
+                                {% elif permission.permission == 'reports_view' %}
+                                    Permet de voir les rapports
+                                {% elif permission.permission == 'reports_export' %}
+                                    Permet d'exporter les rapports
+                                {% elif permission.permission == 'stats_view' %}
+                                    Permet de voir les statistiques
+                                {% elif permission.permission == 'system_admin' %}
+                                    Permet l'administration système complète
+                                {% elif permission.permission == 'data_backup' %}
+                                    Permet de sauvegarder les données
+                                {% elif permission.permission == 'data_restore' %}
+                                    Permet de restaurer les données
+                                {% else %}
+                                    Permission système
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if permission.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'core:role_permission_update' permission.id %}" 
+                                       class="btn btn-outline-warning" 
+                                       title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'core:role_permission_delete' permission.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Supprimer"
+                                       onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette permission ?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Aucune permission définie pour ce rôle</h6>
+                <p class="text-muted">Cliquez sur "Nouvelle Permission" pour commencer.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Légende -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-info-circle"></i>
+                Légende des Permissions
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Gestion des Utilisateurs</h6>
+                    <ul class="list-unstyled">
+                        <li><code>user_create</code> - Créer des utilisateurs</li>
+                        <li><code>user_edit</code> - Modifier des utilisateurs</li>
+                        <li><code>user_delete</code> - Supprimer des utilisateurs</li>
+                        <li><code>user_view</code> - Voir les utilisateurs</li>
+                        <li><code>user_activate</code> - Activer/Désactiver des utilisateurs</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Gestion des Données</h6>
+                    <ul class="list-unstyled">
+                        <li><code>adherent_*</code> - Gestion des adhérents</li>
+                        <li><code>organization_*</code> - Gestion des organisations</li>
+                        <li><code>interaction_*</code> - Gestion des interactions</li>
+                        <li><code>badge_*</code> - Gestion des badges</li>
+                        <li><code>objective_*</code> - Gestion des objectifs</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Administration</h6>
+                    <ul class="list-unstyled">
+                        <li><code>settings_*</code> - Paramètres de l'application</li>
+                        <li><code>reports_*</code> - Rapports et exports</li>
+                        <li><code>stats_view</code> - Statistiques</li>
+                        <li><code>system_admin</code> - Administration système</li>
+                        <li><code>data_*</code> - Sauvegarde/Restauration</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+}
+</style>
+{% endblock %} 

@@ -119,15 +119,17 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if 'user' in request.resolver_match.url_name %}active{% endif %}" 
-                                   href="{% url 'core:user_list' %}">
-                                    <i class="fas fa-users"></i> Utilisateurs
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a class="nav-link {% if 'objective' in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:objective_list' %}">
                                     <i class="fas fa-bullseye"></i> Objectifs
+                                </a>
+                            </li>
+                            
+                            <!-- Paramètres de l'application (Admin uniquement) -->
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'settings' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:settings_dashboard' %}">
+                                    <i class="fas fa-cogs"></i> Paramètres
                                 </a>
                             </li>
                         {% elif user.role == 'superviseur' %}

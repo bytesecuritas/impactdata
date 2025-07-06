@@ -1,0 +1,303 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-list text-success"></i>
+                        {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.category.id_for_label }}" class="form-label">
+                                        <i class="fas fa-folder"></i> Catégorie
+                                    </label>
+                                    {{ form.category }}
+                                    {% if form.category.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.category.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Sélectionnez la catégorie de cette valeur de référence.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.code.id_for_label }}" class="form-label">
+                                        <i class="fas fa-code"></i> Code
+                                    </label>
+                                    {{ form.code }}
+                                    {% if form.code.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.code.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Code unique pour identifier cette valeur.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.label.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag"></i> Libellé
+                            </label>
+                            {{ form.label }}
+                            {% if form.label.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.label.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Libellé qui sera affiché dans les listes déroulantes.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left"></i> Description
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Description optionnelle pour expliquer cette valeur.
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.sort_order.id_for_label }}" class="form-label">
+                                        <i class="fas fa-sort-numeric-up"></i> Ordre de tri
+                                    </label>
+                                    {{ form.sort_order }}
+                                    {% if form.sort_order.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.sort_order.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Ordre d'affichage dans les listes.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.is_active.id_for_label }}" class="form-label">
+                                        <i class="fas fa-toggle-on"></i> Statut
+                                    </label>
+                                    <div class="form-check">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Valeur active
+                                        </label>
+                                    </div>
+                                    {% if form.is_active.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.is_active.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Une valeur inactive n'apparaît pas dans les listes.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.is_default.id_for_label }}" class="form-label">
+                                        <i class="fas fa-star"></i> Valeur par défaut
+                                    </label>
+                                    <div class="form-check">
+                                        {{ form.is_default }}
+                                        <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                                            Valeur par défaut
+                                        </label>
+                                    </div>
+                                    {% if form.is_default.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.is_default.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Cette valeur sera sélectionnée par défaut.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.is_system.id_for_label }}" class="form-label">
+                                        <i class="fas fa-cog"></i> Valeur système
+                                    </label>
+                                    <div class="form-check">
+                                        {{ form.is_system }}
+                                        <label class="form-check-label" for="{{ form.is_system.id_for_label }}">
+                                            Valeur système
+                                        </label>
+                                    </div>
+                                    {% if form.is_system.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.is_system.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Les valeurs système ne peuvent pas être supprimées.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:reference_values_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aide contextuelle -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle"></i>
+                        Guide des Catégories
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Statuts et Types</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>interaction_status</strong> - Statuts des interactions (En cours, Terminé, etc.)</li>
+                                <li><strong>profession_types</strong> - Types de profession</li>
+                                <li><strong>adherent_types</strong> - Types d'adhérent (Personne physique, morale)</li>
+                                <li><strong>organization_categories</strong> - Catégories d'organisation</li>
+                                <li><strong>badge_status</strong> - Statuts de badge (Actif, Expiré, Révoqué)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Autres Catégories</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>objective_status</strong> - Statuts d'objectif</li>
+                                <li><strong>user_roles</strong> - Rôles utilisateur</li>
+                                <li><strong>phone_types</strong> - Types de téléphone</li>
+                                <li><strong>emergency_types</strong> - Types d'urgence</li>
+                                <li><strong>medical_info_types</strong> - Types d'informations médicales</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select, .form-control, .form-control-lg {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus, .form-control:focus, .form-control-lg:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-success {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.btn-success:hover {
+    background-color: #157347;
+    border-color: #146c43;
+}
+
+.list-unstyled li {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.list-unstyled strong {
+    color: #495057;
+    font-weight: 600;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Améliorer l'expérience utilisateur
+    const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+    const codeInput = document.getElementById('{{ form.code.id_for_label }}');
+    const labelInput = document.getElementById('{{ form.label.id_for_label }}');
+    
+    if (categorySelect && codeInput && labelInput) {
+        // Générer automatiquement le code basé sur le libellé
+        labelInput.addEventListener('input', function() {
+            if (!codeInput.value) {
+                const code = this.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, '_')
+                    .replace(/_+/g, '_')
+                    .replace(/^_|_$/g, '');
+                codeInput.value = code;
+            }
+        });
+        
+        // Mettre à jour l'aide contextuelle selon la catégorie sélectionnée
+        categorySelect.addEventListener('change', function() {
+            const selectedCategory = this.value;
+            // Ici on pourrait mettre à jour l'aide contextuelle
+        });
+    }
+});
+</script>
+{% endblock %} 

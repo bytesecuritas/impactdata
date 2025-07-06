@@ -1,0 +1,259 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Valeurs de Référence{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-list text-success"></i>
+                    Valeurs de Référence
+                </h1>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'core:reference_value_create' %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Nouvelle Valeur
+                    </a>
+                    <a href="{% url 'core:reference_value_import' %}" class="btn btn-outline-success">
+                        <i class="fas fa-file-import"></i> Importer CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ total_references }}</h4>
+                    <p class="mb-0">Total des Valeurs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ active_references }}</h4>
+                    <p class="mb-0">Valeurs Actives</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ categories_count }}</h4>
+                    <p class="mb-0">Catégories</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ system_references }}</h4>
+                    <p class="mb-0">Système</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Valeurs par catégorie -->
+    {% for category_name, category_data in categories_data.items %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-folder"></i>
+                {{ category_name }}
+                <span class="badge bg-success ms-2">{{ category_data.total_count }}</span>
+            </h5>
+            <div>
+                <span class="badge bg-primary me-2">{{ category_data.active_count }} actives</span>
+                <span class="badge bg-secondary">{{ category_data.total_count|add:"-"|add:category_data.active_count|add:"0" }} inactives</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if category_data.references %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Libellé</th>
+                            <th>Description</th>
+                            <th>Ordre</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reference in category_data.references %}
+                        <tr>
+                            <td>
+                                <code>{{ reference.code }}</code>
+                            </td>
+                            <td>
+                                <strong>{{ reference.label }}</strong>
+                            </td>
+                            <td>
+                                {% if reference.description %}
+                                    {{ reference.description|truncatechars:50 }}
+                                {% else %}
+                                    <span class="text-muted">Aucune description</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ reference.sort_order }}</span>
+                            </td>
+                            <td>
+                                {% if reference.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                                {% if reference.is_system %}
+                                <span class="badge bg-warning ms-1">Système</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'core:reference_value_update' reference.id %}" 
+                                       class="btn btn-outline-warning" 
+                                       title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if not reference.is_system %}
+                                    <a href="{% url 'core:reference_value_delete' reference.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Supprimer"
+                                       onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette valeur ?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Aucune valeur définie pour cette catégorie</h6>
+                <p class="text-muted">Cliquez sur "Nouvelle Valeur" pour commencer.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Légende -->
+    <div class="card">
+        <div class="card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-info-circle"></i>
+                Légende des Catégories
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Statuts d'Interaction</h6>
+                    <ul class="list-unstyled">
+                        <li><code>interaction_status</code> - Statuts des interactions</li>
+                        <li><code>interaction_type</code> - Types d'interaction</li>
+                        <li><code>interaction_priority</code> - Niveaux de priorité</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Professions</h6>
+                    <ul class="list-unstyled">
+                        <li><code>profession_type</code> - Types de profession</li>
+                        <li><code>profession_sector</code> - Secteurs d'activité</li>
+                        <li><code>profession_level</code> - Niveaux hiérarchiques</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Organisations</h6>
+                    <ul class="list-unstyled">
+                        <li><code>organization_type</code> - Types d'organisation</li>
+                        <li><code>organization_size</code> - Tailles d'entreprise</li>
+                        <li><code>organization_sector</code> - Secteurs d'activité</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <h6>Badges</h6>
+                    <ul class="list-unstyled">
+                        <li><code>badge_type</code> - Types de badges</li>
+                        <li><code>badge_level</code> - Niveaux de badges</li>
+                        <li><code>badge_category</code> - Catégories de badges</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Objectifs</h6>
+                    <ul class="list-unstyled">
+                        <li><code>objective_type</code> - Types d'objectifs</li>
+                        <li><code>objective_priority</code> - Priorités d'objectifs</li>
+                        <li><code>objective_status</code> - Statuts d'objectifs</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Système</h6>
+                    <ul class="list-unstyled">
+                        <li><code>user_role</code> - Rôles utilisateur</li>
+                        <li><code>notification_type</code> - Types de notification</li>
+                        <li><code>system_parameter</code> - Paramètres système</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    color: #e83e8c;
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %} 

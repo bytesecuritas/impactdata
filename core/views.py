@@ -20,12 +20,13 @@ from django.contrib.sites.shortcuts import get_current_site
 import os
 import json
 from datetime import datetime, timedelta
-from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, SupervisorStats
+from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, SupervisorStats, GeneralParameter, ReferenceValue, RolePermission, SystemLog
 from .forms import (
-    UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, 
+    GeneralParameterForm, ReferenceValueImportForm, SystemLogFilterForm, UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, 
     CategoryForm, InteractionForm, UserForm, UserRegistrationForm, UserEditForm,
     BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm,
-    InteractionSearchForm
+    InteractionSearchForm, RolePermissionForm, BulkRolePermissionForm, ReferenceValueForm,
+    ParameterBackupForm
 )
 from .services import EmailService
 import calendar
@@ -40,7 +41,169 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
-# Create your views here.
+# ==================== SYSTÈME DE PERMISSIONS ====================
+
+def has_permission(user, permission_code):
+    """
+    Vérifie si un utilisateur a une permission spécifique.
+    
+    Args:
+        user: L'utilisateur à vérifier
+        permission_code: Le code de permission (ex: 'adherent_create', 'user_view')
+    
+    Returns:
+        bool: True si l'utilisateur a la permission, False sinon
+    """
+    if not user.is_authenticated:
+        return False
+    
+    # Les superutilisateurs ont toutes les permissions
+    if user.is_superuser:
+        return True
+    
+    # Vérifier la permission dans la base de données
+    try:
+        permission = RolePermission.objects.get(
+            role=user.role,
+            permission=permission_code,
+            is_active=True
+        )
+        return True
+    except RolePermission.DoesNotExist:
+        return False
+
+def require_permission(permission_code):
+    """
+    Décorateur pour exiger une permission spécifique.
+    
+    Args:
+        permission_code: Le code de permission requis
+    
+    Returns:
+        function: Le décorateur
+    """
+    def decorator(view_func):
+        def wrapper(request, *args, **kwargs):
+            if not has_permission(request.user, permission_code):
+                messages.error(request, f"Vous n'avez pas la permission d'accéder à cette fonctionnalité.")
+                return HttpResponseForbidden("Permission refusée")
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+class PermissionRequiredMixin:
+    """
+    Mixin pour les vues basées sur les classes qui nécessitent une permission spécifique.
+    """
+    permission_required = None
+    
+    def dispatch(self, request, *args, **kwargs):
+        if self.permission_required and not has_permission(request.user, self.permission_required):
+            messages.error(request, f"Vous n'avez pas la permission d'accéder à cette fonctionnalité.")
+            raise PermissionDenied("Permission refusée")
+        return super().dispatch(request, *args, **kwargs)
+
+def get_user_permissions(user):
+    """
+    Récupère toutes les permissions actives d'un utilisateur.
+    
+    Args:
+        user: L'utilisateur
+    
+    Returns:
+        list: Liste des codes de permissions
+    """
+    if not user.is_authenticated:
+        return []
+    
+    if user.is_superuser:
+        # Retourner toutes les permissions possibles
+        return [choice[0] for choice in RolePermission.PERMISSION_CHOICES]
+    
+    permissions = RolePermission.objects.filter(
+        role=user.role,
+        is_active=True
+    ).values_list('permission', flat=True)
+    
+    return list(permissions)
+
+def can_access_data(user, data_type='read', target_user=None):
+    """
+    Vérifie les permissions d'accès aux données selon le rôle et les permissions configurées.
+    
+    Args:
+        user: L'utilisateur qui demande l'accès
+        data_type: Type d'accès ('read', 'create', 'update', 'delete')
+        target_user: L'utilisateur cible (pour les données utilisateur)
+    
+    Returns:
+        bool: True si l'accès est autorisé, False sinon
+    """
+    if not user.is_authenticated:
+        return False
+    
+    # Les superutilisateurs ont accès à tout
+    if user.is_superuser:
+        return True
+    
+    # Mapper les types d'accès aux permissions
+    permission_mapping = {
+        'read': {
+            'user': 'user_view',
+            'adherent': 'adherent_view',
+            'organization': 'organization_view',
+            'interaction': 'interaction_view',
+            'badge': 'badge_view',
+            'objective': 'objective_view',
+            'settings': 'settings_view',
+            'reports': 'reports_view',
+            'stats': 'stats_view',
+        },
+        'create': {
+            'user': 'user_create',
+            'adherent': 'adherent_create',
+            'organization': 'organization_create',
+            'interaction': 'interaction_create',
+            'badge': 'badge_create',
+            'objective': 'objective_create',
+        },
+        'update': {
+            'user': 'user_edit',
+            'adherent': 'adherent_edit',
+            'organization': 'organization_edit',
+            'interaction': 'interaction_edit',
+            'badge': 'badge_edit',
+            'objective': 'objective_edit',
+        },
+        'delete': {
+            'user': 'user_delete',
+            'adherent': 'adherent_delete',
+            'organization': 'organization_delete',
+            'interaction': 'interaction_delete',
+            'badge': 'badge_delete',
+            'objective': 'objective_delete',
+        }
+    }
+    
+    # Vérifier la permission correspondante
+    if data_type in permission_mapping:
+        for data_category, permission_code in permission_mapping[data_type].items():
+            if has_permission(user, permission_code):
+                return True
+    
+    # Cas spécial pour les données utilisateur
+    if target_user and data_type in ['read', 'update']:
+        if user == target_user:
+            return True  # Un utilisateur peut toujours voir/modifier son propre profil
+        elif user.role == 'superviseur' and target_user.role == 'agent':
+            # Les superviseurs peuvent voir les agents qu'ils ont créés
+            if target_user.created_by == user:
+                return True
+    
+    return False
+
+# ==================== FONCTIONS EXISTANTES (MISE À JOUR) ====================
+
 def is_admin(user):
     return user.is_authenticated and user.role == 'admin'
 
@@ -52,21 +215,24 @@ def is_agent(user):
 
 def can_manage_users(user):
     """Vérifie si l'utilisateur peut gérer les utilisateurs"""
-    return user.is_authenticated and (user.role == 'admin' or user.role == 'superviseur')
+    return has_permission(user, 'user_create') or has_permission(user, 'user_edit') or has_permission(user, 'user_view')
 
 def can_access_user_data(user, target_user):
     """Vérifie si l'utilisateur peut accéder aux données d'un autre utilisateur"""
-    if user.role == 'admin':
+    if user.is_superuser:
         return True
-    elif user.role == 'superviseur':
-        # Les superviseurs peuvent voir les agents qu'ils ont créés ou qui leur sont assignés
-        return target_user.role == 'agent' and (
-            target_user.created_by == user or 
-            target_user in user.created_users.filter(role='agent')
-        )
-    elif user.role == 'agent':
-        # Les agents ne peuvent voir que leur propre profil
-        return user == target_user
+    elif has_permission(user, 'user_view'):
+        if user.role == 'superviseur':
+            # Les superviseurs peuvent voir les agents qu'ils ont créés ou qui leur sont assignés
+            return target_user.role == 'agent' and (
+                target_user.created_by == user or 
+                target_user in user.created_users.filter(role='agent')
+            )
+        elif user.role == 'admin':
+            return True
+        elif user.role == 'agent':
+            # Les agents ne peuvent voir que leur propre profil
+            return user == target_user
     return False
 
 def login_view(request):
@@ -304,36 +470,69 @@ def change_password(request):
     
     return render(request, 'core/profile/change_password.html', {'form': form})
 
-# Vues pour les adhérents (superviseurs et admins)
+# Vues pour les adhérents
 @login_required
+@require_permission('adherent_view')
 def adherent_list(request):
     """Liste des adhérents"""
-    # if request.user.role not in ['agent','superviseur', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     adherents = Adherent.objects.all().order_by('last_name', 'first_name')
+    
+    # Filtrage par recherche
+    search_form = AdherentSearchForm(request.GET)
+    if search_form.is_valid():
+        search = search_form.cleaned_data.get('search')
+        type_adherent = search_form.cleaned_data.get('type_adherent')
+        organisation = search_form.cleaned_data.get('organisation')
+        join_date_from = search_form.cleaned_data.get('join_date_from')
+        join_date_to = search_form.cleaned_data.get('join_date_to')
+
+        if search:
+            adherents = adherents.filter(
+                Q(last_name__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(id__icontains=search)
+            )
+        if type_adherent:
+            adherents = adherents.filter(type_adherent=type_adherent)
+        if organisation:
+            adherents = adherents.filter(organisation=organisation)
+        if join_date_from:
+            adherents = adherents.filter(join_date__gte=join_date_from)
+        if join_date_to:
+            adherents = adherents.filter(join_date__lte=join_date_to)
+
+    # Pagination
+    paginator = Paginator(adherents, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     context = {
+        'page_obj': page_obj,
+        'search_form': search_form,
         'adherents': adherents,
-        'total_adherents': adherents.count(),
+        'total_count': adherents.count(),
+        'can_create': has_permission(request.user, 'adherent_create'),
+        'can_edit': has_permission(request.user, 'adherent_edit'),
+        'can_delete': has_permission(request.user, 'adherent_delete'),
     }
     return render(request, 'core/adherents/adherent_list.html', context)
 
 @login_required
+@require_permission('adherent_view')
 def adherent_detail(request, adherent_id):
     """Détail d'un adhérent"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     try:
         adherent = Adherent.objects.get(id=adherent_id)
         interactions = adherent.interactions.all().order_by('-created_at')
     except Adherent.DoesNotExist:
         messages.error(request, 'Adhérent non trouvé.')
-        return redirect('adherent_list')
+        return redirect('core:adherent_list')
     
     context = {
         'adherent': adherent,
         'interactions': interactions,
+        'can_edit': has_permission(request.user, 'adherent_edit'),
+        'can_delete': has_permission(request.user, 'adherent_delete'),
     }
     return render(request, 'core/adherents/adherent_detail.html', context)
 
@@ -374,59 +573,60 @@ def adherent_interactions(request, adherent_id):
 
 # Vues pour les organisations (agents et admins)
 @login_required
+@require_permission('organization_view')
 def organization_list(request):
     """Liste des organisations"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     organizations = Organization.objects.all().order_by('name')
     context = {
         'organizations': organizations,
         'total_organizations': organizations.count(),
         'total_personel': Organization.objects.aggregate(Sum('number_personnel'))['number_personnel__sum'] or 0,
         'total_revenue': Organization.objects.aggregate(Sum('monthly_revenue'))['monthly_revenue__sum'] or 0,
+        'can_create': has_permission(request.user, 'organization_create'),
+        'can_edit': has_permission(request.user, 'organization_edit'),
+        'can_delete': has_permission(request.user, 'organization_delete'),
     }
     return render(request, 'core/organizations/organization_list.html', context)
 
 @login_required
+@require_permission('organization_view')
 def organization_detail(request, organization_id):
     """Détail d'une organisation"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     try:
         organization = Organization.objects.get(id=organization_id)
         adherents = organization.adherents.all().order_by('last_name', 'first_name')
     except Organization.DoesNotExist:
         messages.error(request, 'Organisation non trouvée.')
-        return redirect('organization_list')
+        return redirect('core:organization_list')
     
     context = {
         'organization': organization,
         'adherents': adherents,
+        'can_edit': has_permission(request.user, 'organization_edit'),
+        'can_delete': has_permission(request.user, 'organization_delete'),
     }
     return render(request, 'core/organizations/organization_detail.html', context)
 
-# Vues pour les catégories (agents et admins)
+# Vues pour les catégories
 @login_required
+@require_permission('organization_view')  # Utilise organization_view car les catégories sont liées aux organisations
 def category_list(request):
     """Liste des catégories"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     categories = Category.objects.all().order_by('name')
     context = {
         'categories': categories,
         'total_categories': categories.count(),
+        'can_create': has_permission(request.user, 'organization_create'),
+        'can_edit': has_permission(request.user, 'organization_edit'),
+        'can_delete': has_permission(request.user, 'organization_delete'),
     }
     return render(request, 'core/categories/category_list.html', context)
 
-# Vues pour les interactions (superviseurs et admins)
+# Vues pour les interactions
 @login_required
+@require_permission('interaction_view')
 def interaction_list(request):
     """Liste des interactions avec recherche avancée"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
     
     # Initialiser le formulaire de recherche
     search_form = InteractionSearchForm(request.GET)
@@ -542,19 +742,19 @@ def interaction_list(request):
     return render(request, 'core/interactions/interaction_list.html', context)
 
 @login_required
+@require_permission('interaction_view')
 def interaction_detail(request, interaction_id):
     """Détail d'une interaction"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     try:
         interaction = Interaction.objects.get(id=interaction_id)
     except Interaction.DoesNotExist:
         messages.error(request, 'Interaction non trouvée.')
-        return redirect('interaction_list')
+        return redirect('core:interaction_list')
     
     context = {
         'interaction': interaction,
+        'can_edit': has_permission(request.user, 'interaction_edit'),
+        'can_delete': has_permission(request.user, 'interaction_delete'),
     }
     return render(request, 'core/interactions/interaction_detail.html', context)
 
@@ -607,11 +807,9 @@ def interaction_notifications(request):
 # ==================== CRUD ADHÉRENTS ====================
 
 @login_required
+@require_permission('adherent_create')
 def adherent_create(request):
     """Créer un nouvel adhérent"""
-    # if not (is_admin(request.user) or is_agent(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
-    
     if request.method == 'POST':
         form = AdherentForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
@@ -627,11 +825,9 @@ def adherent_create(request):
     return render(request, 'core/adherents/adherent_form.html', {'form': form, 'title': 'Créer un adhérent'})
 
 @login_required
+@require_permission('adherent_edit')
 def adherent_update(request, adherent_id):
     """Modifier un adhérent"""
-    # if not (is_admin(request.user) or is_agent(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
-    
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
     if request.method == 'POST':
@@ -646,11 +842,9 @@ def adherent_update(request, adherent_id):
     return render(request, 'core/adherents/adherent_form.html', {'form': form, 'title': 'Modifier l\'adhérent'})
 
 @login_required
+@require_permission('adherent_delete')
 def adherent_delete(request, adherent_id):
     """Supprimer un adhérent"""
-    # if not (is_admin(request.user) or is_agent(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
-    
     adherent = get_object_or_404(Adherent, id=adherent_id)
     
     if request.method == 'POST':
@@ -663,11 +857,9 @@ def adherent_delete(request, adherent_id):
 # ==================== CRUD ORGANISATIONS ====================
 
 @login_required
+@require_permission('organization_create')
 def organization_create(request):
     """Créer une nouvelle organisation"""
-    # if not (is_admin(request.user) or is_agent(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
-    
     if request.method == 'POST':
         form = OrganizationForm(request.POST)
         if form.is_valid():
@@ -682,15 +874,13 @@ def organization_create(request):
     return render(request, 'core/organizations/organization_form.html', {'form': form, 'title': 'Créer une organisation'})
 
 @login_required
+@require_permission('organization_edit')
 def organization_update(request, organization_id):
     """Modifier une organisation"""
-    # if not (is_admin(request.user) or is_agent(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
-    
     organization = get_object_or_404(Organization, id=organization_id)
     
     # Vérifier que l'agent ne peut modifier que ses propres organisations
-    if is_agent(request.user) and organization.created_by != request.user:
+    if request.user.role == 'agent' and organization.created_by != request.user:
         return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
@@ -705,15 +895,13 @@ def organization_update(request, organization_id):
     return render(request, 'core/organizations/organization_form.html', {'form': form, 'title': 'Modifier l\'organisation'})
 
 @login_required
+@require_permission('organization_delete')
 def organization_delete(request, organization_id):
     """Supprimer une organisation"""
-    # if not (is_admin(request.user) or is_agent(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
-    
     organization = get_object_or_404(Organization, id=organization_id)
     
     # Vérifier que l'agent ne peut supprimer que ses propres organisations
-    if is_agent(request.user) and organization.created_by != request.user:
+    if request.user.role == 'agent' and organization.created_by != request.user:
         return HttpResponseForbidden("Accès refusé")
     
     if request.method == 'POST':
@@ -726,11 +914,9 @@ def organization_delete(request, organization_id):
 # ==================== CRUD CATÉGORIES ====================
 
 @login_required
+@require_permission('organization_create')
 def category_create(request):
     """Créer une nouvelle catégorie"""
-    # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
@@ -748,11 +934,9 @@ def category_create(request):
     return render(request, 'core/categories/category_form.html', context)
 
 @login_required
+@require_permission('organization_edit')
 def category_update(request, category_id):
     """Modifier une catégorie"""
-    # if request.user.role not in ['agent', 'adherent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     category = get_object_or_404(Category, id=category_id)
     
     if request.method == 'POST':
@@ -773,11 +957,9 @@ def category_update(request, category_id):
     return render(request, 'core/categories/category_form.html', context)
 
 @login_required
+@require_permission('organization_delete')
 def category_delete(request, category_id):
     """Supprimer une catégorie"""
-    # if request.user.role not in ['agent', 'adherent', 'admin'] and not request.user.is_superuser:
-    #     return HttpResponseForbidden("Accès refusé")
-    
     category = get_object_or_404(Category, id=category_id)
     
     if request.method == 'POST':
@@ -856,7 +1038,8 @@ def interaction_delete(request, interaction_id):
     return render(request, 'core/interactions/interaction_confirm_delete.html', {'interaction': interaction})
 
 # User Management Views (Admin only)
-class UserListView(LoginRequiredMixin, ListView):
+class UserListView(PermissionRequiredMixin, ListView):
+    permission_required = 'user_view'
     model = User
     template_name = 'core/users/user_list.html'
     context_object_name = 'users'
@@ -905,7 +1088,8 @@ class UserListView(LoginRequiredMixin, ListView):
         context['can_create_users'] = can_manage_users(self.request.user)
         return context
 
-class UserDetailView(LoginRequiredMixin, DetailView):
+class UserDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = 'user_view'
     model = User
     template_name = 'core/users/user_detail.html'
     context_object_name = 'user_obj'
@@ -942,7 +1126,8 @@ class UserDetailView(LoginRequiredMixin, DetailView):
         
         return context
 
-class UserCreateView(LoginRequiredMixin, CreateView):
+class UserCreateView(PermissionRequiredMixin, CreateView):
+    permission_required = 'user_create'
     model = User
     template_name = 'core/users/user_form.html'
     form_class = UserRegistrationForm
@@ -987,7 +1172,8 @@ class UserCreateView(LoginRequiredMixin, CreateView):
         
         return redirect('core:user_detail', pk=user.pk)
 
-class UserUpdateView(LoginRequiredMixin, UpdateView):
+class UserUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = 'user_edit'
     model = User
     template_name = 'core/users/user_form.html'
     form_class = UserEditForm
@@ -1011,7 +1197,8 @@ class UserUpdateView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, "Utilisateur mis à jour avec succès.")
         return redirect('core:user_detail', pk=user.pk)
 
-class UserDeleteView(LoginRequiredMixin, DeleteView):
+class UserDeleteView(PermissionRequiredMixin, DeleteView):
+    permission_required = 'user_delete'
     model = User
     template_name = 'core/users/user_confirm_delete.html'
     context_object_name = 'user_obj'
@@ -1027,6 +1214,7 @@ class UserDeleteView(LoginRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 @login_required
+@require_permission('badge_view')
 def badge_list(request):
     """Liste des badges"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
@@ -1046,6 +1234,7 @@ def badge_list(request):
     return render(request, 'core/badges/badge_list.html', context)
 
 @login_required
+@require_permission('badge_view')
 def badge_detail(request, badge_id):
     """Afficher les détails d'un badge"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
@@ -1065,6 +1254,7 @@ def badge_detail(request, badge_id):
     return render(request, 'core/badges/badge_detail.html', context)
 
 @login_required
+@require_permission('badge_view')
 def badge_card(request, badge_id):
     """Afficher le badge comme une carte d'identité"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
@@ -1084,6 +1274,7 @@ def badge_card(request, badge_id):
     return render(request, 'core/badges/badge_card.html', context)
 
 @login_required
+@require_permission('badge_create')
 def generate_badge(request, adherent_id):
     """Générer un badge pour un adhérent (avec option de régénération)"""
     adherent = get_object_or_404(Adherent, id=adherent_id)
@@ -1160,6 +1351,7 @@ def generate_badge(request, adherent_id):
     return render(request, 'core/badges/badge_generation.html', context)
 
 @login_required
+@require_permission('badge_revoke')
 def revoke_badge(request, badge_id):
     """Révoquer un badge"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
@@ -1185,6 +1377,7 @@ def revoke_badge(request, badge_id):
     return render(request, 'core/badges/badge_revoke.html', context)
 
 @login_required
+@require_permission('badge_edit')
 def reactivate_badge(request, badge_id):
     """Réactiver un badge"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
@@ -1203,6 +1396,7 @@ def reactivate_badge(request, badge_id):
     return redirect('core:badge_list')
 
 @login_required
+@require_permission('badge_view')
 def download_badge_pdf(request, badge_id):
     """Télécharger le badge en PDF"""
     # if request.user.role not in ['agent', 'admin'] and not request.user.is_superuser:
@@ -1344,6 +1538,7 @@ def download_badge_pdf(request, badge_id):
     return response
 
 @login_required
+@require_permission('badge_view')
 def badge_qr_scan(request):
     """Scanner un QR code de badge"""
     # if request.user.role not in ['superviseur', 'admin', 'agent'] and not request.user.is_superuser:
@@ -1393,7 +1588,8 @@ def badge_qr_scan(request):
     return render(request, 'core/badges/badge_scan.html')
 
 # Objective Management Views (Supervisor only)
-class ObjectiveListView(LoginRequiredMixin, ListView):
+class ObjectiveListView(PermissionRequiredMixin, ListView):
+    permission_required = 'objective_view'
     model = UserObjective
     template_name = 'core/objectives/objective_list.html'
     context_object_name = 'objectives'
@@ -1412,7 +1608,8 @@ class ObjectiveListView(LoginRequiredMixin, ListView):
         context['can_create_objectives'] = self.request.user.role in ['admin', 'superviseur']
         return context
 
-class ObjectiveDetailView(LoginRequiredMixin, DetailView):
+class ObjectiveDetailView(PermissionRequiredMixin, DetailView):
+    permission_required = 'objective_view'
     model = UserObjective
     template_name = 'core/objectives/objective_detail.html'
     context_object_name = 'objective'
@@ -1425,7 +1622,8 @@ class ObjectiveDetailView(LoginRequiredMixin, DetailView):
         else:
             return UserObjective.objects.filter(user=self.request.user)
 
-class ObjectiveCreateView(LoginRequiredMixin, CreateView):
+class ObjectiveCreateView(PermissionRequiredMixin, CreateView):
+    permission_required = 'objective_create'
     model = UserObjective
     template_name = 'core/objectives/objective_form.html'
     form_class = UserObjectiveForm
@@ -1456,7 +1654,8 @@ class ObjectiveCreateView(LoginRequiredMixin, CreateView):
         print("❌ Formulaire invalide :", form.errors)
         return super().form_invalid(form)
 
-class ObjectiveUpdateView(LoginRequiredMixin, UpdateView):
+class ObjectiveUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = 'objective_edit'
     model = UserObjective
     template_name = 'core/objectives/objective_form.html'
     form_class = UserObjectiveForm
@@ -1478,7 +1677,8 @@ class ObjectiveUpdateView(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('core:objective_detail', kwargs={'pk': self.object.pk})
 
-class ObjectiveDeleteView(LoginRequiredMixin, DeleteView):
+class ObjectiveDeleteView(PermissionRequiredMixin, DeleteView):
+    permission_required = 'objective_delete'
     model = UserObjective
     template_name = 'core/objectives/objective_confirm_delete.html'
     context_object_name = 'objective'
@@ -1618,4 +1818,910 @@ def password_reset_done(request):
 def password_reset_complete(request):
     """Vue affichée après la réinitialisation réussie du mot de passe"""
     return render(request, 'core/auth/password_reset_complete.html')
+
+# ==================== VUES POUR LES PARAMÈTRES DE L'APPLICATION ====================
+
+@login_required
+@require_permission('settings_view')
+def settings_dashboard(request):
+    """Tableau de bord des paramètres de l'application"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    # Statistiques des paramètres
+    total_parameters = GeneralParameter.objects.count()
+    total_references = ReferenceValue.objects.count()
+    total_permissions = RolePermission.objects.count()
+    recent_logs = SystemLog.objects.order_by('-timestamp')[:10]
+    
+    # Paramètres critiques
+    critical_parameters = GeneralParameter.objects.filter(
+        parameter_key__in=['organization_name', 'timezone', 'email_host']
+    )
+    
+    # Valeurs de référence par catégorie
+    reference_categories = ReferenceValue.objects.values('category').annotate(
+        count=Count('id')
+    ).order_by('category')
+    
+    context = {
+        'total_parameters': total_parameters,
+        'total_references': total_references,
+        'total_permissions': total_permissions,
+        'recent_logs': recent_logs,
+        'critical_parameters': critical_parameters,
+        'reference_categories': reference_categories,
+        'now': timezone.now(),
+    }
+    return render(request, 'core/settings/settings_dashboard.html', context)
+
+# ==================== GESTION DES RÔLES ET PERMISSIONS ====================
+
+@login_required
+@require_permission('settings_roles')
+def role_permissions_list(request):
+    """Liste des permissions de rôles"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    # Grouper par rôle
+    roles_data = {}
+    for role_code, role_name in User.ROLE_CHOICES:
+        permissions = RolePermission.objects.filter(role=role_code).order_by('permission')
+        roles_data[role_name] = {
+            'code': role_code,
+            'permissions': permissions,
+            'active_count': permissions.filter(is_active=True).count(),
+            'total_count': permissions.count()
+        }
+    
+    context = {
+        'roles_data': roles_data,
+        'total_permissions': RolePermission.objects.count(),
+        'active_permissions': RolePermission.objects.filter(is_active=True).count(),
+    }
+    return render(request, 'core/settings/role_permissions_list.html', context)
+
+@login_required
+@require_permission('settings_roles')
+def role_permission_create(request):
+    """Créer une nouvelle permission de rôle"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = RolePermissionForm(request.POST)
+        if form.is_valid():
+            permission = form.save()
+            role_display = dict(User.ROLE_CHOICES).get(permission.role, permission.role)
+            permission_display = dict(RolePermission.PERMISSION_CHOICES).get(permission.permission, permission.permission)
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Permission créée: {role_display} - {permission_display}',
+                user=request.user
+            )
+            messages.success(request, 'Permission créée avec succès.')
+            return redirect('core:role_permissions_list')
+    else:
+        form = RolePermissionForm()
+    
+    return render(request, 'core/settings/role_permission_form.html', {
+        'form': form, 
+        'title': 'Créer une permission'
+    })
+
+@login_required
+@require_permission('settings_roles')
+def role_permission_update(request, permission_id):
+    """Modifier une permission de rôle"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    permission = get_object_or_404(RolePermission, id=permission_id)
+    
+    if request.method == 'POST':
+        form = RolePermissionForm(request.POST, instance=permission)
+        if form.is_valid():
+            form.save()
+            role_display = dict(User.ROLE_CHOICES).get(permission.role, permission.role)
+            permission_display = dict(RolePermission.PERMISSION_CHOICES).get(permission.permission, permission.permission)
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Permission modifiée: {role_display} - {permission_display}',
+                user=request.user
+            )
+            messages.success(request, 'Permission mise à jour avec succès.')
+            return redirect('core:role_permissions_list')
+    else:
+        form = RolePermissionForm(instance=permission)
+    
+    return render(request, 'core/settings/role_permission_form.html', {
+        'form': form, 
+        'title': 'Modifier la permission'
+    })
+
+@login_required
+@require_permission('settings_roles')
+def role_permission_delete(request, permission_id):
+    """Supprimer une permission de rôle"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    permission = get_object_or_404(RolePermission, id=permission_id)
+    
+    if request.method == 'POST':
+        permission.delete()
+        role_display = dict(User.ROLE_CHOICES).get(permission.role, permission.role)
+        permission_display = dict(RolePermission.PERMISSION_CHOICES).get(permission.permission, permission.permission)
+        SystemLog.log(
+            'INFO', 'system_config', 
+            f'Permission supprimée: {role_display} - {permission_display}',
+            user=request.user
+        )
+        messages.success(request, 'Permission supprimée avec succès.')
+        return redirect('core:role_permissions_list')
+    
+    return render(request, 'core/settings/role_permission_confirm_delete.html', {
+        'permission': permission
+    })
+
+@login_required
+@require_permission('settings_roles')
+def bulk_role_permissions(request):
+    """Assignation en masse de permissions"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = BulkRolePermissionForm(request.POST)
+        if form.is_valid():
+            role = form.cleaned_data['role']
+            permissions = form.cleaned_data['permissions']
+            action = form.cleaned_data['action']
+            
+            if action == 'add':
+                # Ajouter les permissions
+                for permission_code in permissions:
+                    RolePermission.objects.get_or_create(
+                        role=role,
+                        permission=permission_code,
+                        defaults={'is_active': True}
+                    )
+                message = f"{len(permissions)} permission(s) ajoutée(s) au rôle {dict(User.ROLE_CHOICES)[role]}"
+            
+            elif action == 'remove':
+                # Retirer les permissions
+                RolePermission.objects.filter(
+                    role=role,
+                    permission__in=permissions
+                ).delete()
+                message = f"{len(permissions)} permission(s) retirée(s) du rôle {dict(User.ROLE_CHOICES)[role]}"
+            
+            elif action == 'replace':
+                # Remplacer toutes les permissions
+                RolePermission.objects.filter(role=role).delete()
+                for permission_code in permissions:
+                    RolePermission.objects.create(
+                        role=role,
+                        permission=permission_code,
+                        is_active=True
+                    )
+                message = f"Toutes les permissions du rôle {dict(User.ROLE_CHOICES)[role]} ont été remplacées"
+            
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Permissions en masse: {message}',
+                user=request.user
+            )
+            messages.success(request, message)
+            return redirect('core:role_permissions_list')
+    else:
+        form = BulkRolePermissionForm()
+    
+    return render(request, 'core/settings/bulk_role_permissions.html', {'form': form})
+
+# ==================== GESTION DES VALEURS DE RÉFÉRENCE ====================
+
+@login_required
+@require_permission('settings_references')
+def reference_values_list(request):
+    """Liste des valeurs de référence"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    category_filter = request.GET.get('category')
+    if category_filter:
+        references = ReferenceValue.objects.filter(category=category_filter)
+    else:
+        references = ReferenceValue.objects.all()
+    
+    references = references.order_by('category', 'sort_order', 'label')
+    
+    # Grouper par catégorie avec statistiques
+    categories_data = {}
+    for reference in references:
+        if reference.category not in categories_data:
+            categories_data[reference.category] = {
+                'references': [],
+                'total_count': 0,
+                'active_count': 0
+            }
+        categories_data[reference.category]['references'].append(reference)
+        categories_data[reference.category]['total_count'] += 1
+        if reference.is_active:
+            categories_data[reference.category]['active_count'] += 1
+    
+    # Calculer les statistiques globales
+    total_references = ReferenceValue.objects.count()
+    active_references = ReferenceValue.objects.filter(is_active=True).count()
+    categories_count = len(categories_data)
+    system_references = ReferenceValue.objects.filter(is_system=True).count()
+    
+    context = {
+        'categories_data': categories_data,
+        'category_choices': ReferenceValue.CATEGORY_CHOICES,
+        'selected_category': category_filter,
+        'total_references': total_references,
+        'active_references': active_references,
+        'categories_count': categories_count,
+        'system_references': system_references,
+    }
+    return render(request, 'core/settings/reference_values_list.html', context)
+
+@login_required
+@require_permission('settings_references')
+def reference_value_create(request):
+    """Créer une nouvelle valeur de référence"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = ReferenceValueForm(request.POST)
+        if form.is_valid():
+            reference = form.save(commit=False)
+            reference.created_by = request.user
+            reference.save()
+            category_display = dict(ReferenceValue.CATEGORY_CHOICES).get(reference.category, reference.category)
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Valeur de référence créée: {category_display} - {reference.label}',
+                user=request.user
+            )
+            messages.success(request, 'Valeur de référence créée avec succès.')
+            return redirect('core:reference_values_list')
+    else:
+        form = ReferenceValueForm()
+    
+    return render(request, 'core/settings/reference_value_form.html', {
+        'form': form, 
+        'title': 'Créer une valeur de référence'
+    })
+
+@login_required
+@require_permission('settings_references')
+def reference_value_update(request, reference_id):
+    """Modifier une valeur de référence"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    reference = get_object_or_404(ReferenceValue, id=reference_id)
+    
+    if request.method == 'POST':
+        form = ReferenceValueForm(request.POST, instance=reference)
+        if form.is_valid():
+            form.save()
+            category_display = dict(ReferenceValue.CATEGORY_CHOICES).get(reference.category, reference.category)
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Valeur de référence modifiée: {category_display} - {reference.label}',
+                user=request.user
+            )
+            messages.success(request, 'Valeur de référence mise à jour avec succès.')
+            return redirect('core:reference_values_list')
+    else:
+        form = ReferenceValueForm(instance=reference)
+    
+    return render(request, 'core/settings/reference_value_form.html', {
+        'form': form, 
+        'title': 'Modifier la valeur de référence'
+    })
+
+@login_required
+@require_permission('settings_references')
+def reference_value_delete(request, reference_id):
+    """Supprimer une valeur de référence"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    reference = get_object_or_404(ReferenceValue, id=reference_id)
+    
+    if request.method == 'POST':
+        reference.delete()
+        category_display = dict(ReferenceValue.CATEGORY_CHOICES).get(reference.category, reference.category)
+        SystemLog.log(
+            'INFO', 'system_config', 
+            f'Valeur de référence supprimée: {category_display} - {reference.label}',
+            user=request.user
+        )
+        messages.success(request, 'Valeur de référence supprimée avec succès.')
+        return redirect('core:reference_values_list')
+    
+    return render(request, 'core/settings/reference_value_confirm_delete.html', {
+        'reference': reference
+    })
+
+@login_required
+@require_permission('settings_references')
+def reference_value_import(request):
+    """Importer des valeurs de référence depuis un fichier CSV"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+
+    if request.method == 'POST':
+        form = ReferenceValueImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            category = form.cleaned_data['category']
+            csv_file = form.cleaned_data['csv_file']
+            replace_existing = form.cleaned_data['replace_existing']
+            
+            try:
+                import csv
+                from io import StringIO
+                
+                # Lire le fichier CSV
+                content = csv_file.read().decode('utf-8')
+                csv_reader = csv.reader(StringIO(content))
+                
+                imported_count = 0
+                for row in csv_reader:
+                    if len(row) >= 2:  # Au moins code et label
+                        code, label = row[0], row[1]
+                        description = row[2] if len(row) > 2 else ''
+                        sort_order = int(row[3]) if len(row) > 3 and row[3].isdigit() else 0
+                        is_active = row[4].lower() == 'true' if len(row) > 4 else True
+                        is_default = row[5].lower() == 'true' if len(row) > 5 else False
+                        is_system = row[6].lower() == 'true' if len(row) > 6 else False
+                        
+                        if replace_existing:
+                            ReferenceValue.objects.filter(
+                                category=category,
+                                code=code
+                            ).delete()
+                        
+                        reference, created = ReferenceValue.objects.get_or_create(
+                            category=category,
+                            code=code,
+                            defaults={
+                                'label': label,
+                                'description': description,
+                                'sort_order': sort_order,
+                                'is_active': is_active,
+                                'is_default': is_default,
+                                'is_system': is_system,
+                                'created_by': request.user
+                            }
+                        )
+                        
+                        if not created:
+                            reference.label = label
+                            reference.description = description
+                            reference.sort_order = sort_order
+                            reference.is_active = is_active
+                            reference.is_default = is_default
+                            reference.is_system = is_system
+                            reference.save()
+                        
+                        imported_count += 1
+                
+                SystemLog.log(
+                    'INFO', 'system_config', 
+                    f'Import de {imported_count} valeurs de référence pour la catégorie {dict(ReferenceValue.CATEGORY_CHOICES)[category]}',
+                    user=request.user
+                )
+                messages.success(request, f'{imported_count} valeurs de référence importées avec succès.')
+                return redirect('core:reference_values_list')
+                
+            except Exception as e:
+                messages.error(request, f'Erreur lors de l\'import: {str(e)}')
+    else:
+        form = ReferenceValueImportForm()
+    
+    return render(request, 'core/settings/reference_value_import.html', {'form': form})
+
+# ==================== GESTION DES PARAMÈTRES GÉNÉRAUX ====================
+
+@login_required
+@require_permission('settings_view')
+def general_parameters_list(request):
+    """Liste des paramètres généraux"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    # Grouper par catégorie
+    parameters_data = {}
+    for param in GeneralParameter.objects.all().order_by('parameter_key'):
+        category = get_parameter_category(param.parameter_key)
+        if category not in parameters_data:
+            parameters_data[category] = []
+        parameters_data[category].append(param)
+    
+    context = {
+        'parameters_data': parameters_data,
+        'total_parameters': GeneralParameter.objects.count(),
+        'system_parameters': GeneralParameter.objects.filter(is_system=True).count(),
+    }
+    return render(request, 'core/settings/general_parameters_list.html', context)
+
+def get_parameter_category(parameter_key):
+    """Détermine la catégorie d'un paramètre"""
+    if parameter_key.startswith('organization_'):
+        return 'Informations de l\'organisation'
+    elif parameter_key.startswith('email_'):
+        return 'Configuration email'
+    elif parameter_key.startswith('password_') or parameter_key.startswith('session_') or parameter_key.startswith('max_') or parameter_key.startswith('account_'):
+        return 'Configuration sécurité'
+    elif parameter_key in ['timezone', 'date_format', 'time_format', 'language', 'currency', 'currency_symbol']:
+        return 'Configuration système'
+    elif parameter_key.startswith('enable_') or parameter_key.startswith('items_per_') or parameter_key.startswith('backup_'):
+        return 'Configuration interface'
+    elif parameter_key.startswith('default_') or parameter_key.startswith('interaction_') or parameter_key.startswith('badge_') or parameter_key.startswith('max_'):
+        return 'Configuration métier'
+    else:
+        return 'Autres'
+
+@login_required
+@require_permission('settings_edit')
+def general_parameter_create(request):
+    """Créer un nouveau paramètre général"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = GeneralParameterForm(request.POST)
+        if form.is_valid():
+            parameter = form.save(commit=False)
+            parameter.created_by = request.user
+            parameter.save()
+            parameter_display = dict(GeneralParameter.PARAMETER_CHOICES).get(parameter.parameter_key, parameter.parameter_key)
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Paramètre créé: {parameter_display}',
+                user=request.user
+            )
+            messages.success(request, 'Paramètre créé avec succès.')
+            return redirect('core:general_parameters_list')
+    else:
+        form = GeneralParameterForm()
+    
+    return render(request, 'core/settings/general_parameter_form.html', {
+        'form': form, 
+        'title': 'Créer un paramètre'
+    })
+
+@login_required
+@require_permission('settings_edit')
+def general_parameter_update(request, parameter_id):
+    """Modifier un paramètre général"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    parameter = get_object_or_404(GeneralParameter, id=parameter_id)
+    
+    if request.method == 'POST':
+        form = GeneralParameterForm(request.POST, instance=parameter)
+        if form.is_valid():
+            old_value = parameter.value
+            form.save()
+            parameter_display = dict(GeneralParameter.PARAMETER_CHOICES).get(parameter.parameter_key, parameter.parameter_key)
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Paramètre modifié: {parameter_display} (ancienne valeur: {old_value}, nouvelle valeur: {parameter.value})',
+                user=request.user
+            )
+            messages.success(request, 'Paramètre mis à jour avec succès.')
+            return redirect('core:general_parameters_list')
+    else:
+        form = GeneralParameterForm(instance=parameter)
+    
+    return render(request, 'core/settings/general_parameter_form.html', {
+        'form': form, 
+        'title': 'Modifier le paramètre'
+    })
+
+@login_required
+@require_permission('settings_edit')
+def general_parameter_delete(request, parameter_id):
+    """Supprimer un paramètre général"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    parameter = get_object_or_404(GeneralParameter, id=parameter_id)
+    
+    if parameter.is_system:
+        messages.error(request, 'Impossible de supprimer un paramètre système.')
+        return redirect('core:general_parameters_list')
+    
+    if request.method == 'POST':
+        parameter.delete()
+        parameter_display = dict(GeneralParameter.PARAMETER_CHOICES).get(parameter.parameter_key, parameter.parameter_key)
+        SystemLog.log(
+            'INFO', 'system_config', 
+            f'Paramètre supprimé: {parameter_display}',
+            user=request.user
+        )
+        messages.success(request, 'Paramètre supprimé avec succès.')
+        return redirect('core:general_parameters_list')
+    
+    return render(request, 'core/settings/general_parameter_confirm_delete.html', {
+        'parameter': parameter
+    })
+
+# ==================== GESTION DES JOURNAUX SYSTÈME ====================
+
+@login_required
+@require_permission('system_admin')
+def system_logs_list(request):
+    """Liste des journaux système"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    # Filtres
+    filter_form = SystemLogFilterForm(request.GET)
+    logs = SystemLog.objects.all()
+    
+    if filter_form.is_valid():
+        level = filter_form.cleaned_data.get('level')
+        category = filter_form.cleaned_data.get('category')
+        user = filter_form.cleaned_data.get('user')
+        date_from = filter_form.cleaned_data.get('date_from')
+        date_to = filter_form.cleaned_data.get('date_to')
+        message = filter_form.cleaned_data.get('message')
+        
+        if level:
+            logs = logs.filter(level=level)
+        if category:
+            logs = logs.filter(category=category)
+        if user:
+            logs = logs.filter(user=user)
+        if date_from:
+            logs = logs.filter(timestamp__date__gte=date_from)
+        if date_to:
+            logs = logs.filter(timestamp__date__lte=date_to)
+        if message:
+            logs = logs.filter(message__icontains=message)
+    
+    # Pagination
+    paginator = Paginator(logs.order_by('-timestamp'), 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'logs': page_obj,
+        'filter_form': filter_form,
+        'total_logs': SystemLog.objects.count(),
+        'error_logs': SystemLog.objects.filter(level__in=['ERROR', 'CRITICAL']).count(),
+        'today_logs': SystemLog.objects.filter(timestamp__date=timezone.now().date()).count(),
+    }
+    return render(request, 'core/settings/system_logs_list.html', context)
+
+@login_required
+@require_permission('system_admin')
+def system_log_detail(request, log_id):
+    """Détail d'un journal système"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    log = get_object_or_404(SystemLog, id=log_id)
+    
+    context = {
+        'log': log,
+    }
+    return render(request, 'core/settings/system_log_detail.html', context)
+
+@login_required
+@require_permission('system_admin')
+def system_logs_export(request):
+    """Exporter les journaux système"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    # Appliquer les mêmes filtres que la liste
+    filter_form = SystemLogFilterForm(request.GET)
+    logs = SystemLog.objects.all()
+    
+    if filter_form.is_valid():
+        level = filter_form.cleaned_data.get('level')
+        category = filter_form.cleaned_data.get('category')
+        user = filter_form.cleaned_data.get('user')
+        date_from = filter_form.cleaned_data.get('date_from')
+        date_to = filter_form.cleaned_data.get('date_to')
+        message = filter_form.cleaned_data.get('message')
+        
+        if level:
+            logs = logs.filter(level=level)
+        if category:
+            logs = logs.filter(category=category)
+        if user:
+            logs = logs.filter(user=user)
+        if date_from:
+            logs = logs.filter(timestamp__date__gte=date_from)
+        if date_to:
+            logs = logs.filter(timestamp__date__lte=date_to)
+        if message:
+            logs = logs.filter(message__icontains=message)
+    
+    logs = logs.order_by('-timestamp')
+    
+    # Créer le fichier CSV
+    import csv
+    from io import StringIO
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="system_logs_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Horodatage', 'Niveau', 'Catégorie', 'Message', 'Utilisateur', 'Adresse IP'])
+    
+    for log in logs:
+        writer.writerow([
+            log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            log.get_level_display(),
+            log.get_category_display(),
+            log.message,
+            log.user.get_full_name() if log.user else '',
+            log.ip_address or ''
+        ])
+    
+    SystemLog.log(
+        'INFO', 'system_config', 
+        f'Export des journaux système ({logs.count()} entrées)',
+        user=request.user
+    )
+    
+    return response
+
+@login_required
+@require_permission('system_admin')
+def system_logs_clear(request):
+    """Vider les journaux système"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        # Supprimer les logs de plus de 30 jours
+        cutoff_date = timezone.now() - timedelta(days=30)
+        deleted_count = SystemLog.objects.filter(timestamp__lt=cutoff_date).count()
+        SystemLog.objects.filter(timestamp__lt=cutoff_date).delete()
+        
+        SystemLog.log(
+            'INFO', 'system_config', 
+            f'Nettoyage des journaux système ({deleted_count} entrées supprimées)',
+            user=request.user
+        )
+        messages.success(request, f'{deleted_count} entrées de journal supprimées.')
+        return redirect('core:system_logs_list')
+    
+    return render(request, 'core/settings/system_logs_clear.html')
+
+# ==================== SAUVEGARDE ET RESTAURATION ====================
+
+@login_required
+@require_permission('data_backup')
+def settings_backup(request):
+    """Sauvegarder les paramètres"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        form = ParameterBackupForm(request.POST)
+        if form.is_valid():
+            include_system_params = form.cleaned_data['include_system_params']
+            include_reference_values = form.cleaned_data['include_reference_values']
+            include_role_permissions = form.cleaned_data['include_role_permissions']
+            format_type = form.cleaned_data['format']
+            
+            # Préparer les données
+            backup_data = {}
+            
+            if include_system_params:
+                backup_data['parameters'] = list(GeneralParameter.objects.values())
+            
+            if include_reference_values:
+                backup_data['reference_values'] = list(ReferenceValue.objects.values())
+            
+            if include_role_permissions:
+                backup_data['role_permissions'] = list(RolePermission.objects.values())
+            
+            # Créer le fichier de sauvegarde
+            import json
+            from datetime import datetime
+            
+            filename = f"settings_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            
+            response = HttpResponse(
+                json.dumps(backup_data, indent=2, default=str),
+                content_type='application/json'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            SystemLog.log(
+                'INFO', 'system_config', 
+                f'Sauvegarde des paramètres créée: {filename}',
+                user=request.user
+            )
+            
+            return response
+    else:
+        form = ParameterBackupForm()
+    
+    return render(request, 'core/settings/settings_backup.html', {'form': form})
+
+@login_required
+@require_permission('data_restore')
+def settings_restore(request):
+    """Restaurer les paramètres"""
+    if not (request.user.is_superuser or request.user.role == 'admin'):
+        return HttpResponseForbidden("Accès refusé")
+    
+    if request.method == 'POST':
+        backup_file = request.FILES.get('backup_file')
+        if backup_file:
+            try:
+                import json
+                content = backup_file.read().decode('utf-8')
+                backup_data = json.loads(content)
+                
+                restored_count = 0
+                
+                # Restaurer les paramètres
+                if 'parameters' in backup_data:
+                    for param_data in backup_data['parameters']:
+                        param_data.pop('id', None)  # Supprimer l'ID existant
+                        param_data.pop('created_at', None)
+                        param_data.pop('updated_at', None)
+                        param_data['created_by'] = request.user
+                        
+                        GeneralParameter.objects.get_or_create(
+                            parameter_key=param_data['parameter_key'],
+                            defaults=param_data
+                        )
+                        restored_count += 1
+                
+                # Restaurer les valeurs de référence
+                if 'reference_values' in backup_data:
+                    for ref_data in backup_data['reference_values']:
+                        ref_data.pop('id', None)
+                        ref_data.pop('created_at', None)
+                        ref_data.pop('updated_at', None)
+                        ref_data['created_by'] = request.user
+                        
+                        ReferenceValue.objects.get_or_create(
+                            category=ref_data['category'],
+                            code=ref_data['code'],
+                            defaults=ref_data
+                        )
+                        restored_count += 1
+                
+                # Restaurer les permissions de rôles
+                if 'role_permissions' in backup_data:
+                    for perm_data in backup_data['role_permissions']:
+                        perm_data.pop('id', None)
+                        perm_data.pop('created_at', None)
+                        perm_data.pop('updated_at', None)
+                        
+                        RolePermission.objects.get_or_create(
+                            role=perm_data['role'],
+                            permission=perm_data['permission'],
+                            defaults=perm_data
+                        )
+                        restored_count += 1
+                
+                SystemLog.log(
+                    'INFO', 'system_config', 
+                    f'Restauration des paramètres: {restored_count} éléments restaurés',
+                    user=request.user
+                )
+                messages.success(request, f'{restored_count} éléments restaurés avec succès.')
+                return redirect('core:settings_dashboard')
+                
+            except Exception as e:
+                messages.error(request, f'Erreur lors de la restauration: {str(e)}')
+        else:
+            messages.error(request, 'Veuillez sélectionner un fichier de sauvegarde.')
+    
+    return render(request, 'core/settings/settings_restore.html')
+
+@login_required
+def user_permissions(request, user_id):
+    """Affiche les permissions d'un utilisateur spécifique"""
+    if not (request.user.is_superuser or has_permission(request.user, 'user_view')):
+        return HttpResponseForbidden("Accès refusé")
+    
+    user_obj = get_object_or_404(User, id=user_id)
+    
+    # Récupérer toutes les permissions pour le rôle de l'utilisateur
+    permissions = RolePermission.objects.filter(role=user_obj.role).order_by('permission')
+    
+    # Grouper les permissions par catégorie
+    permissions_by_category = {}
+    for permission in permissions:
+        category = get_permission_category(permission.permission)
+        if category not in permissions_by_category:
+            permissions_by_category[category] = []
+        permissions_by_category[category].append(permission)
+    
+    # Statistiques
+    total_permissions = permissions.count()
+    active_permissions = permissions.filter(is_active=True).count()
+    inactive_permissions = total_permissions - active_permissions
+    
+    context = {
+        'user_obj': user_obj,
+        'permissions_by_category': permissions_by_category,
+        'total_permissions': total_permissions,
+        'active_permissions': active_permissions,
+        'inactive_permissions': inactive_permissions,
+    }
+    
+    return render(request, 'core/settings/user_permissions.html', context)
+
+def get_permission_category(permission_code):
+    """Retourne la catégorie d'une permission"""
+    category_mapping = {
+        # Gestion des utilisateurs
+        'user_create': 'Gestion des utilisateurs',
+        'user_edit': 'Gestion des utilisateurs',
+        'user_delete': 'Gestion des utilisateurs',
+        'user_view': 'Gestion des utilisateurs',
+        'user_activate': 'Gestion des utilisateurs',
+        
+        # Gestion des adhérents
+        'adherent_create': 'Gestion des adhérents',
+        'adherent_edit': 'Gestion des adhérents',
+        'adherent_delete': 'Gestion des adhérents',
+        'adherent_view': 'Gestion des adhérents',
+        
+        # Gestion des organisations
+        'organization_create': 'Gestion des organisations',
+        'organization_edit': 'Gestion des organisations',
+        'organization_delete': 'Gestion des organisations',
+        'organization_view': 'Gestion des organisations',
+        
+        # Gestion des interactions
+        'interaction_create': 'Gestion des interactions',
+        'interaction_edit': 'Gestion des interactions',
+        'interaction_delete': 'Gestion des interactions',
+        'interaction_view': 'Gestion des interactions',
+        
+        # Gestion des badges
+        'badge_create': 'Gestion des badges',
+        'badge_edit': 'Gestion des badges',
+        'badge_delete': 'Gestion des badges',
+        'badge_view': 'Gestion des badges',
+        'badge_revoke': 'Gestion des badges',
+        
+        # Gestion des objectifs
+        'objective_create': 'Gestion des objectifs',
+        'objective_edit': 'Gestion des objectifs',
+        'objective_delete': 'Gestion des objectifs',
+        'objective_view': 'Gestion des objectifs',
+        
+        # Gestion des paramètres
+        'settings_view': 'Gestion des paramètres',
+        'settings_edit': 'Gestion des paramètres',
+        'settings_roles': 'Gestion des paramètres',
+        'settings_references': 'Gestion des paramètres',
+        
+        # Rapports et statistiques
+        'reports_view': 'Rapports et statistiques',
+        'reports_export': 'Rapports et statistiques',
+        'stats_view': 'Rapports et statistiques',
+        
+        # Administration système
+        'system_admin': 'Administration système',
+        'data_backup': 'Administration système',
+        'data_restore': 'Administration système',
+    }
+    
+    return category_mapping.get(permission_code, 'Autres')
     

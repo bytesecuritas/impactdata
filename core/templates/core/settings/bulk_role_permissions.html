@@ -1,0 +1,361 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Assignation en Masse des Permissions{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-tasks text-primary"></i>
+                        Assignation en Masse des Permissions
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.role.id_for_label }}" class="form-label">
+                                        <i class="fas fa-user-tag"></i> Rôle Cible
+                                    </label>
+                                    {{ form.role }}
+                                    {% if form.role.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.role.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Sélectionnez le rôle auquel assigner les permissions.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.action.id_for_label }}" class="form-label">
+                                        <i class="fas fa-cogs"></i> Action
+                                    </label>
+                                    {{ form.action }}
+                                    {% if form.action.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.action.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Choisissez l'action à effectuer.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="fas fa-info-circle"></i> Aperçu
+                                    </label>
+                                    <div id="actionPreview" class="alert alert-info">
+                                        Sélectionnez un rôle et une action pour voir l'aperçu.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-check-square"></i> Permissions à Assigner
+                            </label>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
+                                        <div class="row">
+                                            {% for permission in form.permissions %}
+                                            <div class="col-md-6 mb-2">
+                                                <div class="form-check">
+                                                    {{ permission.tag }}
+                                                    <label class="form-check-label" for="{{ permission.id_for_label }}">
+                                                        {{ permission.choice_label }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if form.permissions.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.permissions.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Cochez les permissions que vous souhaitez assigner au rôle sélectionné.
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:role_permissions_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Appliquer les Changements
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aide et exemples -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle"></i>
+                        Guide d'Utilisation
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Actions Disponibles</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Ajouter</strong> - Ajoute les permissions sélectionnées au rôle</li>
+                                <li><strong>Retirer</strong> - Supprime les permissions sélectionnées du rôle</li>
+                                <li><strong>Remplacer</strong> - Remplace toutes les permissions du rôle par celles sélectionnées</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Exemples d'Usage</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Agent complet</strong> - Toutes les permissions de lecture + création d'adhérents/organisations</li>
+                                <li><strong>Superviseur</strong> - Toutes les permissions d'agent + gestion des objectifs</li>
+                                <li><strong>Admin</strong> - Toutes les permissions système</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Précautions</h6>
+                            <ul class="list-unstyled">
+                                <li>⚠️ L'action "Remplacer" supprime toutes les permissions existantes</li>
+                                <li>✅ Vérifiez les permissions avant d'appliquer</li>
+                                <li>📝 Les changements sont journalisés dans les logs système</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Templates de permissions prédéfinis -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-layer-group"></i>
+                        Templates Prédéfinis
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h6>Agent de Base</h6>
+                                <p class="text-muted small">Permissions minimales pour un agent</p>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadTemplate('agent_basic')">
+                                    <i class="fas fa-download"></i> Charger
+                                </button>
+                                <ul class="list-unstyled mt-2 small">
+                                    <li>• adherent_view</li>
+                                    <li>• organization_view</li>
+                                    <li>• interaction_view</li>
+                                    <li>• badge_view</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h6>Agent Complet</h6>
+                                <p class="text-muted small">Permissions complètes pour un agent</p>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadTemplate('agent_full')">
+                                    <i class="fas fa-download"></i> Charger
+                                </button>
+                                <ul class="list-unstyled mt-2 small">
+                                    <li>• Toutes les permissions de base</li>
+                                    <li>• adherent_create, edit</li>
+                                    <li>• organization_create, edit</li>
+                                    <li>• interaction_create, edit</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h6>Superviseur</h6>
+                                <p class="text-muted small">Permissions pour un superviseur</p>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadTemplate('supervisor')">
+                                    <i class="fas fa-download"></i> Charger
+                                </button>
+                                <ul class="list-unstyled mt-2 small">
+                                    <li>• Toutes les permissions d'agent</li>
+                                    <li>• objective_*</li>
+                                    <li>• user_view, edit</li>
+                                    <li>• reports_view</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select, .form-control {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.list-unstyled li {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.list-unstyled strong {
+    color: #495057;
+    font-weight: 600;
+}
+
+.border.rounded {
+    transition: all 0.2s ease;
+}
+
+.border.rounded:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+</style>
+
+<script>
+// Templates de permissions prédéfinis
+const templates = {
+    'agent_basic': [
+        'adherent_view',
+        'organization_view', 
+        'interaction_view',
+        'badge_view'
+    ],
+    'agent_full': [
+        'adherent_view', 'adherent_create', 'adherent_edit',
+        'organization_view', 'organization_create', 'organization_edit',
+        'interaction_view', 'interaction_create', 'interaction_edit',
+        'badge_view', 'badge_create', 'badge_edit'
+    ],
+    'supervisor': [
+        'adherent_view', 'adherent_create', 'adherent_edit',
+        'organization_view', 'organization_create', 'organization_edit',
+        'interaction_view', 'interaction_create', 'interaction_edit',
+        'badge_view', 'badge_create', 'badge_edit',
+        'objective_view', 'objective_create', 'objective_edit',
+        'user_view', 'user_edit',
+        'reports_view', 'stats_view'
+    ]
+};
+
+function loadTemplate(templateName) {
+    const permissions = templates[templateName];
+    if (!permissions) return;
+    
+    // Décocher toutes les permissions
+    document.querySelectorAll('input[name="permissions"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Cocher les permissions du template
+    permissions.forEach(permission => {
+        const checkbox = document.querySelector(`input[name="permissions"][value="${permission}"]`);
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+    });
+    
+    // Mettre à jour l'aperçu
+    updatePreview();
+    
+    // Afficher un message de confirmation
+    alert(`Template "${templateName}" chargé avec ${permissions.length} permissions.`);
+}
+
+function updatePreview() {
+    const roleSelect = document.getElementById('{{ form.role.id_for_label }}');
+    const actionSelect = document.getElementById('{{ form.action.id_for_label }}');
+    const previewDiv = document.getElementById('actionPreview');
+    
+    if (!roleSelect || !actionSelect || !previewDiv) return;
+    
+    const selectedRole = roleSelect.options[roleSelect.selectedIndex]?.text || 'Aucun rôle';
+    const selectedAction = actionSelect.options[actionSelect.selectedIndex]?.text || 'Aucune action';
+    const checkedPermissions = document.querySelectorAll('input[name="permissions"]:checked').length;
+    
+    let previewText = '';
+    if (roleSelect.value && actionSelect.value) {
+        previewText = `${selectedAction} ${checkedPermissions} permission(s) au rôle "${selectedRole}"`;
+    } else {
+        previewText = 'Sélectionnez un rôle et une action pour voir l\'aperçu.';
+    }
+    
+    previewDiv.textContent = previewText;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Mettre à jour l'aperçu quand les sélections changent
+    const roleSelect = document.getElementById('{{ form.role.id_for_label }}');
+    const actionSelect = document.getElementById('{{ form.action.id_for_label }}');
+    
+    if (roleSelect) roleSelect.addEventListener('change', updatePreview);
+    if (actionSelect) actionSelect.addEventListener('change', updatePreview);
+    
+    // Mettre à jour l'aperçu quand les permissions changent
+    document.querySelectorAll('input[name="permissions"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updatePreview);
+    });
+    
+    // Initialiser l'aperçu
+    updatePreview();
+});
+</script>
+{% endblock %} 

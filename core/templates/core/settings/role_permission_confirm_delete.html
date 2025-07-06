@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Supprimer la Permission{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Confirmer la Suppression
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attention :</strong> Vous êtes sur le point de supprimer une permission de rôle.
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Détails de la permission :</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Rôle :</strong><br>
+                                <span class="badge bg-primary">{{ permission.get_role_display }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Permission :</strong><br>
+                                <span class="badge bg-info">{{ permission.get_permission_display }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <strong>Statut :</strong>
+                            {% if permission.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Impact :</strong> Cette suppression affectera immédiatement les utilisateurs ayant ce rôle.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:role_permissions_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Confirmer la Suppression
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+</style>
+{% endblock %} 

@@ -1,0 +1,391 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Restaurer les Paramètres{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload text-danger"></i>
+                        Restaurer les Paramètres
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attention :</strong> La restauration de paramètres peut écraser les paramètres existants. 
+                        Assurez-vous d'avoir une sauvegarde récente avant de procéder.
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="backup_file" class="form-label">
+                                <i class="fas fa-file-upload"></i> Fichier de Sauvegarde
+                            </label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="backup_file" 
+                                   name="backup_file" 
+                                   accept=".json,.csv"
+                                   required>
+                            <div class="form-text">
+                                Sélectionnez un fichier de sauvegarde (.json ou .csv)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirm_restore" required>
+                                <label class="form-check-label" for="confirm_restore">
+                                    Je confirme que je souhaite restaurer les paramètres
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Cette action peut modifier les paramètres actuels de l'application
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="backup_before_restore" checked>
+                                <label class="form-check-label" for="backup_before_restore">
+                                    Créer une sauvegarde avant la restauration
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Recommandé : crée une sauvegarde automatique avant d'écraser les paramètres
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:settings_dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-danger" id="restore_button" disabled>
+                                <i class="fas fa-upload"></i> Restaurer les Paramètres
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Informations sur la restauration -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Processus de Restauration
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Étapes de restauration :</h6>
+                            <ol class="list-unstyled">
+                                <li><strong>1.</strong> Validation du fichier de sauvegarde</li>
+                                <li><strong>2.</strong> Sauvegarde automatique (si activée)</li>
+                                <li><strong>3.</strong> Restauration des paramètres</li>
+                                <li><strong>4.</strong> Validation des données restaurées</li>
+                                <li><strong>5.</strong> Confirmation de la restauration</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Ce qui sera restauré :</h6>
+                            <ul class="list-unstyled">
+                                <li>✓ Paramètres généraux</li>
+                                <li>✓ Valeurs de référence</li>
+                                <li>✓ Permissions de rôles</li>
+                                <li>✓ Métadonnées</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aperçu du fichier -->
+            <div class="card mt-4" id="file_preview" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-eye"></i>
+                        Aperçu du Fichier
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="preview_content">
+                        <!-- Le contenu de l'aperçu sera affiché ici -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des restaurations -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i>
+                        Dernières Restaurations
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Fichier</th>
+                                    <th>Éléments</th>
+                                    <th>Utilisateur</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for restore in recent_restores %}
+                                <tr>
+                                    <td>{{ restore.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ restore.filename }}</td>
+                                    <td>
+                                        {% if restore.parameters_count %}{{ restore.parameters_count }} paramètres{% endif %}
+                                        {% if restore.references_count %}{% if restore.parameters_count %}, {% endif %}{{ restore.references_count }} références{% endif %}
+                                        {% if restore.permissions_count %}{% if restore.parameters_count or restore.references_count %}, {% endif %}{{ restore.permissions_count }} permissions{% endif %}
+                                    </td>
+                                    <td>{{ restore.created_by.get_full_name }}</td>
+                                    <td>
+                                        {% if restore.success %}
+                                        <span class="badge bg-success">Succès</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Échec</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        Aucune restauration récente
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control, .form-select {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+}
+
+.btn-danger:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.list-unstyled li {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+#file_preview {
+    transition: all 0.3s ease;
+}
+
+.preview-item {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.preview-item h6 {
+    margin-bottom: 0.25rem;
+    color: #495057;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('backup_file');
+    const confirmCheckbox = document.getElementById('confirm_restore');
+    const restoreButton = document.getElementById('restore_button');
+    const filePreview = document.getElementById('file_preview');
+    const previewContent = document.getElementById('preview_content');
+    
+    // Gérer l'activation/désactivation du bouton de restauration
+    function updateRestoreButton() {
+        const fileSelected = fileInput.files.length > 0;
+        const confirmed = confirmCheckbox.checked;
+        restoreButton.disabled = !(fileSelected && confirmed);
+    }
+    
+    fileInput.addEventListener('change', function() {
+        updateRestoreButton();
+        if (this.files.length > 0) {
+            previewFile(this.files[0]);
+        } else {
+            filePreview.style.display = 'none';
+        }
+    });
+    
+    confirmCheckbox.addEventListener('change', updateRestoreButton);
+    
+    // Aperçu du fichier
+    function previewFile(file) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const content = e.target.result;
+                let data;
+                
+                if (file.name.endsWith('.json')) {
+                    data = JSON.parse(content);
+                } else {
+                    // Pour les fichiers CSV, on affiche juste les premières lignes
+                    const lines = content.split('\n').slice(0, 5);
+                    data = { csv_preview: lines };
+                }
+                
+                displayPreview(data, file.name);
+            } catch (error) {
+                displayPreview({ error: 'Impossible de lire le fichier' }, file.name);
+            }
+        };
+        
+        reader.readAsText(file);
+    }
+    
+    function displayPreview(data, filename) {
+        let html = `<h6>Fichier : ${filename}</h6>`;
+        
+        if (data.error) {
+            html += `<div class="alert alert-danger">${data.error}</div>`;
+        } else if (data.csv_preview) {
+            html += '<div class="preview-item">';
+            html += '<h6>Aperçu CSV :</h6>';
+            html += '<pre class="mb-0">' + data.csv_preview.join('\n') + '</pre>';
+            html += '</div>';
+        } else {
+            html += '<div class="row">';
+            
+            if (data.parameters) {
+                html += '<div class="col-md-4">';
+                html += '<div class="preview-item">';
+                html += `<h6>Paramètres (${data.parameters.length})</h6>`;
+                html += '<ul class="list-unstyled mb-0">';
+                data.parameters.slice(0, 3).forEach(param => {
+                    html += `<li>• ${param.parameter_key || 'Clé inconnue'}</li>`;
+                });
+                if (data.parameters.length > 3) {
+                    html += `<li>• ... et ${data.parameters.length - 3} autres</li>`;
+                }
+                html += '</ul></div></div>';
+            }
+            
+            if (data.reference_values) {
+                html += '<div class="col-md-4">';
+                html += '<div class="preview-item">';
+                html += `<h6>Références (${data.reference_values.length})</h6>`;
+                html += '<ul class="list-unstyled mb-0">';
+                data.reference_values.slice(0, 3).forEach(ref => {
+                    html += `<li>• ${ref.category || 'Catégorie inconnue'}: ${ref.label || 'Libellé inconnu'}</li>`;
+                });
+                if (data.reference_values.length > 3) {
+                    html += `<li>• ... et ${data.reference_values.length - 3} autres</li>`;
+                }
+                html += '</ul></div></div>';
+            }
+            
+            if (data.role_permissions) {
+                html += '<div class="col-md-4">';
+                html += '<div class="preview-item">';
+                html += `<h6>Permissions (${data.role_permissions.length})</h6>`;
+                html += '<ul class="list-unstyled mb-0">';
+                data.role_permissions.slice(0, 3).forEach(perm => {
+                    html += `<li>• ${perm.role || 'Rôle inconnu'}: ${perm.permission || 'Permission inconnue'}</li>`;
+                });
+                if (data.role_permissions.length > 3) {
+                    html += `<li>• ... et ${data.role_permissions.length - 3} autres</li>`;
+                }
+                html += '</ul></div></div>';
+            }
+            
+            html += '</div>';
+        }
+        
+        previewContent.innerHTML = html;
+        filePreview.style.display = 'block';
+    }
+    
+    // Confirmation avant restauration
+    restoreButton.addEventListener('click', function(e) {
+        if (!confirm('Êtes-vous sûr de vouloir restaurer les paramètres ? Cette action peut écraser les paramètres existants.')) {
+            e.preventDefault();
+        }
+    });
+    
+    // Initialiser l'état du bouton
+    updateRestoreButton();
+});
+</script>
+{% endblock %} 

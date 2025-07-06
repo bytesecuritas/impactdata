@@ -1,0 +1,325 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Sauvegarder les Paramètres{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-download text-primary"></i>
+                        Sauvegarder les Paramètres
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Information :</strong> Cette fonctionnalité vous permet de sauvegarder les paramètres de l'application 
+                            pour les restaurer ultérieurement ou les transférer vers un autre environnement.
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.include_system_params.id_for_label }}" class="form-label">
+                                <i class="fas fa-sliders-h"></i> Paramètres Système
+                            </label>
+                            <div class="form-check">
+                                {{ form.include_system_params }}
+                                <label class="form-check-label" for="{{ form.include_system_params.id_for_label }}">
+                                    Inclure les paramètres système
+                                </label>
+                            </div>
+                            {% if form.include_system_params.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.include_system_params.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Paramètres critiques pour le fonctionnement de l'application (nom de l'organisation, configuration email, etc.)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.include_reference_values.id_for_label }}" class="form-label">
+                                <i class="fas fa-list"></i> Valeurs de Référence
+                            </label>
+                            <div class="form-check">
+                                {{ form.include_reference_values }}
+                                <label class="form-check-label" for="{{ form.include_reference_values.id_for_label }}">
+                                    Inclure les valeurs de référence
+                                </label>
+                            </div>
+                            {% if form.include_reference_values.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.include_reference_values.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Listes déroulantes et valeurs de référence utilisées dans l'application
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.include_role_permissions.id_for_label }}" class="form-label">
+                                <i class="fas fa-shield-alt"></i> Permissions de Rôles
+                            </label>
+                            <div class="form-check">
+                                {{ form.include_role_permissions }}
+                                <label class="form-check-label" for="{{ form.include_role_permissions.id_for_label }}">
+                                    Inclure les permissions de rôles
+                                </label>
+                            </div>
+                            {% if form.include_role_permissions.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.include_role_permissions.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Configuration des permissions associées à chaque rôle utilisateur
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.format.id_for_label }}" class="form-label">
+                                <i class="fas fa-file-code"></i> Format d'Export
+                            </label>
+                            {{ form.format }}
+                            {% if form.format.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.format.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Format du fichier de sauvegarde
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:settings_dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download"></i> Créer la Sauvegarde
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Informations sur la sauvegarde -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Informations sur la Sauvegarde
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Ce qui est inclus :</h6>
+                            <ul class="list-unstyled">
+                                <li>✓ Paramètres généraux de l'application</li>
+                                <li>✓ Valeurs de référence (listes déroulantes)</li>
+                                <li>✓ Permissions de rôles</li>
+                                <li>✓ Métadonnées (horodatage, utilisateur)</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Ce qui n'est PAS inclus :</h6>
+                            <ul class="list-unstyled">
+                                <li>✗ Données utilisateurs</li>
+                                <li>✗ Données métier (adhérents, organisations)</li>
+                                <li>✗ Fichiers uploadés</li>
+                                <li>✗ Journaux système</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attention :</strong> La sauvegarde ne contient que les paramètres de configuration. 
+                        Pour une sauvegarde complète de l'application, utilisez les outils de sauvegarde de base de données.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des sauvegardes -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i>
+                        Dernières Sauvegardes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Format</th>
+                                    <th>Éléments</th>
+                                    <th>Utilisateur</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backup in recent_backups %}
+                                <tr>
+                                    <td>{{ backup.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ backup.format|upper }}</td>
+                                    <td>
+                                        {% if backup.include_system_params %}Paramètres{% endif %}
+                                        {% if backup.include_reference_values %}{% if backup.include_system_params %}, {% endif %}Références{% endif %}
+                                        {% if backup.include_role_permissions %}{% if backup.include_system_params or backup.include_reference_values %}, {% endif %}Permissions{% endif %}
+                                    </td>
+                                    <td>{{ backup.created_by.get_full_name }}</td>
+                                    <td>
+                                        <a href="{% url 'core:settings_backup_download' backup.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        Aucune sauvegarde récente
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select, .form-control {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.list-unstyled li {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Améliorer l'expérience utilisateur
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const submitButton = document.querySelector('button[type="submit"]');
+    
+    // Vérifier qu'au moins une option est sélectionnée
+    function updateSubmitButton() {
+        const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        if (checkedBoxes.length === 0) {
+            submitButton.disabled = true;
+            submitButton.title = 'Sélectionnez au moins une option';
+        } else {
+            submitButton.disabled = false;
+            submitButton.title = '';
+        }
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSubmitButton);
+    });
+    
+    // Initialiser l'état du bouton
+    updateSubmitButton();
+    
+    // Afficher un aperçu de ce qui sera sauvegardé
+    function updatePreview() {
+        const includeSystem = document.getElementById('{{ form.include_system_params.id_for_label }}').checked;
+        const includeReferences = document.getElementById('{{ form.include_reference_values.id_for_label }}').checked;
+        const includePermissions = document.getElementById('{{ form.include_role_permissions.id_for_label }}').checked;
+        
+        let preview = 'Sauvegarde de : ';
+        const items = [];
+        
+        if (includeSystem) items.push('paramètres système');
+        if (includeReferences) items.push('valeurs de référence');
+        if (includePermissions) items.push('permissions de rôles');
+        
+        if (items.length === 0) {
+            preview = 'Aucun élément sélectionné';
+        } else {
+            preview += items.join(', ');
+        }
+        
+        // Ici on pourrait mettre à jour un élément d'aperçu
+        console.log(preview);
+    }
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updatePreview);
+    });
+    
+    // Initialiser l'aperçu
+    updatePreview();
+});
+</script>
+{% endblock %} 

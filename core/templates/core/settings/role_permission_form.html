@@ -1,0 +1,217 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt text-primary"></i>
+                        {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.role.id_for_label }}" class="form-label">
+                                        <i class="fas fa-user-tag"></i> Rôle
+                                    </label>
+                                    {{ form.role }}
+                                    {% if form.role.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.role.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Sélectionnez le rôle auquel assigner cette permission.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.is_active.id_for_label }}" class="form-label">
+                                        <i class="fas fa-toggle-on"></i> Statut
+                                    </label>
+                                    <div class="form-check">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Permission active
+                                        </label>
+                                    </div>
+                                    {% if form.is_active.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.is_active.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Une permission inactive n'est pas appliquée.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.permission.id_for_label }}" class="form-label">
+                                <i class="fas fa-key"></i> Permission
+                            </label>
+                            {{ form.permission }}
+                            {% if form.permission.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.permission.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Sélectionnez la permission à assigner à ce rôle.
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:role_permissions_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aide contextuelle -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle"></i>
+                        Aide sur les Permissions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Gestion des Utilisateurs</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>user_create</strong> - Créer de nouveaux utilisateurs</li>
+                                <li><strong>user_edit</strong> - Modifier les utilisateurs existants</li>
+                                <li><strong>user_delete</strong> - Supprimer des utilisateurs</li>
+                                <li><strong>user_view</strong> - Voir la liste des utilisateurs</li>
+                                <li><strong>user_activate</strong> - Activer/désactiver des comptes</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Gestion des Données</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>adherent_*</strong> - Opérations sur les adhérents</li>
+                                <li><strong>organization_*</strong> - Opérations sur les organisations</li>
+                                <li><strong>interaction_*</strong> - Opérations sur les interactions</li>
+                                <li><strong>badge_*</strong> - Opérations sur les badges</li>
+                                <li><strong>objective_*</strong> - Opérations sur les objectifs</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6>Administration</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>settings_*</strong> - Paramètres de l'application</li>
+                                <li><strong>reports_*</strong> - Rapports et exports</li>
+                                <li><strong>stats_view</strong> - Accès aux statistiques</li>
+                                <li><strong>system_admin</strong> - Administration système</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Données</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>data_backup</strong> - Sauvegarder les données</li>
+                                <li><strong>data_restore</strong> - Restaurer les données</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select, .form-control {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.list-unstyled li {
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.list-unstyled strong {
+    color: #495057;
+    font-weight: 600;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Améliorer l'expérience utilisateur
+    const roleSelect = document.getElementById('{{ form.role.id_for_label }}');
+    const permissionSelect = document.getElementById('{{ form.permission.id_for_label }}');
+    
+    if (roleSelect && permissionSelect) {
+        // Filtrer les permissions selon le rôle sélectionné
+        roleSelect.addEventListener('change', function() {
+            const selectedRole = this.value;
+            
+            // Réinitialiser la sélection de permission
+            permissionSelect.value = '';
+            
+            // Optionnel : filtrer les permissions selon le rôle
+            // (à implémenter si nécessaire)
+        });
+    }
+});
+</script>
+{% endblock %} 

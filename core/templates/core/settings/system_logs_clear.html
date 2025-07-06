@@ -1,0 +1,325 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Nettoyer les Journaux{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-broom"></i>
+                        Nettoyer les Journaux Système
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attention :</strong> Cette action supprimera définitivement les anciens journaux système.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Statistiques Actuelles</h6>
+                            <div class="list-group">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    Total des journaux
+                                    <span class="badge bg-primary rounded-pill">{{ total_logs }}</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    Journaux d'erreur
+                                    <span class="badge bg-danger rounded-pill">{{ error_logs }}</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    Journaux d'aujourd'hui
+                                    <span class="badge bg-success rounded-pill">{{ today_logs }}</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    Journaux > 30 jours
+                                    <span class="badge bg-warning text-dark rounded-pill">{{ old_logs }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Options de Nettoyage</h6>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="cleanup_option" id="option_30" value="30" checked>
+                                <label class="form-check-label" for="option_30">
+                                    <strong>Supprimer les journaux de plus de 30 jours</strong>
+                                    <br><small class="text-muted">Recommandé - Garde un historique récent</small>
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="cleanup_option" id="option_7" value="7">
+                                <label class="form-check-label" for="option_7">
+                                    <strong>Supprimer les journaux de plus de 7 jours</strong>
+                                    <br><small class="text-muted">Nettoyage agressif - Garde seulement la semaine</small>
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="cleanup_option" id="option_all" value="all">
+                                <label class="form-check-label" for="option_all">
+                                    <strong>Supprimer tous les journaux</strong>
+                                    <br><small class="text-muted">⚠️ DANGEREUX - Supprime tout l'historique</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Impact :</strong> 
+                        <span id="impact_text">Cette action supprimera environ {{ old_logs }} journaux de plus de 30 jours.</span>
+                    </div>
+
+                    <form method="post" id="cleanup_form">
+                        {% csrf_token %}
+                        <input type="hidden" name="cleanup_option" id="cleanup_option_input" value="30">
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirm_cleanup" required>
+                                <label class="form-check-label" for="confirm_cleanup">
+                                    Je confirme que je souhaite nettoyer les journaux système
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:system_logs_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-warning" id="cleanup_button" disabled>
+                                <i class="fas fa-broom"></i> Nettoyer les Journaux
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recommandations -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb"></i>
+                        Recommandations
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Avant le nettoyage :</h6>
+                            <ul class="list-unstyled">
+                                <li>✓ Exporter les journaux importants</li>
+                                <li>✓ Vérifier qu'aucune investigation est en cours</li>
+                                <li>✓ S'assurer d'avoir une sauvegarde</li>
+                                <li>✓ Choisir la bonne période de rétention</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Après le nettoyage :</h6>
+                            <ul class="list-unstyled">
+                                <li>✓ Vérifier que le nettoyage s'est bien passé</li>
+                                <li>✓ Surveiller les nouveaux journaux</li>
+                                <li>✓ Configurer un nettoyage automatique si nécessaire</li>
+                                <li>✓ Documenter l'action effectuée</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique des nettoyages -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history"></i>
+                        Historique des Nettoyages
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Option</th>
+                                    <th>Journaux supprimés</th>
+                                    <th>Utilisateur</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cleanup in cleanup_history %}
+                                <tr>
+                                    <td>{{ cleanup.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if cleanup.option == '30' %}
+                                        <span class="badge bg-info">30 jours</span>
+                                        {% elif cleanup.option == '7' %}
+                                        <span class="badge bg-warning text-dark">7 jours</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Tous</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ cleanup.deleted_count }}</td>
+                                    <td>{{ cleanup.created_by.get_full_name }}</td>
+                                    <td>
+                                        {% if cleanup.success %}
+                                        <span class="badge bg-success">Succès</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Échec</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        Aucun nettoyage récent
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    border-radius: 0 !important;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.alert {
+    border-radius: 0.375rem;
+}
+
+.btn {
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+.form-check-input:checked {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirm_cleanup');
+    const cleanupButton = document.getElementById('cleanup_button');
+    const cleanupOptionInput = document.getElementById('cleanup_option_input');
+    const impactText = document.getElementById('impact_text');
+    
+    // Statistiques
+    const stats = {
+        total: {{ total_logs }},
+        old_30: {{ old_logs }},
+        old_7: {{ old_logs_7 }},
+        today: {{ today_logs }}
+    };
+    
+    // Gérer l'activation/désactivation du bouton
+    function updateCleanupButton() {
+        cleanupButton.disabled = !confirmCheckbox.checked;
+    }
+    
+    confirmCheckbox.addEventListener('change', updateCleanupButton);
+    
+    // Mettre à jour l'impact selon l'option sélectionnée
+    function updateImpact() {
+        const selectedOption = document.querySelector('input[name="cleanup_option"]:checked').value;
+        cleanupOptionInput.value = selectedOption;
+        
+        let impactMessage = '';
+        let impactCount = 0;
+        
+        if (selectedOption === '30') {
+            impactCount = stats.old_30;
+            impactMessage = `Cette action supprimera environ ${impactCount} journaux de plus de 30 jours.`;
+        } else if (selectedOption === '7') {
+            impactCount = stats.old_7;
+            impactMessage = `Cette action supprimera environ ${impactCount} journaux de plus de 7 jours.`;
+        } else if (selectedOption === 'all') {
+            impactCount = stats.total;
+            impactMessage = `⚠️ ATTENTION : Cette action supprimera TOUS les ${impactCount} journaux !`;
+        }
+        
+        impactText.textContent = impactMessage;
+        
+        // Changer la couleur de l'alerte pour l'option "tous"
+        const alertElement = impactText.closest('.alert');
+        if (selectedOption === 'all') {
+            alertElement.classList.remove('alert-info');
+            alertElement.classList.add('alert-danger');
+        } else {
+            alertElement.classList.remove('alert-danger');
+            alertElement.classList.add('alert-info');
+        }
+    }
+    
+    // Écouter les changements d'option
+    document.querySelectorAll('input[name="cleanup_option"]').forEach(radio => {
+        radio.addEventListener('change', updateImpact);
+    });
+    
+    // Confirmation spéciale pour l'option "tous"
+    cleanupButton.addEventListener('click', function(e) {
+        const selectedOption = document.querySelector('input[name="cleanup_option"]:checked').value;
+        
+        if (selectedOption === 'all') {
+            if (!confirm('⚠️ ATTENTION : Vous êtes sur le point de supprimer TOUS les journaux système. Cette action est irréversible. Êtes-vous absolument sûr ?')) {
+                e.preventDefault();
+                return;
+            }
+            
+            if (!confirm('Dernière confirmation : Voulez-vous vraiment supprimer tous les journaux ?')) {
+                e.preventDefault();
+                return;
+            }
+        } else {
+            if (!confirm('Êtes-vous sûr de vouloir nettoyer les journaux système ?')) {
+                e.preventDefault();
+                return;
+            }
+        }
+    });
+    
+    // Initialiser
+    updateCleanupButton();
+    updateImpact();
+});
+</script>
+{% endblock %} 

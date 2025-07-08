@@ -1,13 +1,13 @@
-﻿asgiref==3.8.1
+﻿asgiref==3.7.2
 charset-normalizer==3.4.2
 colorama==0.4.6
-Django==5.2.3
-mysqlclient==2.2.7
-pillow==11.2.1
+Django==4.2.23
+# mysqlclient==2.2.7
+pillow==10.2.0
 python-decouple==3.8
 qrcode==8.2
-reportlab==4.4.2
-sqlparse==0.5.3
-tzdata==2025.2
-gunicorn
+reportlab==4.0.7
+sqlparse==0.4.4
+tzdata==2024.1
+gunicorn==21.2.0
 

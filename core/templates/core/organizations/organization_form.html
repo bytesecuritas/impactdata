@@ -157,7 +157,7 @@
                             <a href="{% url 'core:organization_list' %}" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left"></i> Retour à la liste
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
                                 <i class="fas fa-save"></i> {{ submit_text }}
                             </button>
                         </div>
@@ -167,4 +167,74 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Récupérer les éléments du formulaire
+    const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const numberPersonnelInput = document.getElementById('{{ form.number_personnel.id_for_label }}');
+    const monthlyRevenueInput = document.getElementById('{{ form.monthly_revenue.id_for_label }}');
+    const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
+    const whatsappInput = document.getElementById('{{ form.whatsapp.id_for_label }}');
+    const addressInput = document.getElementById('{{ form.address.id_for_label }}');
+    const creationDateInput = document.getElementById('{{ form.creation_date.id_for_label }}');
+    const infosAnnexesInput = document.getElementById('{{ form.infos_annexes.id_for_label }}');
+    const hobiesInput = document.getElementById('{{ form.hobies.id_for_label }}');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // Fonction pour activer/désactiver les champs
+    function toggleFields() {
+        const isCategorySelected = categorySelect.value !== '';
+        
+        // Désactiver/activer tous les autres champs
+        const fieldsToToggle = [
+            nameInput, numberPersonnelInput, monthlyRevenueInput, 
+            phoneInput, whatsappInput, addressInput, creationDateInput,
+            infosAnnexesInput, hobiesInput, submitBtn
+        ];
+        
+        fieldsToToggle.forEach(field => {
+            if (field) {
+                field.disabled = !isCategorySelected;
+                if (field.classList) {
+                    if (!isCategorySelected) {
+                        field.classList.add('disabled');
+                    } else {
+                        field.classList.remove('disabled');
+                    }
+                }
+            }
+        });
+
+        // Changer l'apparence visuelle
+        if (!isCategorySelected) {
+            submitBtn.classList.add('btn-secondary');
+            submitBtn.classList.remove('btn-primary');
+        } else {
+            submitBtn.classList.remove('btn-secondary');
+            submitBtn.classList.add('btn-primary');
+        }
+    }
+
+    // Initialiser l'état des champs
+    toggleFields();
+
+    // Écouter les changements sur le select de catégorie
+    categorySelect.addEventListener('change', toggleFields);
+});
+</script>
+
+<style>
+.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.form-control:disabled {
+    background-color: #f8f9fa;
+    opacity: 0.6;
+}
+</style>
+
 {% endblock %} 

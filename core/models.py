@@ -468,6 +468,7 @@ class Organization(models.Model):
     )
     phone = models.CharField(
         max_length=20,
+        unique=True,
         validators=[User.phone_validator],
         verbose_name="Téléphone"
     )
@@ -561,6 +562,7 @@ class Adherent(models.Model):
 
     phone1 = models.CharField(
         max_length=15,
+        unique=True,
         validators=[User.phone_validator],
         verbose_name="Téléphone principal"
     )

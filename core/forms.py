@@ -88,6 +88,9 @@ class AdherentForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         phone1 = cleaned_data.get('phone1')
+        # verifié que le numéro de téléphone est unique dans la base de données
+        if phone1 and Adherent.objects.filter(phone1=phone1).exists():
+            raise forms.ValidationError("Le numéro de téléphone principal existe déjà pour un autre adhérent.")
         phone2 = cleaned_data.get('phone2')
         
         # Validation des numéros de téléphone
@@ -128,6 +131,16 @@ class CategoryForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Mécanique'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder':'Ce dans couvre quelles domaines ...'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get('name')
+        
+        # Vérifier l'unicité du nom de la catégorie
+        if name and Category.objects.filter(name__iexact=name).exists():
+            raise forms.ValidationError("Une catégorie avec ce nom existe déjà.")
+        
+        return cleaned_data        
 
 # Formulaires pour Interaction
 class InteractionForm(forms.ModelForm):

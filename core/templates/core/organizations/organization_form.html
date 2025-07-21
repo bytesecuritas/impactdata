@@ -167,4 +167,50 @@
         </div>
     </div>
 </div>
+
+<!-- Script pour la gestion des champs selon la catégorie -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
+    const monthlyRevenueField = document.getElementById('{{ form.monthly_revenue.id_for_label }}');
+    const hobbiesField = document.getElementById('{{ form.hobies.id_for_label }}');
+    
+    // Fonction pour gérer l'activation/désactivation des champs selon la catégorie
+    function toggleFieldsBasedOnCategory() {
+        const selectedCategory = categorySelect.value;
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const categoryName = selectedOption ? selectedOption.text.toLowerCase() : '';
+        
+        // Désactiver les champs financiers pour certaines catégories
+        if (categoryName.includes('association') || categoryName.includes('ong') || categoryName.includes('organisme')) {
+            monthlyRevenueField.disabled = true;
+            monthlyRevenueField.value = '';
+            monthlyRevenueField.classList.add('form-control', 'disabled');
+            monthlyRevenueField.parentNode.classList.add('text-muted');
+        } else {
+            monthlyRevenueField.disabled = false;
+            monthlyRevenueField.classList.remove('disabled');
+            monthlyRevenueField.parentNode.classList.remove('text-muted');
+        }
+        
+        // Désactiver les hobbies pour certaines catégories
+        if (categoryName.includes('entreprise') || categoryName.includes('société') || categoryName.includes('compagnie')) {
+            hobbiesField.disabled = true;
+            hobbiesField.value = '';
+            hobbiesField.classList.add('form-control', 'disabled');
+            hobbiesField.parentNode.classList.add('text-muted');
+        } else {
+            hobbiesField.disabled = false;
+            hobbiesField.classList.remove('disabled');
+            hobbiesField.parentNode.classList.remove('text-muted');
+        }
+    }
+    
+    // Appliquer les règles au chargement de la page
+    toggleFieldsBasedOnCategory();
+    
+    // Appliquer les règles quand la catégorie change
+    categorySelect.addEventListener('change', toggleFieldsBasedOnCategory);
+});
+</script>
 {% endblock %} 

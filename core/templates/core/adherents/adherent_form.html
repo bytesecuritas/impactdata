@@ -347,4 +347,80 @@
         </div>
     </div>
 </div>
+
+<!-- Script pour la gestion des champs selon l'organisation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const organizationSelect = document.getElementById('{{ form.organisation.id_for_label }}');
+    const medicalInfoField = document.getElementById('{{ form.medical_info.id_for_label }}');
+    const formationProField = document.getElementById('{{ form.formation_pro.id_for_label }}');
+    const distinctionField = document.getElementById('{{ form.distinction.id_for_label }}');
+    const languesField = document.getElementById('{{ form.langues.id_for_label }}');
+    
+    // Fonction pour gérer l'activation/désactivation des champs selon l'organisation
+    function toggleFieldsBasedOnOrganization() {
+        const selectedOrganization = organizationSelect.value;
+        const selectedOption = organizationSelect.options[organizationSelect.selectedIndex];
+        const organizationName = selectedOption ? selectedOption.text.toLowerCase() : '';
+        
+        // Désactiver les informations médicales pour les organisations non-santé
+        if (organizationName.includes('entreprise') || organizationName.includes('société') || 
+            organizationName.includes('compagnie') || organizationName.includes('commerce')) {
+            medicalInfoField.disabled = true;
+            medicalInfoField.value = '';
+            medicalInfoField.classList.add('form-control', 'disabled');
+            medicalInfoField.parentNode.classList.add('text-muted');
+        } else {
+            medicalInfoField.disabled = false;
+            medicalInfoField.classList.remove('disabled');
+            medicalInfoField.parentNode.classList.remove('text-muted');
+        }
+        
+        // Désactiver la formation professionnelle pour les organisations simples
+        if (organizationName.includes('association') || organizationName.includes('ong') || 
+            organizationName.includes('organisme') || organizationName.includes('groupe')) {
+            formationProField.disabled = true;
+            formationProField.value = '';
+            formationProField.classList.add('form-control', 'disabled');
+            formationProField.parentNode.classList.add('text-muted');
+        } else {
+            formationProField.disabled = false;
+            formationProField.classList.remove('disabled');
+            formationProField.parentNode.classList.remove('text-muted');
+        }
+        
+        // Désactiver les distinctions pour les organisations non-prestigieuses
+        if (organizationName.includes('petit') || organizationName.includes('local') || 
+            organizationName.includes('simple')) {
+            distinctionField.disabled = true;
+            distinctionField.value = '';
+            distinctionField.classList.add('form-control', 'disabled');
+            distinctionField.parentNode.classList.add('text-muted');
+        } else {
+            distinctionField.disabled = false;
+            distinctionField.classList.remove('disabled');
+            distinctionField.parentNode.classList.remove('text-muted');
+        }
+        
+        // Désactiver les langues pour les organisations locales
+        if (organizationName.includes('local') || organizationName.includes('régional') || 
+            organizationName.includes('communautaire')) {
+            languesField.disabled = true;
+            languesField.value = '';
+            languesField.classList.add('form-control', 'disabled');
+            languesField.parentNode.classList.add('text-muted');
+        } else {
+            languesField.disabled = false;
+            languesField.classList.remove('disabled');
+            languesField.parentNode.classList.remove('text-muted');
+        }
+    }
+    
+    // Appliquer les règles au chargement de la page
+    toggleFieldsBasedOnOrganization();
+    
+    // Appliquer les règles quand l'organisation change
+    organizationSelect.addEventListener('change', toggleFieldsBasedOnOrganization);
+});
+</script>
 {% endblock %} 

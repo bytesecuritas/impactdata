@@ -41,26 +41,26 @@ class AdherentForm(forms.ModelForm):
             'organisation', 'profile_picture', 'activity_name', 'badge_validity'
         ]
         widgets = {
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Moussa'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Diallo'}),
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'type_adherent': forms.Select(attrs={'class': 'form-select'}),
-            'commune': forms.TextInput(attrs={'class': 'form-control'}),
-            'quartier': forms.TextInput(attrs={'class': 'form-control'}),
-            'secteur': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone1': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone2': forms.TextInput(attrs={'class': 'form-control'}),
-            'num_urgence1': forms.TextInput(attrs={'class': 'form-control'}),
-            'num_urgence2': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'medical_info': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'langues': forms.TextInput(attrs={'class': 'form-control'}),
+            'commune': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Kaloum'}),
+            'quartier': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Almamya'}),
+            'secteur': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Secteur 1'}),
+            'phone1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: +224 625 123 456'}),
+            'phone2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: +224 625 789 012'}),
+            'num_urgence1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: +224 625 345 678'}),
+            'num_urgence2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: +224 625 901 234'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ex: moussa.diallo@email.com'}),
+            'medical_info': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ex: Allergie aux arachides, Groupe sanguin O+...'}),
+            'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ex: Licence en Commerce, Formation en Marketing...'}),
+            'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ex: Meilleur vendeur 2023, Certificat d\'excellence...'}),
+            'langues': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Français, Soussou, Malinké, Anglais'}),
             'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'organisation': forms.Select(attrs={'class': 'form-select'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
-            'activity_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'activity_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Commerçant, Artisan, Macanier'}),
             'badge_validity': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
@@ -109,17 +109,17 @@ class OrganizationForm(forms.ModelForm):
             'number_personnel', 'infos_annexes', 'hobies'
         ]
         widgets = {
-            'identifiant': forms.NumberInput(attrs={'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'monthly_revenue': forms.NumberInput(attrs={'class': 'form-control'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'identifiant': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 1001'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Entreprise ABC'}),
+            'monthly_revenue': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5000000'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ex: 123 Rue de la Paix, Conakry'}),
             'creation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: +224 625 123 456'}),
+            'whatsapp': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: +224 625 123 456'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
-            'number_personnel': forms.NumberInput(attrs={'class': 'form-control'}),
-            'infos_annexes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'hobies': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'number_personnel': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25'}),
+            'infos_annexes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Informations supplémentaires sur l\'organisation...'}),
+            'hobies': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ex: Football, Musique, Lecture...'}),
         }
 
 # Formulaires pour Catégorie
@@ -128,8 +128,8 @@ class CategoryForm(forms.ModelForm):
         model = Category
         fields = ['name', 'description']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Entreprise Commerciale'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ex: Organisations spécialisées dans le commerce et la vente...'}),
         }
 
 # Formulaires pour Interaction
@@ -141,10 +141,10 @@ class InteractionForm(forms.ModelForm):
             'due_date', 'status'
         ]
         widgets = {
-            'identifiant': forms.TextInput(attrs={'class': 'form-control'}),
+            'identifiant': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: INT-2024-001'}),
             'personnel': forms.Select(attrs={'class': 'form-control'}),
             'adherent': forms.Select(attrs={'class': 'form-control'}),
-            'report': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'report': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Ex: Visite de suivi effectuée. L\'adhérent a bien progressé dans son activité...'}),
             'due_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
         }

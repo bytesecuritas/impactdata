@@ -13,6 +13,12 @@
                     </h4>
                 </div>
                 <div class="card-body">
+                    <!-- Message d'aide général -->
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Conseil :</strong> Commencez par sélectionner un adhérent pour activer tous les champs du formulaire.
+                    </div>
+                    
                     <form method="post">
                         {% csrf_token %}
                         
@@ -51,6 +57,9 @@
                                     {% if form.adherent.errors %}
                                         <div class="text-danger">{{ form.adherent.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> Veuillez sélectionner un adhérent pour activer les autres champs.
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
@@ -111,39 +120,78 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const adherentSelect = document.getElementById('{{ form.adherent.id_for_label }}');
-    const dueDateField = document.getElementById('{{ form.due_date.id_for_label }}');
-    const reportField = document.getElementById('{{ form.report.id_for_label }}');
+    
+    // Récupérer tous les champs du formulaire (sauf l'adhérent lui-même)
+    const formFields = [
+        document.getElementById('{{ form.identifiant.id_for_label }}'),
+        document.getElementById('{{ form.personnel.id_for_label }}'),
+        document.getElementById('{{ form.status.id_for_label }}'),
+        document.getElementById('{{ form.due_date.id_for_label }}'),
+        document.getElementById('{{ form.report.id_for_label }}')
+    ];
+    
+    // Fonction pour désactiver tous les champs
+    function disableAllFields() {
+        formFields.forEach(field => {
+            if (field) {
+                field.disabled = true;
+                field.classList.add('form-control', 'disabled');
+                field.parentNode.classList.add('text-muted');
+            }
+        });
+    }
+    
+    // Fonction pour activer tous les champs
+    function enableAllFields() {
+        formFields.forEach(field => {
+            if (field) {
+                field.disabled = false;
+                field.classList.remove('disabled');
+                field.parentNode.classList.remove('text-muted');
+            }
+        });
+    }
     
     // Fonction pour gérer l'activation/désactivation des champs selon l'adhérent
     function toggleFieldsBasedOnAdherent() {
         const selectedAdherent = adherentSelect.value;
+        
+        // Si aucun adhérent n'est sélectionné, désactiver tous les champs
+        if (!selectedAdherent || selectedAdherent === '') {
+            disableAllFields();
+            return;
+        }
+        
+        // Activer tous les champs si un adhérent est sélectionné
+        enableAllFields();
+        
         const selectedOption = adherentSelect.options[adherentSelect.selectedIndex];
         const adherentName = selectedOption ? selectedOption.text.toLowerCase() : '';
+        
+        // Règles spécifiques selon l'adhérent
+        const dueDateField = document.getElementById('{{ form.due_date.id_for_label }}');
+        const reportField = document.getElementById('{{ form.report.id_for_label }}');
         
         // Désactiver la date d'échéance pour les adhérents VIP ou prioritaires
         if (adherentName.includes('vip') || adherentName.includes('prioritaire') || 
             adherentName.includes('important') || adherentName.includes('urgent')) {
-            dueDateField.disabled = true;
-            dueDateField.value = '';
-            dueDateField.classList.add('form-control', 'disabled');
-            dueDateField.parentNode.classList.add('text-muted');
-        } else {
-            dueDateField.disabled = false;
-            dueDateField.classList.remove('disabled');
-            dueDateField.parentNode.classList.remove('text-muted');
+            if (dueDateField) {
+                dueDateField.disabled = true;
+                dueDateField.value = '';
+                dueDateField.classList.add('form-control', 'disabled');
+                dueDateField.parentNode.classList.add('text-muted');
+            }
         }
         
         // Désactiver le rapport pour les adhérents simples
         if (adherentName.includes('simple') || adherentName.includes('basique') || 
             adherentName.includes('standard')) {
-            reportField.disabled = true;
-            reportField.value = '';
-            reportField.classList.add('form-control', 'disabled');
-            reportField.parentNode.classList.add('text-muted');
-        } else {
-            reportField.disabled = false;
-            reportField.classList.remove('disabled');
-            reportField.parentNode.classList.remove('text-muted');
+            if (reportField) {
+                reportField.disabled = true;
+                reportField.value = '';
+                reportField.classList.add('form-control', 'disabled');
+                reportField.parentNode.classList.add('text-muted');
+            }
         }
     }
     

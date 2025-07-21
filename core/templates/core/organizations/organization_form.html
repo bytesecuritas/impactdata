@@ -13,6 +13,12 @@
                     </h4>
                 </div>
                 <div class="card-body">
+                    <!-- Message d'aide général -->
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Conseil :</strong> Commencez par sélectionner une catégorie pour activer tous les champs du formulaire.
+                    </div>
+                    
                     <form method="post">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
@@ -56,6 +62,9 @@
                                     {% if form.category.errors %}
                                         <div class="text-danger">{{ form.category.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> Veuillez sélectionner une catégorie pour activer les autres champs.
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
@@ -173,73 +182,93 @@
     </div>
 </div>
 
+<!-- Script pour la gestion des champs selon la catégorie -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Récupérer les éléments du formulaire
     const categorySelect = document.getElementById('{{ form.category.id_for_label }}');
-    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
-    const numberPersonnelInput = document.getElementById('{{ form.number_personnel.id_for_label }}');
-    const monthlyRevenueInput = document.getElementById('{{ form.monthly_revenue.id_for_label }}');
-    const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
-    const whatsappInput = document.getElementById('{{ form.whatsapp.id_for_label }}');
-    const addressInput = document.getElementById('{{ form.address.id_for_label }}');
-    const creationDateInput = document.getElementById('{{ form.creation_date.id_for_label }}');
-    const infosAnnexesInput = document.getElementById('{{ form.infos_annexes.id_for_label }}');
-    const hobiesInput = document.getElementById('{{ form.hobies.id_for_label }}');
-    const submitBtn = document.getElementById('submit-btn');
-
-    // Fonction pour activer/désactiver les champs
-    function toggleFields() {
-        const isCategorySelected = categorySelect.value !== '';
-        
-        // Désactiver/activer tous les autres champs
-        const fieldsToToggle = [
-            nameInput, numberPersonnelInput, monthlyRevenueInput, 
-            phoneInput, whatsappInput, addressInput, creationDateInput,
-            infosAnnexesInput, hobiesInput, submitBtn
-        ];
-        
-        fieldsToToggle.forEach(field => {
+    
+    // Récupérer tous les champs du formulaire (sauf la catégorie elle-même)
+    const formFields = [
+        document.getElementById('{{ form.identifiant.id_for_label }}'),
+        document.getElementById('{{ form.name.id_for_label }}'),
+        document.getElementById('{{ form.number_personnel.id_for_label }}'),
+        document.getElementById('{{ form.monthly_revenue.id_for_label }}'),
+        document.getElementById('{{ form.phone.id_for_label }}'),
+        document.getElementById('{{ form.whatsapp.id_for_label }}'),
+        document.getElementById('{{ form.address.id_for_label }}'),
+        document.getElementById('{{ form.creation_date.id_for_label }}'),
+        document.getElementById('{{ form.infos_annexes.id_for_label }}'),
+        document.getElementById('{{ form.hobies.id_for_label }}')
+    ];
+    
+    // Fonction pour désactiver tous les champs
+    function disableAllFields() {
+        formFields.forEach(field => {
             if (field) {
-                field.disabled = !isCategorySelected;
-                if (field.classList) {
-                    if (!isCategorySelected) {
-                        field.classList.add('disabled');
-                    } else {
-                        field.classList.remove('disabled');
-                    }
-                }
+                field.disabled = true;
+                field.classList.add('form-control', 'disabled');
+                field.parentNode.classList.add('text-muted');
             }
         });
-
-        // Changer l'apparence visuelle
-        if (!isCategorySelected) {
-            submitBtn.classList.add('btn-secondary');
-            submitBtn.classList.remove('btn-primary');
-        } else {
-            submitBtn.classList.remove('btn-secondary');
-            submitBtn.classList.add('btn-primary');
+    }
+    
+    // Fonction pour activer tous les champs
+    function enableAllFields() {
+        formFields.forEach(field => {
+            if (field) {
+                field.disabled = false;
+                field.classList.remove('disabled');
+                field.parentNode.classList.remove('text-muted');
+            }
+        });
+    }
+    
+    // Fonction pour gérer l'activation/désactivation des champs selon la catégorie
+    function toggleFieldsBasedOnCategory() {
+        const selectedCategory = categorySelect.value;
+        
+        // Si aucune catégorie n'est sélectionnée, désactiver tous les champs
+        if (!selectedCategory || selectedCategory === '') {
+            disableAllFields();
+            return;
+        }
+        
+        // Activer tous les champs si une catégorie est sélectionnée
+        enableAllFields();
+        
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const categoryName = selectedOption ? selectedOption.text.toLowerCase() : '';
+        
+        // Règles spécifiques selon la catégorie
+        const monthlyRevenueField = document.getElementById('{{ form.monthly_revenue.id_for_label }}');
+        const hobbiesField = document.getElementById('{{ form.hobies.id_for_label }}');
+        
+        // Désactiver les champs financiers pour certaines catégories
+        if (categoryName.includes('association') || categoryName.includes('ong') || categoryName.includes('organisme')) {
+            if (monthlyRevenueField) {
+                monthlyRevenueField.disabled = true;
+                monthlyRevenueField.value = '';
+                monthlyRevenueField.classList.add('form-control', 'disabled');
+                monthlyRevenueField.parentNode.classList.add('text-muted');
+            }
+        }
+        
+        // Désactiver les hobbies pour certaines catégories
+        if (categoryName.includes('entreprise') || categoryName.includes('société') || categoryName.includes('compagnie')) {
+            if (hobbiesField) {
+                hobbiesField.disabled = true;
+                hobbiesField.value = '';
+                hobbiesField.classList.add('form-control', 'disabled');
+                hobbiesField.parentNode.classList.add('text-muted');
+            }
         }
     }
-
-    // Initialiser l'état des champs
-    toggleFields();
-
-    // Écouter les changements sur le select de catégorie
-    categorySelect.addEventListener('change', toggleFields);
+    
+    // Appliquer les règles au chargement de la page
+    toggleFieldsBasedOnCategory();
+    
+    // Appliquer les règles quand la catégorie change
+    categorySelect.addEventListener('change', toggleFieldsBasedOnCategory);
 });
 </script>
-
-<style>
-.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.form-control:disabled {
-    background-color: #f8f9fa;
-    opacity: 0.6;
-}
-</style>
-
 {% endblock %} 

@@ -261,6 +261,9 @@
                                     {% if form.organisation.errors %}
                                         <div class="text-danger">{{ form.organisation.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> Veuillez sélectionner une organisation pour activer les autres champs.
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -352,67 +355,118 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const organizationSelect = document.getElementById('{{ form.organisation.id_for_label }}');
-    const medicalInfoField = document.getElementById('{{ form.medical_info.id_for_label }}');
-    const formationProField = document.getElementById('{{ form.formation_pro.id_for_label }}');
-    const distinctionField = document.getElementById('{{ form.distinction.id_for_label }}');
-    const languesField = document.getElementById('{{ form.langues.id_for_label }}');
+    
+    // Récupérer tous les champs du formulaire (sauf l'organisation elle-même)
+    const formFields = [
+        document.getElementById('{{ form.identifiant.id_for_label }}'),
+        document.getElementById('{{ form.first_name.id_for_label }}'),
+        document.getElementById('{{ form.last_name.id_for_label }}'),
+        document.getElementById('{{ form.birth_date.id_for_label }}'),
+        document.getElementById('{{ form.type_adherent.id_for_label }}'),
+        document.getElementById('{{ form.commune.id_for_label }}'),
+        document.getElementById('{{ form.quartier.id_for_label }}'),
+        document.getElementById('{{ form.secteur.id_for_label }}'),
+        document.getElementById('{{ form.phone1.id_for_label }}'),
+        document.getElementById('{{ form.phone2.id_for_label }}'),
+        document.getElementById('{{ form.num_urgence1.id_for_label }}'),
+        document.getElementById('{{ form.num_urgence2.id_for_label }}'),
+        document.getElementById('{{ form.email.id_for_label }}'),
+        document.getElementById('{{ form.medical_info.id_for_label }}'),
+        document.getElementById('{{ form.formation_pro.id_for_label }}'),
+        document.getElementById('{{ form.distinction.id_for_label }}'),
+        document.getElementById('{{ form.langues.id_for_label }}'),
+        document.getElementById('{{ form.join_date.id_for_label }}'),
+        document.getElementById('{{ form.activity_name.id_for_label }}'),
+        document.getElementById('{{ form.badge_validity.id_for_label }}'),
+        document.getElementById('{{ form.profile_picture.id_for_label }}')
+    ];
+    
+    // Fonction pour désactiver tous les champs
+    function disableAllFields() {
+        formFields.forEach(field => {
+            if (field) {
+                field.disabled = true;
+                field.classList.add('form-control', 'disabled');
+                field.parentNode.classList.add('text-muted');
+            }
+        });
+    }
+    
+    // Fonction pour activer tous les champs
+    function enableAllFields() {
+        formFields.forEach(field => {
+            if (field) {
+                field.disabled = false;
+                field.classList.remove('disabled');
+                field.parentNode.classList.remove('text-muted');
+            }
+        });
+    }
     
     // Fonction pour gérer l'activation/désactivation des champs selon l'organisation
     function toggleFieldsBasedOnOrganization() {
         const selectedOrganization = organizationSelect.value;
+        
+        // Si aucune organisation n'est sélectionnée, désactiver tous les champs
+        if (!selectedOrganization || selectedOrganization === '') {
+            disableAllFields();
+            return;
+        }
+        
+        // Activer tous les champs si une organisation est sélectionnée
+        enableAllFields();
+        
         const selectedOption = organizationSelect.options[organizationSelect.selectedIndex];
         const organizationName = selectedOption ? selectedOption.text.toLowerCase() : '';
+        
+        // Règles spécifiques selon l'organisation
+        const medicalInfoField = document.getElementById('{{ form.medical_info.id_for_label }}');
+        const formationProField = document.getElementById('{{ form.formation_pro.id_for_label }}');
+        const distinctionField = document.getElementById('{{ form.distinction.id_for_label }}');
+        const languesField = document.getElementById('{{ form.langues.id_for_label }}');
         
         // Désactiver les informations médicales pour les organisations non-santé
         if (organizationName.includes('entreprise') || organizationName.includes('société') || 
             organizationName.includes('compagnie') || organizationName.includes('commerce')) {
-            medicalInfoField.disabled = true;
-            medicalInfoField.value = '';
-            medicalInfoField.classList.add('form-control', 'disabled');
-            medicalInfoField.parentNode.classList.add('text-muted');
-        } else {
-            medicalInfoField.disabled = false;
-            medicalInfoField.classList.remove('disabled');
-            medicalInfoField.parentNode.classList.remove('text-muted');
+            if (medicalInfoField) {
+                medicalInfoField.disabled = true;
+                medicalInfoField.value = '';
+                medicalInfoField.classList.add('form-control', 'disabled');
+                medicalInfoField.parentNode.classList.add('text-muted');
+            }
         }
         
         // Désactiver la formation professionnelle pour les organisations simples
         if (organizationName.includes('association') || organizationName.includes('ong') || 
             organizationName.includes('organisme') || organizationName.includes('groupe')) {
-            formationProField.disabled = true;
-            formationProField.value = '';
-            formationProField.classList.add('form-control', 'disabled');
-            formationProField.parentNode.classList.add('text-muted');
-        } else {
-            formationProField.disabled = false;
-            formationProField.classList.remove('disabled');
-            formationProField.parentNode.classList.remove('text-muted');
+            if (formationProField) {
+                formationProField.disabled = true;
+                formationProField.value = '';
+                formationProField.classList.add('form-control', 'disabled');
+                formationProField.parentNode.classList.add('text-muted');
+            }
         }
         
         // Désactiver les distinctions pour les organisations non-prestigieuses
         if (organizationName.includes('petit') || organizationName.includes('local') || 
             organizationName.includes('simple')) {
-            distinctionField.disabled = true;
-            distinctionField.value = '';
-            distinctionField.classList.add('form-control', 'disabled');
-            distinctionField.parentNode.classList.add('text-muted');
-        } else {
-            distinctionField.disabled = false;
-            distinctionField.classList.remove('disabled');
-            distinctionField.parentNode.classList.remove('text-muted');
+            if (distinctionField) {
+                distinctionField.disabled = true;
+                distinctionField.value = '';
+                distinctionField.classList.add('form-control', 'disabled');
+                distinctionField.parentNode.classList.add('text-muted');
+            }
         }
         
         // Désactiver les langues pour les organisations locales
         if (organizationName.includes('local') || organizationName.includes('régional') || 
             organizationName.includes('communautaire')) {
-            languesField.disabled = true;
-            languesField.value = '';
-            languesField.classList.add('form-control', 'disabled');
-            languesField.parentNode.classList.add('text-muted');
-        } else {
-            languesField.disabled = false;
-            languesField.classList.remove('disabled');
-            languesField.parentNode.classList.remove('text-muted');
+            if (languesField) {
+                languesField.disabled = true;
+                languesField.value = '';
+                languesField.classList.add('form-control', 'disabled');
+                languesField.parentNode.classList.add('text-muted');
+            }
         }
     }
     

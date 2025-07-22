@@ -9,18 +9,20 @@
         <h1 class="h2">
             <i class="fas fa-comments"></i> Interaction {{ interaction.identifiant }}
         </h1>
-        {% if user.role == 'admin' or user.role == 'superviseur' %}
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
+                {% if can_edit %}
                 <a href="{% url 'core:interaction_update' interaction.id %}" class="btn btn-sm btn-warning">
                     <i class="fas fa-edit"></i> Modifier
                 </a>
+                {% endif %}
+                {% if can_delete %}
                 <a href="{% url 'core:interaction_delete' interaction.id %}" class="btn btn-sm btn-danger">
                     <i class="fas fa-trash"></i> Supprimer
                 </a>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
     </div>
 
     <div class="row">

@@ -10,11 +10,13 @@
             <i class="fas fa-comments"></i> Liste des Interactions
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
+            {% if can_create %}
             <div class="btn-group me-2">
                 <a href="{% url 'core:interaction_create' %}" class="btn btn-sm btn-primary">
                     <i class="fas fa-plus"></i> Nouvelle interaction
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 
@@ -266,12 +268,14 @@
                                            title="Voir détails">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        {% if user.role == 'admin' or user.role == 'superviseur' %}
+                                        {% if can_edit %}
                                         <a href="{% url 'core:interaction_update' interaction.id %}" 
                                            class="btn btn-sm btn-outline-warning" 
                                            title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        {% endif %}
+                                        {% if can_delete %}
                                         <a href="{% url 'core:interaction_delete' interaction.id %}" 
                                            class="btn btn-sm btn-outline-danger" 
                                            title="Supprimer"

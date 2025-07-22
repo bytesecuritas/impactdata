@@ -737,6 +737,9 @@ class Adherent(models.Model):
             from datetime import date
             return (date.today() - self.birth_date).days // 365
         return None
+    
+    def is_badge_valid(self):
+        return self.badge_validity > timezone.now().date()
 
 
 # Updated Interaction Model

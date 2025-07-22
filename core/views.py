@@ -533,6 +533,7 @@ def adherent_detail(request, adherent_id):
         'interactions': interactions,
         'can_edit': has_permission(request.user, 'adherent_edit'),
         'can_delete': has_permission(request.user, 'adherent_delete'),
+        'can_gen_badge': has_permission(request.user, 'badge_create')
     }
     return render(request, 'core/adherents/adherent_detail.html', context)
 
@@ -738,6 +739,9 @@ def interaction_list(request):
         'overdue_interactions': overdue_interactions[:5],  # Limiter à 5 pour l'affichage
         'due_soon_interactions': due_soon_interactions[:5],
         'now': timezone.now(),
+        'can_create': has_permission(request.user, 'interaction_create'),
+        'can_edit': has_permission(request.user, 'interaction_edit'),
+        'can_delete': has_permission(request.user, 'interaction_delete'),
     }
     return render(request, 'core/interactions/interaction_list.html', context)
 

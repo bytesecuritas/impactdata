@@ -43,7 +43,7 @@ class AdherentForm(forms.ModelForm):
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': timezone.now().date()}),
             'type_adherent': forms.Select(attrs={'class': 'form-select'}),
             'commune': forms.TextInput(attrs={'class': 'form-control'}),
             'quartier': forms.TextInput(attrs={'class': 'form-control'}),
@@ -57,11 +57,11 @@ class AdherentForm(forms.ModelForm):
             'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'langues': forms.TextInput(attrs={'class': 'form-control'}),
-            'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': timezone.now().date()}),
             'organisation': forms.Select(attrs={'class': 'form-select'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'activity_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'badge_validity': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'badge_validity': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min':timezone.now().date()}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -113,7 +113,7 @@ class OrganizationForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'monthly_revenue': forms.NumberInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'creation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'creation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max':timezone.now().date()}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
@@ -155,7 +155,7 @@ class InteractionForm(forms.ModelForm):
             'personnel': forms.Select(attrs={'class': 'form-control'}),
             'adherent': forms.Select(attrs={'class': 'form-control'}),
             'report': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'due_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'due_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local', 'min': timezone.now().strftime('%Y-%m-%dT%H:%M')  }),
             'status': forms.Select(attrs={'class': 'form-control'}),
         }
 
@@ -177,6 +177,12 @@ class InteractionForm(forms.ModelForm):
         #     self.fields['adherent'].queryset = Adherent.objects.filter(
         #         organisation__in=Organization.objects.filter(created_by=user)
         #     )
+
+    def clean_due_date(self):
+        due_date = self.cleaned_data['due_date']
+        if due_date and due_date < timezone.now():
+            raise forms.ValidationError("La date d'échéance ne peut pas être dans le passé.")
+        return due_date
 
 class UserForm(forms.ModelForm):
     """Formulaire pour créer/modifier un utilisateur"""
@@ -471,7 +477,7 @@ class UserObjectiveForm(forms.ModelForm):
         help_text="Nombre d'éléments à créer en plus de ce qui existe déjà"
     )
     deadline = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min':timezone.now().date()}),
         label="Date limite"
     )
     description = forms.CharField(

@@ -67,6 +67,7 @@
                                     <th>Matricule</th>
                                     <th>Profession</th>
                                     <th>Fonction</th>
+                                    <th>Adresse</th>
                                     <th>Email</th>
                                     <th>Téléphone</th>
                                     <th>Rôle</th>
@@ -92,6 +93,13 @@
                                     </td>
                                     <td>{{ user_obj.profession }}</td>
                                     <td>{{ user_obj.fonction }}</td>
+                                    <td>
+                                        {% if user_obj.adresse %}
+                                            <small>{{ user_obj.adresse|truncatechars:30 }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Non spécifiée</small>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ user_obj.email }}</td>
                                     <td>{{ user_obj.telephone }}</td>
                                     <td>
@@ -133,7 +141,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="8" class="text-center py-4">
+                                    <td colspan="11" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="fas fa-users fa-3x mb-3"></i>
                                             <p>Aucun utilisateur trouvé</p>

@@ -29,6 +29,31 @@
                 <i class="fas fa-chart-line"></i> Impact Data
             </a>
             
+            <!-- Barre de recherche globale -->
+            <div class="navbar-nav mx-auto flex-grow-1">
+                <form class="d-flex" method="GET" action="{% url 'core:global_search' %}" id="global-search-form">
+                    <div class="input-group" style="max-width: 500px;">
+                        <select class="form-select" name="type" id="search-type" style="max-width: 150px;">
+                            <option value="all">Tout</option>
+                            <option value="adherents">Adhérents</option>
+                            <option value="organizations">Organisations</option>
+                            <option value="users">Utilisateurs</option>
+                            <option value="interactions">Interactions</option>
+                            <option value="badges">Badges</option>
+                        </select>
+                        <input class="form-control" type="search" name="q" placeholder="Rechercher..." 
+                               id="global-search-input" autocomplete="off">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <!-- Suggestions de recherche -->
+                <div id="search-suggestions" class="position-absolute bg-white border rounded shadow-sm" 
+                     style="display: none; z-index: 1000; width: 100%; max-width: 500px; top: 100%; left: 50%; transform: translateX(-50%);">
+                </div>
+            </div>
+            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -288,6 +313,133 @@
                     }
                 }
             });
+        });
+
+        // Recherche globale avec suggestions
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('global-search-input');
+            const searchType = document.getElementById('search-type');
+            const suggestionsDiv = document.getElementById('search-suggestions');
+            let searchTimeout;
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.trim();
+                    const type = searchType.value;
+                    
+                    clearTimeout(searchTimeout);
+                    
+                    if (query.length >= 2) {
+                        searchTimeout = setTimeout(function() {
+                            fetchSuggestions(query, type);
+                        }, 300);
+                    } else {
+                        suggestionsDiv.style.display = 'none';
+                    }
+                });
+
+                // Masquer les suggestions quand on clique ailleurs
+                document.addEventListener('click', function(event) {
+                    if (!searchInput.contains(event.target) && !suggestionsDiv.contains(event.target)) {
+                        suggestionsDiv.style.display = 'none';
+                    }
+                });
+
+                // Gestion des touches clavier
+                searchInput.addEventListener('keydown', function(event) {
+                    const suggestions = suggestionsDiv.querySelectorAll('.suggestion-item');
+                    const activeSuggestion = suggestionsDiv.querySelector('.suggestion-item.active');
+                    
+                    if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        if (activeSuggestion) {
+                            activeSuggestion.classList.remove('active');
+                            const nextSuggestion = activeSuggestion.nextElementSibling;
+                            if (nextSuggestion) {
+                                nextSuggestion.classList.add('active');
+                            } else {
+                                suggestions[0].classList.add('active');
+                            }
+                        } else if (suggestions.length > 0) {
+                            suggestions[0].classList.add('active');
+                        }
+                    } else if (event.key === 'ArrowUp') {
+                        event.preventDefault();
+                        if (activeSuggestion) {
+                            activeSuggestion.classList.remove('active');
+                            const prevSuggestion = activeSuggestion.previousElementSibling;
+                            if (prevSuggestion) {
+                                prevSuggestion.classList.add('active');
+                            } else {
+                                suggestions[suggestions.length - 1].classList.add('active');
+                            }
+                        } else if (suggestions.length > 0) {
+                            suggestions[suggestions.length - 1].classList.add('active');
+                        }
+                    } else if (event.key === 'Enter' && activeSuggestion) {
+                        event.preventDefault();
+                        window.location.href = activeSuggestion.dataset.url;
+                    } else if (event.key === 'Escape') {
+                        suggestionsDiv.style.display = 'none';
+                    }
+                });
+            }
+
+            function fetchSuggestions(query, type) {
+                fetch(`{% url 'core:search_suggestions' %}?q=${encodeURIComponent(query)}&type=${type}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displaySuggestions(data.suggestions);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors de la récupération des suggestions:', error);
+                    });
+            }
+
+            function displaySuggestions(suggestions) {
+                if (suggestions.length === 0) {
+                    suggestionsDiv.style.display = 'none';
+                    return;
+                }
+
+                suggestionsDiv.innerHTML = '';
+                
+                suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item p-2 border-bottom';
+                    item.dataset.url = suggestion.url;
+                    item.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-${getIconForType(suggestion.type)} me-2 text-muted"></i>
+                            <span>${suggestion.text}</span>
+                        </div>
+                    `;
+                    
+                    item.addEventListener('click', function() {
+                        window.location.href = this.dataset.url;
+                    });
+                    
+                    item.addEventListener('mouseenter', function() {
+                        suggestionsDiv.querySelectorAll('.suggestion-item').forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                    
+                    suggestionsDiv.appendChild(item);
+                });
+                
+                suggestionsDiv.style.display = 'block';
+            }
+
+            function getIconForType(type) {
+                const icons = {
+                    'adherent': 'user',
+                    'organization': 'building',
+                    'user': 'user-tie',
+                    'interaction': 'comments',
+                    'badge': 'id-card'
+                };
+                return icons[type] || 'search';
+            }
         });
     </script>
     {% block extra_js %}{% endblock %}

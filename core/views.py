@@ -2728,4 +2728,198 @@ def get_permission_category(permission_code):
     }
     
     return category_mapping.get(permission_code, 'Autres')
+
+# ==================== RECHERCHE GLOBALE ====================
+
+@login_required
+def global_search(request):
+    """
+    Vue de recherche globale dans toute la plateforme.
+    """
+    query = request.GET.get('q', '').strip()
+    search_type = request.GET.get('type', 'all')
+    
+    results = {
+        'adherents': [],
+        'organizations': [],
+        'users': [],
+        'interactions': [],
+        'badges': []
+    }
+    
+    if query:
+        # Recherche dans les adhérents
+        if search_type in ['all', 'adherents']:
+            adherents = Adherent.objects.filter(
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query) |
+                Q(identifiant__icontains=query) |
+                Q(phone1__icontains=query) |
+                Q(phone2__icontains=query) |
+                Q(email__icontains=query) |
+                Q(commune__icontains=query) |
+                Q(quartier__icontains=query) |
+                Q(secteur__icontains=query) |
+                Q(medical_info__icontains=query) |
+                Q(formation_pro__icontains=query) |
+                Q(distinction__icontains=query) |
+                Q(langues__icontains=query) |
+                Q(activity_name__icontains=query) |
+                Q(organisation__name__icontains=query)
+            ).select_related('organisation')[:10]
+            
+            results['adherents'] = adherents
+        
+        # Recherche dans les organisations
+        if search_type in ['all', 'organizations']:
+            organizations = Organization.objects.filter(
+                Q(name__icontains=query) |
+                Q(identifiant__icontains=query) |
+                Q(address__icontains=query) |
+                Q(phone__icontains=query) |
+                Q(whatsapp__icontains=query) |
+                Q(infos_annexes__icontains=query) |
+                Q(hobies__icontains=query) |
+                Q(category__name__icontains=query)
+            ).select_related('category')[:10]
+            
+            results['organizations'] = organizations
+        
+        # Recherche dans les utilisateurs
+        if search_type in ['all', 'users']:
+            users = User.objects.filter(
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query) |
+                Q(matricule__icontains=query) |
+                Q(profession__icontains=query) |
+                Q(fonction__icontains=query) |
+                Q(telephone__icontains=query) |
+                Q(email__icontains=query) |
+                Q(adresse__icontains=query) |
+                Q(nom_urg1__icontains=query) |
+                Q(prenom_urg1__icontains=query) |
+                Q(telephone_urg1__icontains=query) |
+                Q(nom_urg2__icontains=query) |
+                Q(prenom_urg2__icontains=query) |
+                Q(telephone_urg2__icontains=query)
+            )[:10]
+            
+            results['users'] = users
+        
+        # Recherche dans les interactions
+        if search_type in ['all', 'interactions']:
+            interactions = Interaction.objects.filter(
+                Q(identifiant__icontains=query) |
+                Q(report__icontains=query) |
+                Q(adherent__first_name__icontains=query) |
+                Q(adherent__last_name__icontains=query) |
+                Q(personnel__first_name__icontains=query) |
+                Q(personnel__last_name__icontains=query) |
+                Q(auteur__first_name__icontains=query) |
+                Q(auteur__last_name__icontains=query)
+            ).select_related('adherent', 'personnel', 'auteur')[:10]
+            
+            results['interactions'] = interactions
+        
+        # Recherche dans les badges
+        if search_type in ['all', 'badges']:
+            badges = Badge.objects.filter(
+                Q(badge_number__icontains=query) |
+                Q(activity_name__icontains=query) |
+                Q(notes__icontains=query) |
+                Q(adherent__first_name__icontains=query) |
+                Q(adherent__last_name__icontains=query) |
+                Q(issued_by__first_name__icontains=query) |
+                Q(issued_by__last_name__icontains=query)
+            ).select_related('adherent', 'issued_by')[:10]
+            
+            results['badges'] = badges
+    
+    # Compter les résultats par type
+    counts = {
+        'adherents': len(results['adherents']),
+        'organizations': len(results['organizations']),
+        'users': len(results['users']),
+        'interactions': len(results['interactions']),
+        'badges': len(results['badges'])
+    }
+    
+    total_results = sum(counts.values())
+    
+    context = {
+        'query': query,
+        'search_type': search_type,
+        'results': results,
+        'counts': counts,
+        'total_results': total_results,
+        'search_types': [
+            ('all', 'Tout'),
+            ('adherents', 'Adhérents'),
+            ('organizations', 'Organisations'),
+            ('users', 'Utilisateurs'),
+            ('interactions', 'Interactions'),
+            ('badges', 'Badges')
+        ]
+    }
+    
+    return render(request, 'core/search_results.html', context)
+
+@login_required
+def search_suggestions(request):
+    """
+    API pour les suggestions de recherche en temps réel.
+    """
+    query = request.GET.get('q', '').strip()
+    search_type = request.GET.get('type', 'all')
+    
+    if len(query) < 2:
+        return JsonResponse({'suggestions': []})
+    
+    suggestions = []
+    
+    if search_type in ['all', 'adherents']:
+        adherents = Adherent.objects.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(identifiant__icontains=query)
+        )[:5]
+        
+        for adherent in adherents:
+            suggestions.append({
+                'type': 'adherent',
+                'id': adherent.id,
+                'text': f"{adherent.full_name} ({adherent.identifiant})",
+                'url': reverse_lazy('core:adherent_detail', kwargs={'adherent_id': adherent.id})
+            })
+    
+    if search_type in ['all', 'organizations']:
+        organizations = Organization.objects.filter(
+            Q(name__icontains=query) |
+            Q(identifiant__icontains=query)
+        )[:5]
+        
+        for org in organizations:
+            suggestions.append({
+                'type': 'organization',
+                'id': org.id,
+                'text': f"{org.name} ({org.identifiant})",
+                'url': reverse_lazy('core:organization_detail', kwargs={'organization_id': org.id})
+            })
+    
+    if search_type in ['all', 'users']:
+        users = User.objects.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(matricule__icontains=query)
+        )[:5]
+        
+        for user in users:
+            suggestions.append({
+                'type': 'user',
+                'id': user.id,
+                'text': f"{user.get_full_name()} ({user.matricule})",
+                'url': reverse_lazy('core:user_detail', kwargs={'pk': user.id})
+            })
+    
+    return JsonResponse({'suggestions': suggestions})
     

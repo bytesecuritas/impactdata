@@ -37,6 +37,7 @@
                                 <tr><td><strong>Nom complet:</strong></td><td>{{ user_obj.get_full_name }}</td></tr>
                                 <tr><td><strong>Profession:</strong></td><td>{{ user_obj.profession }}</td></tr>
                                 <tr><td><strong>Fonction:</strong></td><td>{{ user_obj.fonction|default:"Non spécifiée" }}</td></tr>
+                                <tr><td><strong>Adresse:</strong></td><td>{{ user_obj.adresse|default:"Non spécifiée"|linebreaks }}</td></tr>
                                 <tr><td><strong>Rôle:</strong></td><td>
                                     <span class="badge {% if user_obj.role == 'admin' %}bg-danger{% elif user_obj.role == 'superviseur' %}bg-warning{% else %}bg-info{% endif %}">
                                         {{ user_obj.get_role_display }}
@@ -61,6 +62,43 @@
                                 </td></tr>
                                 <tr><td><strong>Dernière connexion:</strong></td><td>
                                     {% if user_obj.last_login %}{{ user_obj.last_login|date:"d/m/Y H:i" }}{% else %}<span class="text-muted">Jamais connecté</span>{% endif %}
+                                </td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Contacts d'urgence -->
+                    <hr class="my-4">
+                    <h5 class="mb-3"><i class="fas fa-phone-alt"></i> Contacts d'urgence</h5>
+                    <div class="row">
+                        <!-- Premier contact d'urgence -->
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">Contact d'urgence 1</h6>
+                            <table class="table table-borderless">
+                                <tr><td><strong>Nom:</strong></td><td>{{ user_obj.nom_urg1|default:"Non spécifié" }}</td></tr>
+                                <tr><td><strong>Prénom:</strong></td><td>{{ user_obj.prenom_urg1|default:"Non spécifié" }}</td></tr>
+                                <tr><td><strong>Téléphone:</strong></td><td>
+                                    {% if user_obj.telephone_urg1 %}
+                                        <a href="tel:{{ user_obj.telephone_urg1 }}">{{ user_obj.telephone_urg1 }}</a>
+                                    {% else %}
+                                        <span class="text-muted">Non spécifié</span>
+                                    {% endif %}
+                                </td></tr>
+                            </table>
+                        </div>
+
+                        <!-- Deuxième contact d'urgence -->
+                        <div class="col-md-6">
+                            <h6 class="text-success mb-3">Contact d'urgence 2</h6>
+                            <table class="table table-borderless">
+                                <tr><td><strong>Nom:</strong></td><td>{{ user_obj.nom_urg2|default:"Non spécifié" }}</td></tr>
+                                <tr><td><strong>Prénom:</strong></td><td>{{ user_obj.prenom_urg2|default:"Non spécifié" }}</td></tr>
+                                <tr><td><strong>Téléphone:</strong></td><td>
+                                    {% if user_obj.telephone_urg2 %}
+                                        <a href="tel:{{ user_obj.telephone_urg2 }}">{{ user_obj.telephone_urg2 }}</a>
+                                    {% else %}
+                                        <span class="text-muted">Non spécifié</span>
+                                    {% endif %}
                                 </td></tr>
                             </table>
                         </div>

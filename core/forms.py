@@ -11,7 +11,9 @@ User = get_user_model()
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction']
+        fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 
+                 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'nom_urg2', 'prenom_urg2', 'telephone_urg2']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -19,6 +21,13 @@ class UserProfileForm(forms.ModelForm):
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'nom_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'telephone_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'nom_urg2': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom_urg2': forms.TextInput(attrs={'class': 'form-control'}),
+            'telephone_urg2': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class CustomPasswordChangeForm(PasswordChangeForm):
@@ -88,9 +97,17 @@ class AdherentForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         phone1 = cleaned_data.get('phone1')
-        # verifié que le numéro de téléphone est unique dans la base de données
-        if phone1 and Adherent.objects.filter(phone1=phone1).exists():
-            raise forms.ValidationError("Le numéro de téléphone principal existe déjà pour un autre adhérent.")
+        
+        # Vérifier que le numéro de téléphone est unique dans la base de données
+        # Exclure l'instance actuelle lors de la mise à jour
+        if phone1:
+            queryset = Adherent.objects.filter(phone1=phone1)
+            if self.instance and self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise forms.ValidationError("Le numéro de téléphone principal existe déjà pour un autre adhérent.")
+        
         phone2 = cleaned_data.get('phone2')
         
         # Validation des numéros de téléphone
@@ -137,8 +154,14 @@ class CategoryForm(forms.ModelForm):
         name = cleaned_data.get('name')
         
         # Vérifier l'unicité du nom de la catégorie
-        if name and Category.objects.filter(name__iexact=name).exists():
-            raise forms.ValidationError("Une catégorie avec ce nom existe déjà.")
+        # Exclure l'instance actuelle lors de la mise à jour
+        if name:
+            queryset = Category.objects.filter(name__iexact=name)
+            if self.instance and self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise forms.ValidationError("Une catégorie avec ce nom existe déjà.")
         
         return cleaned_data        
 
@@ -199,7 +222,9 @@ class UserForm(forms.ModelForm):
     
     class Meta:
         model = User
-        fields = ['matricule', 'first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 'role', 'is_active']
+        fields = ['matricule', 'first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 
+                 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'is_active']
         widgets = {
             'matricule': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Matricule du personnel ex:AG1245'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Fodé'}),
@@ -208,6 +233,13 @@ class UserForm(forms.ModelForm):
             'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'625325458'}),
             'profession': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Electricien, Maçon, ...'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Rôle dans l\'entreprise ex: DRH'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder':'Adresse complète'}),
+            'nom_urg1': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Nom du contact d\'urgence 1'}),
+            'prenom_urg1': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Prénom du contact d\'urgence 1'}),
+            'telephone_urg1': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'625325458'}),
+            'nom_urg2': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Nom du contact d\'urgence 2'}),
+            'prenom_urg2': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Prénom du contact d\'urgence 2'}),
+            'telephone_urg2': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'625325458'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -259,7 +291,8 @@ class UserRegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'matricule', 'email', 'telephone', 
-                 'profession', 'fonction', 'role', 'created_by', 'is_active']
+                 'profession', 'fonction', 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'created_by', 'is_active']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Le prénom ex: Fodé'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Le nom ex: Camara'}),
@@ -268,6 +301,13 @@ class UserRegistrationForm(UserCreationForm):
             'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Numéro de téléphone ex: 625325458'}),
             'profession': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Electricien, Maçon, ...'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Rôle dans l\'entreprise ex: DGH'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder':'Adresse complète'}),
+            'nom_urg1': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Nom du contact d\'urgence 1'}),
+            'prenom_urg1': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Prénom du contact d\'urgence 1'}),
+            'telephone_urg1': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'625325458'}),
+            'nom_urg2': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Nom du contact d\'urgence 2'}),
+            'prenom_urg2': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Prénom du contact d\'urgence 2'}),
+            'telephone_urg2': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'625325458'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'created_by': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -320,7 +360,8 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'telephone', 
-                 'profession', 'fonction', 'role', 'created_by', 'is_active', 'notes']
+                 'profession', 'fonction', 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'created_by', 'is_active', 'notes']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -328,6 +369,13 @@ class UserEditForm(forms.ModelForm):
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'nom_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'telephone_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'nom_urg2': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom_urg2': forms.TextInput(attrs={'class': 'form-control'}),
+            'telephone_urg2': forms.TextInput(attrs={'class': 'form-control'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'created_by': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -373,7 +421,9 @@ class ProfileEditForm(forms.ModelForm):
     """Formulaire de modification du profil utilisateur"""
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction']
+        fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 
+                 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'nom_urg2', 'prenom_urg2', 'telephone_urg2']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -381,6 +431,13 @@ class ProfileEditForm(forms.ModelForm):
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control'}),
+            'adresse': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'nom_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'telephone_urg1': forms.TextInput(attrs={'class': 'form-control'}),
+            'nom_urg2': forms.TextInput(attrs={'class': 'form-control'}),
+            'prenom_urg2': forms.TextInput(attrs={'class': 'form-control'}),
+            'telephone_urg2': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class AdherentSearchForm(forms.Form):

@@ -114,4 +114,8 @@ urlpatterns = [
     
     # Badge Generation for Adherents
     path('adherents/<int:adherent_id>/generate-badge/', views.generate_badge, name='generate_badge'),
+    
+    # ==================== RECHERCHE GLOBALE ====================
+    path('search/', views.global_search, name='global_search'),
+    path('search/suggestions/', views.search_suggestions, name='search_suggestions'),
 ]

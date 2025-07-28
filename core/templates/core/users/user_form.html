@@ -115,6 +115,20 @@
                                         </div>
                                     {% endif %}
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.adresse.id_for_label }}" class="form-label">
+                                        Adresse
+                                    </label>
+                                    {{ form.adresse }}
+                                    {% if form.adresse.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.adresse.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Informations de contact et système -->
@@ -238,6 +252,103 @@
                             </div>
                         </div>
                         {% endif %}
+
+                        <!-- Contacts d'urgence -->
+                        <hr class="my-4">
+                        <h5 class="mb-3"><i class="fas fa-phone-alt"></i> Contacts d'urgence</h5>
+                        <div class="row">
+                            <!-- Premier contact d'urgence -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">Contact d'urgence 1</h6>
+                                <div class="mb-3">
+                                    <label for="{{ form.nom_urg1.id_for_label }}" class="form-label">
+                                        Nom
+                                    </label>
+                                    {{ form.nom_urg1 }}
+                                    {% if form.nom_urg1.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.nom_urg1.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.prenom_urg1.id_for_label }}" class="form-label">
+                                        Prénom
+                                    </label>
+                                    {{ form.prenom_urg1 }}
+                                    {% if form.prenom_urg1.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.prenom_urg1.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.telephone_urg1.id_for_label }}" class="form-label">
+                                        Téléphone
+                                    </label>
+                                    {{ form.telephone_urg1 }}
+                                    {% if form.telephone_urg1.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.telephone_urg1.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Deuxième contact d'urgence -->
+                            <div class="col-md-6">
+                                <h6 class="text-success mb-3">Contact d'urgence 2</h6>
+                                <div class="mb-3">
+                                    <label for="{{ form.nom_urg2.id_for_label }}" class="form-label">
+                                        Nom
+                                    </label>
+                                    {{ form.nom_urg2 }}
+                                    {% if form.nom_urg2.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.nom_urg2.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.prenom_urg2.id_for_label }}" class="form-label">
+                                        Prénom
+                                    </label>
+                                    {{ form.prenom_urg2 }}
+                                    {% if form.prenom_urg2.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.prenom_urg2.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.telephone_urg2.id_for_label }}" class="form-label">
+                                        Téléphone
+                                    </label>
+                                    {{ form.telephone_urg2 }}
+                                    {% if form.telephone_urg2.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.telephone_urg2.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Notes (admin seulement) -->
                         {% if user.role == 'admin' and form.notes %}

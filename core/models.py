@@ -132,6 +132,49 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     email = models.EmailField(unique=True, max_length=100)
     
+    # Adresse et contacts d'urgence
+    adresse = models.TextField(
+        blank=True,
+        verbose_name="Adresse",
+        help_text="Adresse complète de l'utilisateur"
+    )
+    
+    # Premier contact d'urgence
+    nom_urg1 = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Nom du contact d'urgence 1"
+    )
+    prenom_urg1 = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Prénom du contact d'urgence 1"
+    )
+    telephone_urg1 = models.CharField(
+        max_length=15,
+        blank=True,
+        validators=[phone_validator],
+        verbose_name="Téléphone du contact d'urgence 1"
+    )
+    
+    # Deuxième contact d'urgence
+    nom_urg2 = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Nom du contact d'urgence 2"
+    )
+    prenom_urg2 = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Prénom du contact d'urgence 2"
+    )
+    telephone_urg2 = models.CharField(
+        max_length=15,
+        blank=True,
+        validators=[phone_validator],
+        verbose_name="Téléphone du contact d'urgence 2"
+    )
+    
     # System fields for authentication and permissions
     is_active = models.BooleanField(
         default=True,

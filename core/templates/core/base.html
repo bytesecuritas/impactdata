@@ -15,6 +15,9 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/professional-cards.css' %}">
+    <link rel="stylesheet" href="{% static 'css/search-filters.css' %}">
+    <link rel="stylesheet" href="{% static 'css/organization-detail.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -26,11 +29,11 @@
                 <i class="fas fa-bars"></i>
             </button>
             <a class="navbar-brand" href="{% url 'core:dashboard' %}">
-                <i class="fas fa-chart-line"></i> Impact Data
+                <img src="{% static 'images/impactdata.jpg' %}" alt="Impact Data" style="height: 30px; width: auto; object-fit: contain;">
             </a>
             
             <!-- Barre de recherche globale -->
-            <div class="navbar-nav mx-auto flex-grow-1">
+            <div class="navbar-nav mx-auto flex-grow-1 d-flex justify-content-center">
                 <form class="d-flex" method="GET" action="{% url 'core:global_search' %}" id="global-search-form">
                     <div class="input-group" style="max-width: 500px;">
                         <select class="form-select" name="type" id="search-type" style="max-width: 150px;">
@@ -442,6 +445,11 @@
             }
         });
     </script>
+    
+    <!-- Custom Search Filters JS -->
+    <script src="{% static 'js/search-filters.js' %}"></script>
+    <!-- Organization Detail JS -->
+    <script src="{% static 'js/organization-detail.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html> 

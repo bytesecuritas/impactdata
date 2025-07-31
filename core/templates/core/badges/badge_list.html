@@ -6,7 +6,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
 
-<!-- Correctif CSS temporaire intégré -->
 <style>
     .badge-card,
     .badge-card * {
@@ -34,6 +33,138 @@
         display: none !important;
         pointer-events: none;
     }
+    
+    .filters-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .filter-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .filter-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .filter-card .card-header {
+        border: none;
+        padding: 15px 20px;
+    }
+    
+    .filter-card .card-body {
+        padding: 20px;
+    }
+    
+    .filter-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-badge:hover {
+        transform: scale(1.05);
+    }
+    
+    .btn-filter {
+        border-radius: 20px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-filter:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .btn-filter.active {
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    }
+    
+    .professional-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .professional-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .badge-card-header {
+        background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
+        color: white;
+        padding: 15px 20px;
+        border: none;
+    }
+    
+    .badge-card-body {
+        padding: 20px;
+    }
+    
+    .badge-card-footer {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .validity-indicator {
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-top: 10px;
+    }
+    
+    .validity-ok {
+        background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        color: white;
+    }
+    
+    .validity-warning {
+        background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%);
+        color: white;
+    }
+    
+    .validity-expired {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        color: white;
+    }
+    
+    .empty-state {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 60px 20px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
 </style>
 {% endblock %}
 
@@ -50,11 +181,110 @@
         </div>
     </div>
 
+    <!-- Section des filtres -->
+    <div class="filters-section">
+        <div class="row">
+            <div class="col-12 mb-3">
+                <h5 class="text-primary mb-3">
+                    <i class="fas fa-filter me-2"></i> Filtres
+                </h5>
+            </div>
+            
+            <!-- Filtre par statut -->
+            <div class="col-lg-6 mb-3">
+                <div class="card filter-card h-100">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-tag me-2"></i> Statut du Badge
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="?{% if current_validity %}validity={{ current_validity }}{% endif %}" 
+                               class="btn btn-filter btn-outline-secondary {% if not current_status %}active{% endif %}">
+                                <i class="fas fa-list me-1"></i> Tous les statuts
+                            </a>
+                            {% for value, label in status_choices %}
+                                <a href="?status={{ value }}{% if current_validity %}&validity={{ current_validity }}{% endif %}" 
+                                   class="btn btn-filter btn-outline-primary {% if current_status == value %}active{% endif %}">
+                                    <i class="fas fa-tag me-1"></i> {{ label }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtre par échéance -->
+            <div class="col-lg-6 mb-3">
+                <div class="card filter-card h-100">
+                    <div class="card-header bg-gradient-success text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i> Échéance
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="?{% if current_status %}status={{ current_status }}{% endif %}" 
+                               class="btn btn-filter btn-outline-secondary {% if not current_validity %}active{% endif %}">
+                                <i class="fas fa-calendar me-1"></i> Toutes les échéances
+                            </a>
+                            {% for value, label in validity_choices %}
+                                {% if value %}
+                                    <a href="?validity={{ value }}{% if current_status %}&status={{ current_status }}{% endif %}" 
+                                       class="btn btn-filter btn-outline-success {% if current_validity == value %}active{% endif %}">
+                                        <i class="fas fa-clock me-1"></i> {{ label }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Résumé des filtres actifs -->
+        {% if current_status or current_validity %}
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                    <span class="text-muted fw-bold">Filtres actifs :</span>
+                    {% if current_status %}
+                        {% for value, label in status_choices %}
+                            {% if value == current_status %}
+                                <span class="badge bg-primary filter-badge">
+                                    <i class="fas fa-tag me-1"></i> {{ label }}
+                                    <a href="?{% if current_validity %}validity={{ current_validity }}{% endif %}" 
+                                       class="text-white text-decoration-none ms-2">×</a>
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if current_validity %}
+                        {% for value, label in validity_choices %}
+                            {% if value == current_validity %}
+                                <span class="badge bg-success filter-badge">
+                                    <i class="fas fa-calendar-alt me-1"></i> {{ label }}
+                                    <a href="?{% if current_status %}status={{ current_status }}{% endif %}" 
+                                       class="text-white text-decoration-none ms-2">×</a>
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    <a href="{% url 'core:badge_list' %}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-times me-1"></i> Effacer tous les filtres
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
     {% if badges %}
     <div class="row">
         {% for badge in badges %}
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card badge-card h-100">
+            <div class="professional-card badge-card h-100">
                 <div class="badge-card-header">
                     <h6 class="mb-0">
                         <i class="fas fa-id-card me-2"></i>
@@ -76,7 +306,7 @@
                         
                         <div class="badge-card-info">
                             <div class="badge-card-name">
-                                <a href="{% url 'core:adherent_detail' badge.adherent.id %}" class="text-decoration-none">
+                                <a href="{% url 'core:adherent_detail' badge.adherent.id %}" class="text-decoration-none fw-bold">
                                     {{ badge.adherent.full_name }}
                                 </a>
                             </div>
@@ -90,7 +320,7 @@
                                 <i class="fas fa-briefcase me-1"></i>{{ badge.adherent.activity_name|default:"Non spécifiée" }}
                             </div>
 
-                            <div class="badge-card-status mt-1">
+                            <div class="badge-card-status mt-2">
                                 {% if badge.status == 'active' %}
                                     <span class="badge bg-success">Actif</span>
                                 {% elif badge.status == 'expired' %}
@@ -100,28 +330,34 @@
                                 {% endif %}
                             </div>
 
-                            <div class="badge-card-details mt-2">
-                                <small class="text-muted">Validité: 
-                                    {% if badge.is_valid %}
-                                        <span class="text-success">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                            <div class="validity-indicator 
+                                        {% if badge.is_valid %}validity-ok
+                                        {% elif badge.adherent.badge_validity < today %}validity-expired
+                                        {% else %}validity-warning{% endif %}">
+                                <i class="fas {% if badge.is_valid %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %} me-1"></i>
+                                {% if badge.is_valid %}
+                                    Valide jusqu'au {{ badge.adherent.badge_validity|date:"d/m/Y" }}
+                                {% else %}
+                                    {% if badge.adherent.badge_validity < today %}
+                                        Expiré le {{ badge.adherent.badge_validity|date:"d/m/Y" }}
                                     {% else %}
-                                        <span class="text-danger">{{ badge.adherent.badge_validity|date:"d/m/Y" }}</span>
+                                        Expire le {{ badge.adherent.badge_validity|date:"d/m/Y" }}
                                     {% endif %}
-                                </small>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
 
                     {% if badge.qr_code %}
-                    <div class="badge-card-qr mt-3">
-                        <img src="{{ badge.qr_code.url }}" alt="QR Code">
-                        <p class="badge-card-qr-text">Scanner pour vérifier</p>
+                    <div class="badge-card-qr mt-3 text-center">
+                        <img src="{{ badge.qr_code.url }}" alt="QR Code" style="max-width: 80px;">
+                        <p class="badge-card-qr-text small text-muted mt-2">Scanner pour vérifier</p>
                     </div>
                     {% endif %}
                 </div>
 
                 <div class="badge-card-footer">
-                    <div class="badge-actions d-flex justify-content-between">
+                    <div class="badge-actions d-flex justify-content-between align-items-center">
                         <div class="badge-action-buttons">
                             {% if badge.id %}
                                 <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-sm btn-primary" title="Voir détails">
@@ -181,12 +417,27 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="card shadow mb-4">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-id-card fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">Aucun badge trouvé</h5>
-            <p class="text-muted">Les badges générés apparaîtront ici.</p>
-        </div>
+    <div class="empty-state">
+        <i class="fas fa-id-card"></i>
+        <h5 class="text-muted mb-3">
+            {% if current_status or current_validity %}
+                Aucun badge ne correspond aux filtres sélectionnés
+            {% else %}
+                Aucun badge trouvé
+            {% endif %}
+        </h5>
+        <p class="text-muted">
+            {% if current_status or current_validity %}
+                Essayez de modifier vos critères de recherche ou d'effacer les filtres.
+            {% else %}
+                Les badges générés apparaîtront ici.
+            {% endif %}
+        </p>
+        {% if current_status or current_validity %}
+            <a href="{% url 'core:badge_list' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-times me-2"></i> Effacer tous les filtres
+            </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

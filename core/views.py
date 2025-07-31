@@ -40,6 +40,11 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from django.template.loader import render_to_string
+from django.conf import settings
+import base64
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 # ==================== SYSTÈME DE PERMISSIONS ====================
 
@@ -1231,9 +1236,55 @@ def badge_list(request):
     if status_filter:
         badges = badges.filter(status=status_filter)
     
+    # Filtre par échéance
+    validity_filter = request.GET.get('validity')
+    if validity_filter:
+        from datetime import date, timedelta
+        today = date.today()
+        
+        if validity_filter == 'expired':
+            # Badges expirés
+            badges = badges.filter(adherent__badge_validity__lt=today)
+        elif validity_filter == 'expiring_soon':
+            # Badges expirant dans les 30 prochains jours
+            thirty_days_later = today + timedelta(days=30)
+            badges = badges.filter(
+                adherent__badge_validity__gte=today,
+                adherent__badge_validity__lte=thirty_days_later
+            )
+        elif validity_filter == 'valid':
+            # Badges valides (pas expirés)
+            badges = badges.filter(adherent__badge_validity__gte=today)
+        elif validity_filter == 'expiring_week':
+            # Badges expirant dans les 7 prochains jours
+            week_later = today + timedelta(days=7)
+            badges = badges.filter(
+                adherent__badge_validity__gte=today,
+                adherent__badge_validity__lte=week_later
+            )
+        elif validity_filter == 'expiring_month':
+            # Badges expirant dans les 30 prochains jours
+            month_later = today + timedelta(days=30)
+            badges = badges.filter(
+                adherent__badge_validity__gte=today,
+                adherent__badge_validity__lte=month_later
+            )
+    
+    # Tri par défaut
+    badges = badges.order_by('-issued_date')
+    
     context = {
         'badges': badges,
         'status_choices': Badge.STATUS_CHOICES,
+        'validity_choices': [
+            ('', 'Toutes les échéances'),
+            ('valid', 'Badges valides'),
+            ('expired', 'Badges expirés'),
+            ('expiring_week', 'Expire dans 7 jours'),
+            ('expiring_month', 'Expire dans 30 jours'),
+        ],
+        'current_status': status_filter,
+        'current_validity': validity_filter,
     }
     return render(request, 'core/badges/badge_list.html', context)
 
@@ -1539,6 +1590,93 @@ def download_badge_pdf(request, badge_id):
     
     # Construire le PDF
     doc.build(elements)
+    return response
+
+@login_required
+@require_permission('badge_view')
+def download_badge_jpg(request, badge_id):
+    """Télécharger le badge en JPG"""
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        # En cas de doublons, prendre le plus récent
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+    
+    # Créer une image du badge
+    width, height = 400, 600  # Dimensions du badge
+    
+    # Créer une image avec fond blanc
+    img = Image.new('RGB', (width, height), color='white')
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        # Essayer de charger une police
+        font_large = ImageFont.truetype("arial.ttf", 24)
+        font_medium = ImageFont.truetype("arial.ttf", 16)
+        font_small = ImageFont.truetype("arial.ttf", 12)
+    except:
+        # Fallback vers la police par défaut
+        font_large = ImageFont.load_default()
+        font_medium = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+    
+    # En-tête avec drapeau guinéen (bandes colorées)
+    header_height = 60
+    band_width = width // 3
+    
+    # Rouge
+    draw.rectangle([0, 0, band_width, header_height], fill='#e74c3c')
+    # Jaune
+    draw.rectangle([band_width, 0, 2*band_width, header_height], fill='#f1c40f')
+    # Vert
+    draw.rectangle([2*band_width, 0, width, header_height], fill='#27ae60')
+    
+    # Texte de l'en-tête
+    draw.text((10, 15), "REPUBLIQUE DE GUINEE", fill='white', font=font_medium)
+    draw.text((10, 35), "Travail - Justice - Solidarite", fill='white', font=font_small)
+    
+    # Zone principale
+    main_start = header_height + 10
+    main_height = height - header_height - 100  # Laisser de l'espace pour le footer
+    
+    # Titre du métier
+    draw.text((20, main_start + 20), badge.adherent.activity_name.upper(), fill='#27ae60', font=font_large)
+    
+    # Informations personnelles
+    y_pos = main_start + 80
+    draw.text((20, y_pos), f"Nom: {badge.adherent.full_name}", fill='black', font=font_medium)
+    y_pos += 30
+    draw.text((20, y_pos), f"ID: {badge.adherent.identifiant}", fill='black', font=font_medium)
+    y_pos += 30
+    draw.text((20, y_pos), f"Telephone: {badge.adherent.phone1}", fill='black', font=font_medium)
+    y_pos += 30
+    draw.text((20, y_pos), f"Lieu: {badge.adherent.commune}", fill='#e74c3c', font=font_medium)
+    
+    # Numéro de badge
+    y_pos += 40
+    draw.text((20, y_pos), f"Badge: {badge.badge_number}", fill='#2c3e50', font=font_medium)
+    
+    # Date de validité
+    y_pos += 30
+    draw.text((20, y_pos), f"Valide jusqu'au: {badge.badge_validity.strftime('%d/%m/%Y')}", fill='#2c3e50', font=font_small)
+    
+    # Footer
+    footer_start = height - 50
+    draw.rectangle([0, footer_start, width, height], fill='#2c3e50')
+    draw.text((20, footer_start + 15), "IMPACT DATA", fill='white', font=font_medium)
+    draw.text((width - 150, footer_start + 15), "Badge Officiel", fill='white', font=font_small)
+    
+    # Convertir l'image en bytes
+    img_io = BytesIO()
+    img.save(img_io, format='JPEG', quality=95)
+    img_io.seek(0)
+    
+    # Créer la réponse HTTP
+    response = HttpResponse(img_io.getvalue(), content_type='image/jpeg')
+    response['Content-Disposition'] = f'attachment; filename="badge_{badge.badge_number}.jpg"'
+    
     return response
 
 @login_required

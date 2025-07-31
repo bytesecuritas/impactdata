@@ -38,53 +38,57 @@
     <!-- Statistiques -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="stats-card">
-                <div class="text-center">
-                    <h3>{{ total_interactions }}</h3>
-                    <p>Total interactions</p>
+            <div class="stats-card-professional">
+                <div class="icon-container primary">
+                    <i class="fas fa-comments"></i>
                 </div>
+                <h3>{{ total_interactions }}</h3>
+                <p>Total interactions</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
-                <div class="text-center">
-                    <h3>{{ filtered_count }}</h3>
-                    <p>Interactions filtrées</p>
+            <div class="stats-card-professional">
+                <div class="icon-container success">
+                    <i class="fas fa-filter"></i>
                 </div>
+                <h3>{{ filtered_count }}</h3>
+                <p>Interactions filtrées</p>
             </div>
         </div>
         {% if overdue_interactions %}
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
-                <div class="text-center">
-                    <h3>{{ overdue_interactions|length }}</h3>
-                    <p>En retard</p>
+            <div class="stats-card-professional">
+                <div class="icon-container danger">
+                    <i class="fas fa-exclamation-triangle"></i>
                 </div>
+                <h3>{{ overdue_interactions|length }}</h3>
+                <p>En retard</p>
             </div>
         </div>
         {% endif %}
         {% if due_soon_interactions %}
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
-                <div class="text-center">
-                    <h3>{{ due_soon_interactions|length }}</h3>
-                    <p>Échéance proche</p>
+            <div class="stats-card-professional">
+                <div class="icon-container warning">
+                    <i class="fas fa-clock"></i>
                 </div>
+                <h3>{{ due_soon_interactions|length }}</h3>
+                <p>Échéance proche</p>
             </div>
         </div>
         {% endif %}
     </div>
 
     <!-- Formulaire de recherche avancée optimisé -->
-    <div class="search-card mb-4">
+    <div class="search-card">
         <div class="search-header">
             <div class="search-title">
                 <i class="fas fa-search search-icon"></i>
-                <h6 class="mb-0">Recherche avancée</h6>
+                <h6>Recherche avancée</h6>
             </div>
             <div class="search-controls">
                 <span class="filter-count" id="activeFilters">0 filtres actifs</span>
-                <button class="btn btn-sm btn-ghost toggle-search" type="button" data-bs-toggle="collapse" data-bs-target="#searchForm">
+                <button class="toggle-search" type="button" data-bs-toggle="collapse" data-bs-target="#searchForm">
                     <i class="fas fa-chevron-down transition-icon"></i>
                 </button>
             </div>
@@ -109,11 +113,11 @@
                                 {{ search_form.status }}
                             </div>
                             <div class="search-actions">
-                                <button type="submit" class="btn btn-primary search-btn">
+                                <button type="submit" class="search-btn">
                                     <i class="fas fa-search"></i>
                                     <span>Rechercher</span>
                                 </button>
-                                <a href="{% url 'core:interaction_list' %}" class="btn btn-outline-secondary clear-btn">
+                                <a href="{% url 'core:interaction_list' %}" class="clear-btn">
                                     <i class="fas fa-times"></i>
                                 </a>
                             </div>
@@ -188,9 +192,9 @@
 
     <!-- Interactions en retard (si il y en a) -->
     {% if overdue_interactions %}
-    <div class="card mb-4 border-danger">
-        <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">
+    <div class="table-card-professional mb-4 border-danger">
+        <div class="card-header">
+            <h5>
                 <i class="fas fa-exclamation-triangle"></i> Interactions en retard
             </h5>
         </div>
@@ -234,9 +238,9 @@
     {% endif %}
 
     <!-- Liste des interactions -->
-    <div class="card">
+    <div class="table-card-professional">
         <div class="card-header">
-            <h5 class="mb-0">
+            <h5>
                 <i class="fas fa-list"></i> Interactions ({{ interactions|length }})
                 {% if filtered_count != total_interactions %}
                     <small class="text-muted">sur {{ total_interactions }} total</small>

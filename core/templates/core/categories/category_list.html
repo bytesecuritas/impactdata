@@ -21,27 +21,29 @@
     <!-- Statistiques -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="stats-card">
-                <div class="text-center">
-                    <h3>{{ total_categories }}</h3>
-                    <p>Total catégories</p>
+            <div class="stats-card-professional">
+                <div class="icon-container primary">
+                    <i class="fas fa-tags"></i>
                 </div>
+                <h3>{{ total_categories }}</h3>
+                <p>Total catégories</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
-                <div class="text-center">
-                    <h3>{{ categories|length }}</h3>
-                    <p>Catégories affichées</p>
+            <div class="stats-card-professional">
+                <div class="icon-container success">
+                    <i class="fas fa-list"></i>
                 </div>
+                <h3>{{ categories|length }}</h3>
+                <p>Catégories affichées</p>
             </div>
         </div>
     </div>
 
     <!-- Liste des catégories -->
-    <div class="card">
+    <div class="table-card-professional">
         <div class="card-header">
-            <h5 class="mb-0">
+            <h5>
                 <i class="fas fa-list"></i> Catégories ({{ categories|length }})
             </h5>
         </div>

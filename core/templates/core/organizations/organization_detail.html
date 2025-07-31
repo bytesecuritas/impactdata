@@ -4,128 +4,260 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- En-tête -->
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">
-            <i class="fas fa-building"></i> {{ organization.name }}
-        </h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-                <a href="{% url 'core:organization_update' organization.id %}" class="btn btn-sm btn-warning">
-                    <i class="fas fa-edit"></i> Modifier
-                </a>
-                <a href="{% url 'core:organization_delete' organization.id %}" class="btn btn-sm btn-danger">
-                    <i class="fas fa-trash"></i> Supprimer
-                </a>
+    <!-- En-tête avec navigation -->
+    <div class="organization-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="organization-title">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2">
+                        <li class="breadcrumb-item"><a href="{% url 'core:organization_list' %}">Organisations</a></li>
+                        <li class="breadcrumb-item active">{{ organization.name }}</li>
+                    </ol>
+                </nav>
+                <h1 class="organization-name">
+                    <i class="fas fa-building"></i> {{ organization.name }}
+                </h1>
+                <p class="organization-subtitle text-muted">
+                    <i class="fas fa-hashtag"></i> {{ organization.identifiant }} • 
+                    <i class="fas fa-tag"></i> {{ organization.category.name }}
+                </p>
+            </div>
+            <div class="organization-actions">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'core:organization_update' organization.id %}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    <a href="{% url 'core:organization_delete' organization.id %}" 
+                       class="btn btn-outline-danger">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <!-- Informations de l'organisation -->
-        <div class="col-md-8">
-            <div class="card mb-4">
+        <!-- Informations principales -->
+        <div class="col-lg-8">
+            <div class="detail-card-professional mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">
+                    <h5>
                         <i class="fas fa-info-circle"></i> Informations de l'organisation
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Identifiant :</strong> {{ organization.identifiant }}</p>
-                            <p><strong>Nom :</strong> {{ organization.name }}</p>
-                            <p><strong>Catégorie :</strong> 
-                                <span class="badge bg-info">{{ organization.category.name }}</span>
-                            </p>
-                            <p><strong>Téléphone :</strong> {{ organization.phone }}</p>
-                            {% if organization.whatsapp %}
-                            <p><strong>WhatsApp :</strong> {{ organization.whatsapp }}</p>
-                            {% endif %}
-                            <p><strong>Nombre de personnel :</strong> {{ organization.number_personnel }} personnes</p>
+                            <div class="info-section">
+                                <h6 class="info-section-title">
+                                    <i class="fas fa-id-card"></i> Identité
+                                </h6>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Identifiant</span>
+                                        <span class="info-value">{{ organization.identifiant }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Nom</span>
+                                        <span class="info-value">{{ organization.name }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Catégorie</span>
+                                        <span class="info-value">
+                                            <span class="badge bg-info">{{ organization.category.name }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Chiffre d'affaires mensuel :</strong> 
-                                {% if organization.monthly_revenue %}
-                                    {{ organization.monthly_revenue|floatformat:0 }} GNF
-                                {% else %}
-                                    <span class="text-muted">Non spécifié</span>
-                                {% endif %}
-                            </p>
-                            <p><strong>Date de création :</strong> 
-                                {{ organization.creation_date|date:"d/m/Y"|default:"Non spécifiée" }}
-                            </p>
-                            <p><strong>Adhérents :</strong> 
-                                <span class="badge bg-secondary">{{ organization.get_adherents_count }}</span>
-                            </p>
-                            {% if organization.created_by %}
-                            <p><strong>Créé par :</strong> {{ organization.created_by.get_full_name }}</p>
-                            <p><strong>Date d'enregistrement :</strong> {{ organization.created_at|date:"d/m/Y H:i" }}</p>
-                            {% endif %}
+                            <div class="info-section">
+                                <h6 class="info-section-title">
+                                    <i class="fas fa-phone"></i> Contact
+                                </h6>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Téléphone</span>
+                                        <span class="info-value">
+                                            <a href="tel:{{ organization.phone }}" class="contact-link">
+                                                <i class="fas fa-phone"></i> {{ organization.phone }}
+                                            </a>
+                                        </span>
+                                    </div>
+                                    {% if organization.whatsapp %}
+                                    <div class="info-item">
+                                        <span class="info-label">WhatsApp</span>
+                                        <span class="info-value">
+                                            <a href="https://wa.me/{{ organization.whatsapp }}" 
+                                               target="_blank" class="contact-link">
+                                                <i class="fab fa-whatsapp"></i> {{ organization.whatsapp }}
+                                            </a>
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="info-item">
+                                        <span class="info-label">Personnel</span>
+                                        <span class="info-value">{{ organization.number_personnel }} personnes</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <p><strong>Adresse :</strong></p>
-                        <p class="text-muted">{{ organization.address }}</p>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="info-section-title">
+                                    <i class="fas fa-chart-line"></i> Activité
+                                </h6>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Chiffre d'affaires</span>
+                                        <span class="info-value">
+                                            {% if organization.monthly_revenue %}
+                                                <span class="revenue-amount">{{ organization.monthly_revenue|floatformat:0 }} GNF</span>
+                                                <small class="text-muted">/mois</small>
+                                            {% else %}
+                                                <span class="text-muted">Non spécifié</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Date de création</span>
+                                        <span class="info-value">
+                                            {{ organization.creation_date|date:"d/m/Y"|default:"Non spécifiée" }}
+                                        </span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Adhérents</span>
+                                        <span class="info-value">
+                                            <span class="badge bg-secondary">{{ organization.get_adherents_count }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="info-section-title">
+                                    <i class="fas fa-user-cog"></i> Administration
+                                </h6>
+                                <div class="info-grid">
+                                    {% if organization.created_by %}
+                                    <div class="info-item">
+                                        <span class="info-label">Créé par</span>
+                                        <span class="info-value">{{ organization.created_by.get_full_name }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Date d'enregistrement</span>
+                                        <span class="info-value">{{ organization.created_at|date:"d/m/Y H:i" }}</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="info-item">
+                                        <span class="info-label">Système</span>
+                                        <span class="info-value text-muted">Organisation système</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
+                    {% if organization.address %}
+                    <div class="info-section mt-4">
+                        <h6 class="info-section-title">
+                            <i class="fas fa-map-marker-alt"></i> Adresse
+                        </h6>
+                        <div class="address-content">
+                            <p class="address-text">{{ organization.address }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     {% if organization.infos_annexes %}
-                    <div class="mt-3">
-                        <p><strong>Informations annexes :</strong></p>
-                        <p class="text-muted">{{ organization.infos_annexes }}</p>
+                    <div class="info-section mt-4">
+                        <h6 class="info-section-title">
+                            <i class="fas fa-sticky-note"></i> Informations annexes
+                        </h6>
+                        <div class="annexes-content">
+                            <p class="annexes-text">{{ organization.infos_annexes }}</p>
+                        </div>
                     </div>
                     {% endif %}
                     
                     {% if organization.hobies %}
-                    <div class="mt-3">
-                        <p><strong>Hobbies :</strong></p>
-                        <p class="text-muted">{{ organization.hobies }}</p>
+                    <div class="info-section mt-4">
+                        <h6 class="info-section-title">
+                            <i class="fas fa-heart"></i> Hobbies
+                        </h6>
+                        <div class="hobbies-content">
+                            <p class="hobbies-text">{{ organization.hobies }}</p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Statistiques -->
-        <div class="col-md-4">
-            <div class="stats-card mb-3">
-                <div class="text-center">
+        <!-- Statistiques et métriques -->
+        <div class="col-lg-4">
+            <div class="stats-section">
+                <div class="stats-card-professional mb-3">
+                    <div class="icon-container primary">
+                        <i class="fas fa-users"></i>
+                    </div>
                     <h3>{{ organization.get_adherents_count }}</h3>
                     <p>Adhérents</p>
                 </div>
-            </div>
-            <div class="stats-card mb-3" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
-                <div class="text-center">
+                
+                <div class="stats-card-professional mb-3">
+                    <div class="icon-container warning">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
                     <h3>{{ organization.number_personnel }}</h3>
                     <p>Personnel</p>
                 </div>
-            </div>
-            {% if organization.monthly_revenue %}
-            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
-                <div class="text-center">
+                
+                {% if organization.monthly_revenue %}
+                <div class="stats-card-professional mb-3">
+                    <div class="icon-container success">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
                     <h3>{{ organization.monthly_revenue|floatformat:0 }}</h3>
                     <p>GNF/mois</p>
                 </div>
+                {% endif %}
+                
+                <div class="stats-card-professional">
+                    <div class="icon-container info">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3>{{ organization.creation_date|date:"Y"|default:"N/A" }}</h3>
+                    <p>Année de création</p>
+                </div>
             </div>
-            {% endif %}
         </div>
     </div>
 
     <!-- Liste des adhérents -->
-    <div class="card">
+    <div class="table-card-professional">
         <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-users"></i> Adhérents de cette organisation ({{ adherents|length }})
-            </h5>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5>
+                    <i class="fas fa-users"></i> Adhérents de cette organisation
+                </h5>
+                <span class="adherents-count">{{ adherents|length }} adhérent(s)</span>
+            </div>
         </div>
         <div class="card-body">
             {% if adherents %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover adherents-table">
                         <thead>
                             <tr>
                                 <th>Identifiant</th>
-                                <th>Nom complet</th>
+                                <th>Adhérent</th>
                                 <th>Type</th>
                                 <th>Badge</th>
                                 <th>Date d'adhésion</th>
@@ -134,53 +266,58 @@
                         </thead>
                         <tbody>
                             {% for adherent in adherents %}
-                            <tr>
+                            <tr class="adherent-row">
                                 <td>
-                                    <strong>{{ adherent.identifiant }}</strong>
+                                    <span class="adherent-id">{{ adherent.identifiant }}</span>
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center">
-                                        {% if adherent.profile_picture %}
-                                            <img src="{{ adherent.profile_picture.url }}" 
-                                                 class="rounded-circle me-2" 
-                                                 width="30" height="30" 
-                                                 alt="{{ adherent.full_name }}">
-                                        {% else %}
-                                            <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" 
-                                                 style="width: 30px; height: 30px;">
-                                                <i class="fas fa-user text-white"></i>
-                                            </div>
-                                        {% endif %}
-                                        <div>
-                                            <strong>{{ adherent.full_name }}</strong>
-                                            <br>
-                                            <small class="text-muted">{{ adherent.phone1 }}</small>
+                                    <div class="adherent-info">
+                                        <div class="adherent-avatar">
+                                            {% if adherent.profile_picture %}
+                                                <img src="{{ adherent.profile_picture.url }}" 
+                                                     alt="{{ adherent.full_name }}">
+                                            {% else %}
+                                                <div class="avatar-placeholder">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="adherent-details">
+                                            <div class="adherent-name">{{ adherent.full_name }}</div>
+                                            <div class="adherent-phone">{{ adherent.phone1 }}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{% if adherent.type_adherent == 'physical' %}primary{% else %}info{% endif %}">
+                                    <span class="badge type-badge {% if adherent.type_adherent == 'physical' %}badge-primary{% else %}badge-info{% endif %}">
                                         {{ adherent.get_type_adherent_display }}
                                     </span>
                                 </td>
                                 <td>
-                                    {% if adherent.is_badge_valid %}
-                                        <span class="badge bg-success">Valide</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Expiré</span>
-                                    {% endif %}
-                                    <br>
-                                    <small class="text-muted">{{ adherent.badge_validity|date:"d/m/Y" }}</small>
+                                    <div class="badge-status">
+                                        {% if adherent.is_badge_valid %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check-circle"></i> Valide
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-times-circle"></i> Expiré
+                                            </span>
+                                        {% endif %}
+                                        <div class="badge-date">{{ adherent.badge_validity|date:"d/m/Y" }}</div>
+                                    </div>
                                 </td>
                                 <td>
-                                    {{ adherent.join_date|date:"d/m/Y" }}
+                                    <span class="join-date">{{ adherent.join_date|date:"d/m/Y" }}</span>
                                 </td>
                                 <td>
-                                    <a href="{% url 'core:adherent_detail' adherent.id %}" 
-                                       class="btn btn-sm btn-outline-primary" 
-                                       title="Voir détails">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
+                                    <div class="action-buttons">
+                                        <a href="{% url 'core:adherent_detail' adherent.id %}" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -188,17 +325,20 @@
                     </table>
                 </div>
             {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-users fa-2x text-muted mb-3"></i>
-                    <h6 class="text-muted">Aucun adhérent</h6>
-                    <p class="text-muted">Cette organisation n'a pas encore d'adhérents.</p>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h6>Aucun adhérent</h6>
+                    <p>Cette organisation n'a pas encore d'adhérents.</p>
                 </div>
             {% endif %}
         </div>
     </div>
 
-    <div class="mt-3">
-        <a href="{% url 'core:organization_list' %}" class="btn btn-secondary">
+    <!-- Navigation de retour -->
+    <div class="navigation-footer mt-4">
+        <a href="{% url 'core:organization_list' %}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left"></i> Retour à la liste
         </a>
     </div>

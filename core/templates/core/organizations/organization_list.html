@@ -21,43 +21,47 @@
     <!-- Statistiques -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="stats-card">
-                <div class="text-center">
-                    <h3>{{ total_organizations }}</h3>
-                    <p>Total organisations</p>
+            <div class="stats-card-professional">
+                <div class="icon-container primary">
+                    <i class="fas fa-building"></i>
                 </div>
+                <h3>{{ total_organizations }}</h3>
+                <p>Total organisations</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
-                <div class="text-center">
-                    <h3>{{ organizations|length }}</h3>
-                    <p>Organisations affichées</p>
+            <div class="stats-card-professional">
+                <div class="icon-container success">
+                    <i class="fas fa-list"></i>
                 </div>
+                <h3>{{ organizations|length }}</h3>
+                <p>Organisations affichées</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
-                <div class="text-center">
-                    <h3>{{ total_personel|default:0 }}</h3>
-                    <p>Total personnel</p>
+            <div class="stats-card-professional">
+                <div class="icon-container warning">
+                    <i class="fas fa-users"></i>
                 </div>
+                <h3>{{ total_personel|default:0 }}</h3>
+                <p>Total personnel</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stats-card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
-                <div class="text-center">
-                    <h3>{{ total_revenue|default:0|floatformat:0 }}</h3>
-                    <p>Chiffre d'affaires (GNF)</p>
+            <div class="stats-card-professional">
+                <div class="icon-container info">
+                    <i class="fas fa-money-bill-wave"></i>
                 </div>
+                <h3>{{ total_revenue|default:0|floatformat:0 }}</h3>
+                <p>Chiffre d'affaires (GNF)</p>
             </div>
         </div>
     </div>
 
     <!-- Liste des organisations -->
-    <div class="card">
+    <div class="table-card-professional">
         <div class="card-header">
-            <h5 class="mb-0">
+            <h5>
                 <i class="fas fa-list"></i> Organisations ({{ organizations|length }})
             </h5>
         </div>

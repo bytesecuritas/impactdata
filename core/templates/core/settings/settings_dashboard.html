@@ -3,6 +3,65 @@
 
 {% block title %}Paramètres de l'Application{% endblock %}
 
+{% block extra_css %}
+<style>
+    .action-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .action-icon {
+        transition: all 0.3s ease;
+    }
+    
+    .action-card:hover .action-icon {
+        transform: scale(1.1);
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    }
+    
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    }
+    
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    }
+    
+    .bg-gradient-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+    
+    .action-card .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .action-card:hover .btn {
+        transform: scale(1.05);
+    }
+    
+    .stats-card-professional {
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card-professional:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -30,165 +89,287 @@
     <!-- Statistiques générales -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">{{ total_parameters }}</h4>
-                            <p class="card-text">Paramètres Généraux</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-sliders-h fa-2x"></i>
-                        </div>
-                    </div>
+            <div class="stats-card-professional">
+                <div class="icon-container primary">
+                    <i class="fas fa-sliders-h"></i>
                 </div>
+                <h3>{{ total_parameters }}</h3>
+                <p>Paramètres Généraux</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">{{ total_references }}</h4>
-                            <p class="card-text">Valeurs de Référence</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-list fa-2x"></i>
-                        </div>
-                    </div>
+            <div class="stats-card-professional">
+                <div class="icon-container success">
+                    <i class="fas fa-list"></i>
                 </div>
+                <h3>{{ total_references }}</h3>
+                <p>Valeurs de Référence</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">{{ total_permissions }}</h4>
-                            <p class="card-text">Permissions de Rôles</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-shield-alt fa-2x"></i>
-                        </div>
-                    </div>
+            <div class="stats-card-professional">
+                <div class="icon-container warning">
+                    <i class="fas fa-shield-alt"></i>
                 </div>
+                <h3>{{ total_permissions }}</h3>
+                <p>Permissions de Rôles</p>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="card-title">{{ recent_logs.count }}</h4>
-                            <p class="card-text">Logs Récents</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-clipboard-list fa-2x"></i>
-                        </div>
-                    </div>
+            <div class="stats-card-professional">
+                <div class="icon-container info">
+                    <i class="fas fa-clipboard-list"></i>
                 </div>
+                <h3>{{ recent_logs.count }}</h3>
+                <p>Logs Récents</p>
             </div>
         </div>
     </div>
 
-    <!-- Sections principales -->
+    <!-- Actions rapides principales -->
     <div class="row">
         <!-- Gestion des rôles et permissions -->
-        <div class="col-md-6 mb-4">
+        <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-gradient-primary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-shield-alt"></i>
                         Gestion des Rôles et Permissions
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Définir et ajuster les permissions associées à chaque rôle utilisateur.</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'core:role_permissions_list' %}" class="btn btn-primary">
-                            <i class="fas fa-list"></i> Voir les permissions
-                        </a>
-                        <a href="{% url 'core:role_permission_create' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-plus"></i> Ajouter une permission
-                        </a>
-                        <a href="{% url 'core:bulk_role_permissions' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-tasks"></i> Assignation en masse
-                        </a>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="action-card bg-primary bg-opacity-10 border-primary border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-list fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-primary">Voir les permissions</h6>
+                                        <p class="mb-0 small text-muted">Consulter toutes les permissions par rôle</p>
+                                    </div>
+                                    <a href="{% url 'core:role_permissions_list' %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-card bg-primary bg-opacity-10 border-primary border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-plus fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-primary">Ajouter une permission</h6>
+                                        <p class="mb-0 small text-muted">Créer une nouvelle permission pour un rôle</p>
+                                    </div>
+                                    <a href="{% url 'core:role_permission_create' %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-card bg-secondary bg-opacity-10 border-secondary border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-tasks fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-secondary">Assignation en masse</h6>
+                                        <p class="mb-0 small text-muted">Assigner des permissions à plusieurs rôles</p>
+                                    </div>
+                                    <a href="{% url 'core:bulk_role_permissions' %}" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-tasks"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Valeurs de référence -->
-        <div class="col-md-6 mb-4">
+        <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-gradient-success text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-list"></i>
                         Valeurs de Référence
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Gérer les listes déroulantes utilisées dans l'application.</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'core:reference_values_list' %}" class="btn btn-success">
-                            <i class="fas fa-list"></i> Voir les valeurs
-                        </a>
-                        <a href="{% url 'core:reference_value_create' %}" class="btn btn-outline-success">
-                            <i class="fas fa-plus"></i> Ajouter une valeur
-                        </a>
-                        <a href="{% url 'core:reference_value_import' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-file-import"></i> Importer CSV
-                        </a>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="action-card bg-success bg-opacity-10 border-success border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-list fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-success">Voir les valeurs</h6>
+                                        <p class="mb-0 small text-muted">Consulter toutes les valeurs de référence</p>
+                                    </div>
+                                    <a href="{% url 'core:reference_values_list' %}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-card bg-success bg-opacity-10 border-success border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-plus fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-success">Ajouter une valeur</h6>
+                                        <p class="mb-0 small text-muted">Créer une nouvelle valeur de référence</p>
+                                    </div>
+                                    <a href="{% url 'core:reference_value_create' %}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-card bg-info bg-opacity-10 border-info border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-file-import fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-info">Importer CSV</h6>
+                                        <p class="mb-0 small text-muted">Importer des valeurs depuis un fichier CSV</p>
+                                    </div>
+                                    <a href="{% url 'core:reference_value_import' %}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-file-import"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Paramètres généraux -->
-        <div class="col-md-6 mb-4">
+        <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header bg-warning text-white">
+                <div class="card-header bg-gradient-warning text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-sliders-h"></i>
                         Paramètres Généraux
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Configuration générale de l'application (nom, fuseau horaire, etc.).</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'core:general_parameters_list' %}" class="btn btn-warning">
-                            <i class="fas fa-list"></i> Voir les paramètres
-                        </a>
-                        <a href="{% url 'core:general_parameter_create' %}" class="btn btn-outline-warning">
-                            <i class="fas fa-plus"></i> Ajouter un paramètre
-                        </a>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="action-card bg-warning bg-opacity-10 border-warning border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-list fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-warning">Voir les paramètres</h6>
+                                        <p class="mb-0 small text-muted">Consulter tous les paramètres généraux</p>
+                                    </div>
+                                    <a href="{% url 'core:general_parameters_list' %}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-card bg-warning bg-opacity-10 border-warning border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-plus fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-warning">Ajouter un paramètre</h6>
+                                        <p class="mb-0 small text-muted">Créer un nouveau paramètre général</p>
+                                    </div>
+                                    <a href="{% url 'core:general_parameter_create' %}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Journaux système -->
-        <div class="col-md-6 mb-4">
+        <div class="col-lg-6 mb-4">
             <div class="card h-100">
-                <div class="card-header bg-info text-white">
+                <div class="card-header bg-gradient-info text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-clipboard-list"></i>
                         Journaux Système
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Consulter et gérer les logs d'activité du système.</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'core:system_logs_list' %}" class="btn btn-info">
-                            <i class="fas fa-list"></i> Voir les logs
-                        </a>
-                        <a href="{% url 'core:system_logs_export' %}" class="btn btn-outline-info">
-                            <i class="fas fa-download"></i> Exporter
-                        </a>
-                        <a href="{% url 'core:system_logs_clear' %}" class="btn btn-outline-danger">
-                            <i class="fas fa-trash"></i> Nettoyer
-                        </a>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="action-card bg-info bg-opacity-10 border-info border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-list fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-info">Voir les logs</h6>
+                                        <p class="mb-0 small text-muted">Consulter tous les journaux système</p>
+                                    </div>
+                                    <a href="{% url 'core:system_logs_list' %}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-card bg-info bg-opacity-10 border-info border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-download fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-info">Exporter les logs</h6>
+                                        <p class="mb-0 small text-muted">Télécharger les journaux système</p>
+                                    </div>
+                                    <a href="{% url 'core:system_logs_export' %}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="action-card bg-danger bg-opacity-10 border-danger border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-trash fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-danger">Nettoyer les logs</h6>
+                                        <p class="mb-0 small text-muted">Supprimer les anciens journaux</p>
+                                    </div>
+                                    <a href="{% url 'core:system_logs_clear' %}" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -200,7 +381,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-danger text-white">
+                <div class="card-header bg-gradient-danger text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-exclamation-triangle"></i>
                         Paramètres Critiques
@@ -210,13 +391,20 @@
                     <div class="row">
                         {% for param in critical_parameters %}
                         <div class="col-md-4 mb-3">
-                            <div class="border rounded p-3">
-                                <h6 class="text-danger">{{ param.get_parameter_key_display }}</h6>
-                                <p class="mb-1"><strong>Valeur:</strong> {{ param.value|truncatechars:50 }}</p>
-                                <p class="mb-0"><small class="text-muted">Type: {{ param.get_parameter_type_display }}</small></p>
-                                <a href="{% url 'core:general_parameter_update' param.id %}" class="btn btn-sm btn-outline-primary mt-2">
-                                    <i class="fas fa-edit"></i> Modifier
-                                </a>
+                            <div class="action-card bg-danger bg-opacity-10 border-danger border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-exclamation-triangle fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-danger">{{ param.get_parameter_key_display }}</h6>
+                                        <p class="mb-1 small">{{ param.value|truncatechars:50 }}</p>
+                                        <small class="text-muted">Type: {{ param.get_parameter_type_display }}</small>
+                                    </div>
+                                    <a href="{% url 'core:general_parameter_update' param.id %}" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         {% endfor %}
@@ -232,7 +420,7 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bg-gradient-primary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-pie"></i>
                         Valeurs de Référence par Catégorie
@@ -242,9 +430,12 @@
                     <div class="row">
                         {% for category in reference_categories %}
                         <div class="col-md-3 mb-3">
-                            <div class="border rounded p-3 text-center">
-                                <h6>{{ category.category|title }}</h6>
-                                <div class="h4 text-primary">{{ category.count }}</div>
+                            <div class="action-card bg-primary bg-opacity-10 border-primary border-start border-4 rounded p-3 text-center">
+                                <div class="action-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-list fa-lg"></i>
+                                </div>
+                                <h6 class="fw-bold text-primary">{{ category.category|title }}</h6>
+                                <div class="h4 text-primary mb-0">{{ category.count }}</div>
                                 <small class="text-muted">valeurs</small>
                             </div>
                         </div>
@@ -261,7 +452,7 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bg-gradient-info text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-history"></i>
                         Activité Récente
@@ -307,38 +498,4 @@
     </div>
     {% endif %}
 </div>
-
-<style>
-.card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.btn-group .btn {
-    border-radius: 0.375rem;
-}
-
-.btn-group .btn:first-child {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.btn-group .btn:last-child {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-}
-
-.border.rounded {
-    transition: all 0.2s ease;
-}
-
-.border.rounded:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
-}
-</style>
 {% endblock %} 

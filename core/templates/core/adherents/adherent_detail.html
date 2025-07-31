@@ -2,6 +2,49 @@
 
 {% block title %}Détails de l'Adhérent - Impact Data{% endblock %}
 
+{% block extra_css %}
+<style>
+    .action-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .action-icon {
+        transition: all 0.3s ease;
+    }
+    
+    .action-card:hover .action-icon {
+        transform: scale(1.1);
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+    
+    .action-card .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .action-card:hover .btn {
+        transform: scale(1.05);
+    }
+    
+    .statistics-card {
+        transition: all 0.3s ease;
+    }
+    
+    .statistics-card:hover {
+        background-color: #f8f9fa !important;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- En-tête -->
@@ -344,30 +387,125 @@
 
             <!-- Actions rapides -->
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bg-gradient-primary text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-bolt"></i> Actions Rapides
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'core:adherent_update' adherent.pk %}" class="btn btn-outline-warning">
-                            <i class="fas fa-edit"></i> Modifier l'adhérent
-                        </a>
-                        <a href="{% url 'core:adherent_interactions' adherent.pk %}" class="btn btn-outline-info">
-                            <i class="fas fa-history"></i> Voir toutes les interactions
-                        </a>
-                        <a href="{% url 'core:interaction_create' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-comments"></i> Nouvelle Interaction
-                        </a>
+                    <div class="row g-3">
+                        <!-- Modifier l'adhérent -->
+                        <div class="col-12">
+                            <div class="action-card bg-warning bg-opacity-10 border-warning border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-edit fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-warning">Modifier l'adhérent</h6>
+                                        <p class="mb-0 small text-muted">Modifier les informations personnelles et de contact</p>
+                                    </div>
+                                    <a href="{% url 'core:adherent_update' adherent.pk %}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Voir les interactions -->
+                        <div class="col-12">
+                            <div class="action-card bg-info bg-opacity-10 border-info border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-history fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-info">Historique des interactions</h6>
+                                        <p class="mb-0 small text-muted">Consulter toutes les interactions avec cet adhérent</p>
+                                    </div>
+                                    <a href="{% url 'core:adherent_interactions' adherent.pk %}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nouvelle interaction -->
+                        <div class="col-12">
+                            <div class="action-card bg-primary bg-opacity-10 border-primary border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-comments fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-primary">Nouvelle interaction</h6>
+                                        <p class="mb-0 small text-muted">Créer une nouvelle interaction avec cet adhérent</p>
+                                    </div>
+                                    <a href="{% url 'core:interaction_create' %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Régénérer badge -->
                         {% if can_gen_badge %}
-                            <a href="{% url 'core:generate_badge' adherent.id %}?force=1" class="btn btn-warning me-2">
-                                <i class="fas fa-redo"></i> Régénérer un nouveau badge
-                            </a>
+                        <div class="col-12">
+                            <div class="action-card bg-success bg-opacity-10 border-success border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-id-card fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-success">Régénérer le badge</h6>
+                                        <p class="mb-0 small text-muted">Créer un nouveau badge pour cet adhérent</p>
+                                    </div>
+                                    <a href="{% url 'core:generate_badge' adherent.id %}?force=1" class="btn btn-success btn-sm">
+                                        <i class="fas fa-redo"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
-                        <a href="{% url 'core:adherent_delete' adherent.pk %}" class="btn btn-outline-danger">
-                            <i class="fas fa-trash"></i> Supprimer l'adhérent
-                        </a>
+
+                        <!-- Supprimer l'adhérent -->
+                        <div class="col-12">
+                            <div class="action-card bg-danger bg-opacity-10 border-danger border-start border-4 rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="action-icon bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-trash fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold text-danger">Supprimer l'adhérent</h6>
+                                        <p class="mb-0 small text-muted">Supprimer définitivement cet adhérent du système</p>
+                                    </div>
+                                    <a href="{% url 'core:adherent_delete' adherent.pk %}" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistiques rapides -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-chart-bar"></i> Statistiques rapides
+                        </h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light rounded statistics-card">
+                                    <div class="h5 mb-0 text-primary">{{ adherent.interaction_set.count }}</div>
+                                    <small class="text-muted">Interactions</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 bg-light rounded statistics-card">
+                                    <div class="h5 mb-0 text-success">{{ adherent.get_age_membership }}</div>
+                                    <small class="text-muted">Jours d'adhésion</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

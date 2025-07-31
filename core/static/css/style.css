@@ -5,10 +5,15 @@
     --success-color: #38a169;
     --warning-color: #d69e2e;
     --danger-color: #e53e3e;
-    --light-gray: #f7fafc;
+    --info-color: #3182ce;
+    --light-gray: #f8fafc;
     --border-color: #e2e8f0;
-    --text-primary: #2d3748;
-    --text-secondary: #718096;
+    --text-primary: #1a202c;
+    --text-secondary: #4a5568;
+    --text-muted: #718096;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --border-radius: 8px;
 }
 
 body {
@@ -63,7 +68,7 @@ body {
 
 .sidebar .nav-link:hover {
     color: var(--accent-color);
-    background-color: #ebf8ff;
+    background-color: #f7fafc;
 }
 
 .sidebar .nav-link.active {
@@ -79,248 +84,460 @@ body {
 }
 
 .main-content {
-    padding: 24px;
+    padding: 20px;
     background-color: var(--light-gray);
 }
 
+/* ===== NOUVEAU DESIGN DES CARTES PROFESSIONNELLES ===== */
+
 .card {
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
     background-color: white;
-    transition: box-shadow 0.2s ease;
+    transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .card:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-1px);
 }
 
 .card-header {
     background-color: white;
     border-bottom: 1px solid var(--border-color);
-    border-radius: 8px 8px 0 0 !important;
-    padding: 16px 20px;
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.card-header h5 {
+    margin: 0;
     font-weight: 600;
     color: var(--text-primary);
 }
 
-.card-body {
-    padding: 20px;
-}
-
-.btn {
-    border-radius: 6px;
-    font-weight: 500;
-    padding: 8px 16px;
-    transition: all 0.2s ease;
-    border: none;
-}
-
-.btn-primary {
-    background-color: var(--accent-color);
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: #2c5aa0;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-secondary {
-    background-color: var(--text-secondary);
-    color: white;
-}
-
-.btn-success {
-    background-color: var(--success-color);
-    color: white;
-}
-
-.btn-warning {
-    background-color: var(--warning-color);
-    color: white;
-}
-
-.btn-danger {
-    background-color: var(--danger-color);
-    color: white;
-}
-
-.btn-outline-primary {
-    border: 1px solid var(--accent-color);
+.card-header i {
+    margin-right: 8px;
     color: var(--accent-color);
-    background-color: transparent;
 }
 
-.btn-outline-primary:hover {
-    background-color: var(--accent-color);
-    color: white;
+.card-body {
+    padding: 1.5rem;
+    color: var(--text-secondary);
 }
 
-.btn-outline-warning {
-    border: 1px solid var(--warning-color);
-    color: var(--warning-color);
-    background-color: transparent;
-}
-
-.btn-outline-warning:hover {
-    background-color: var(--warning-color);
-    color: white;
-}
-
-.btn-outline-danger {
-    border: 1px solid var(--danger-color);
-    color: var(--danger-color);
-    background-color: transparent;
-}
-
-.btn-outline-danger:hover {
-    background-color: var(--danger-color);
-    color: white;
-}
+/* ===== CARTES DE STATISTIQUES PROFESSIONNELLES ===== */
 
 .stats-card {
-    background-color: white;
+    background: white;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.stats-card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
 }
 
 .stats-card h3 {
     font-size: 2rem;
     font-weight: 700;
+    color: var(--text-primary);
     margin: 0;
-    color: var(--accent-color);
+    line-height: 1.2;
 }
 
 .stats-card p {
-    margin: 8px 0 0 0;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     font-weight: 500;
+    margin: 0;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
+
+.stats-card .bg-primary {
+    background-color: var(--accent-color) !important;
+}
+
+.stats-card .bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.stats-card .bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.stats-card .bg-info {
+    background-color: var(--info-color) !important;
+}
+
+.stats-card .bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+.stats-card .bg-secondary {
+    background-color: var(--text-muted) !important;
+}
+
+/* ===== CARTES DE CONTENU PROFESSIONNELLES ===== */
+
+.content-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.content-card:hover {
+    box-shadow: var(--card-shadow-hover);
+}
+
+.content-card .card-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+}
+
+.content-card .card-header h5 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin: 0;
+}
+
+/* ===== CARTES DE LISTE PROFESSIONNELLES ===== */
+
+.list-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+}
+
+.list-card:hover {
+    box-shadow: var(--card-shadow-hover);
+}
+
+.list-card .list-group-item {
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+    background: transparent;
+}
+
+.list-card .list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-card .list-group-item:hover {
+    background-color: #f8fafc;
+}
+
+/* ===== CARTES DE FORMULAIRE PROFESSIONNELLES ===== */
+
+.form-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+}
+
+.form-card:hover {
+    box-shadow: var(--card-shadow-hover);
+}
+
+.form-card .card-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ===== CARTES DE DÉTAIL PROFESSIONNELLES ===== */
+
+.detail-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+}
+
+.detail-card:hover {
+    box-shadow: var(--card-shadow-hover);
+}
+
+.detail-card .card-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ===== BOUTONS PROFESSIONNELS ===== */
+
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2c5aa0;
+    border-color: #2c5aa0;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: var(--text-muted);
+    border-color: var(--text-muted);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #4a5568;
+    border-color: #4a5568;
+    color: white;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #2f855a;
+    border-color: #2f855a;
+    color: white;
+}
+
+.btn-warning {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #b7791f;
+    border-color: #b7791f;
+    color: white;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c53030;
+    border-color: #c53030;
+    color: white;
+}
+
+.btn-outline-primary {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    background-color: transparent;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.btn-outline-warning {
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+    background-color: transparent;
+}
+
+.btn-outline-warning:hover {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: white;
+}
+
+.btn-outline-danger {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+    background-color: transparent;
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: white;
+}
+
+/* ===== ALERTES PROFESSIONNELLES ===== */
 
 .alert {
-    border-radius: 6px;
-    border: none;
-    padding: 12px 16px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
 }
 
+/* ===== TABLEAUX PROFESSIONNELS ===== */
+
 .table {
-    border-radius: 6px;
-    overflow: hidden;
-    background-color: white;
+    color: var(--text-secondary);
+    margin-bottom: 0;
 }
 
 .table thead th {
-    background-color: var(--light-gray);
+    background-color: #f8fafc;
+    border-bottom: 2px solid var(--border-color);
     color: var(--text-primary);
-    border: none;
     font-weight: 600;
-    padding: 12px 16px;
+    padding: 1rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .table tbody td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
     vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .table tbody tr:hover {
-    background-color: #f7fafc;
+    background-color: #f8fafc;
 }
+
+/* ===== BADGES PROFESSIONNELS ===== */
 
 .badge {
     font-weight: 500;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
 }
+
+/* ===== FORMULAIRES PROFESSIONNELS ===== */
 
 .form-control, .form-select {
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    padding: 8px 12px;
-    transition: border-color 0.2s ease;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
 }
 
 .form-control:focus, .form-select:focus {
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+    box-shadow: 0 0 0 0.2rem rgba(49, 130, 206, 0.25);
 }
 
 .form-label {
     font-weight: 500;
     color: var(--text-primary);
-    margin-bottom: 6px;
+    margin-bottom: 0.5rem;
 }
+
+/* ===== DROPDOWN PROFESSIONNELS ===== */
 
 .dropdown-menu {
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow-hover);
+    padding: 0.5rem 0;
 }
 
 .dropdown-item {
-    padding: 8px 16px;
-    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
 }
 
 .dropdown-item:hover {
-    background-color: var(--light-gray);
-    color: var(--accent-color);
+    background-color: #f8fafc;
+    color: var(--text-primary);
 }
 
+/* ===== NAVIGATION PROFESSIONNELLE ===== */
+
 .navbar-nav .nav-link {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: rgba(255, 255, 255, 0.8);
+    transition: all 0.2s ease;
 }
 
 .navbar-nav .nav-link:hover {
-    color: white !important;
+    color: white;
 }
 
-/* Responsive adjustments */
+/* ===== RESPONSIVE DESIGN ===== */
+
 @media (max-width: 768px) {
     .main-content {
-        padding: 16px;
+        padding: 12px;
     }
     
     .stats-card {
-        padding: 16px;
+        margin-bottom: 0.75rem;
     }
     
     .card-body {
-        padding: 16px;
+        padding: 0.875rem;
     }
 }
 
-/* Sidebar Toggle Button */
+/* ===== BOUTON SIDEBAR TOGGLE ===== */
+
 #sidebarToggle {
-    border: none;
     background: transparent;
-    font-size: 1.2rem;
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    padding: 0.5rem;
+    border-radius: 6px;
     transition: all 0.2s ease;
 }
 
 #sidebarToggle:hover {
-    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 #sidebarToggle:focus {
-    box-shadow: none;
     outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
 }
 
-/* Mobile Sidebar Overlay */
+/* ===== SIDEBAR RESPONSIVE ===== */
+
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;
         top: 0;
         left: 0;
         z-index: 1000;
+        width: 100%;
         height: 100vh;
-        width: 280px;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
     }
@@ -348,17 +565,16 @@ body {
     }
 }
 
-/* Desktop Sidebar */
 @media (min-width: 769px) {
     .sidebar {
         position: sticky;
         top: 0;
-        height: 100vh;
+        height: calc(100vh - 56px);
         overflow-y: auto;
     }
     
     .sidebar.collapsed {
-        margin-left: -100%;
         transform: translateX(-100%);
+        margin-left: -100%;
     }
 } 

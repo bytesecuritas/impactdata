@@ -110,6 +110,7 @@ urlpatterns = [
     path('badges/<int:badge_id>/revoke/', views.revoke_badge, name='revoke_badge'),
     path('badges/<int:badge_id>/reactivate/', views.reactivate_badge, name='reactivate_badge'),
     path('badges/<int:badge_id>/download/', views.download_badge_pdf, name='download_badge_pdf'),
+    path('badges/<int:badge_id>/download-jpg/', views.download_badge_jpg, name='download_badge_jpg'),
     path('badges/scan/', views.badge_qr_scan, name='badge_qr_scan'),
     
     # Badge Generation for Adherents

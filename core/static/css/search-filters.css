@@ -1,0 +1,561 @@
+/* ===== DESIGN MODERNE POUR CHAMPS DE RECHERCHE ET TRI ===== */
+
+/* Variables pour les champs de recherche */
+:root {
+    --search-border-radius: 8px;
+    --search-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    --search-shadow-focus: 0 4px 12px rgba(49, 130, 206, 0.15);
+    --search-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --search-border: 1px solid #d1d5db;
+    --search-border-focus: 2px solid #3182ce;
+    --search-bg: #ffffff;
+    --search-bg-hover: #f8fafc;
+    --search-text: #1a202c;
+    --search-text-muted: #718096;
+    --search-placeholder: #a0aec0;
+}
+
+/* ===== CARTE DE RECHERCHE PRINCIPALE ===== */
+
+.search-card {
+    background: var(--search-bg);
+    border: 2px solid #d1d5db;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: var(--search-transition);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.search-card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    border-color: #9ca3af;
+}
+
+/* ===== EN-TÊTE DE RECHERCHE ===== */
+
+.search-header {
+    background: #f8fafc;
+    border-bottom: 2px solid #d1d5db;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.search-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.search-title h6 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--search-text);
+    font-size: 1rem;
+}
+
+.search-icon {
+    color: #3182ce;
+    font-size: 1.1rem;
+}
+
+.search-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter-count {
+    font-size: 0.875rem;
+    color: var(--search-text-muted);
+    background: #e2e8f0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.toggle-search {
+    background: #ffffff;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.5rem;
+    color: var(--search-text-muted);
+    transition: var(--search-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.toggle-search:hover {
+    background: #f8fafc;
+    border-color: #9ca3af;
+    color: var(--search-text);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.transition-icon {
+    transition: transform 0.3s ease;
+}
+
+.toggle-search[aria-expanded="true"] .transition-icon {
+    transform: rotate(180deg);
+}
+
+/* ===== CORPS DE RECHERCHE ===== */
+
+.search-body {
+    padding: 1.5rem;
+}
+
+.search-form {
+    width: 100%;
+}
+
+/* ===== SECTION RECHERCHE RAPIDE ===== */
+
+.quick-search-section {
+    margin-bottom: 1.5rem;
+}
+
+.quick-search-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 1rem;
+    align-items: end;
+}
+
+.search-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-field-sm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 150px;
+}
+
+.search-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: end;
+}
+
+/* ===== CHAMPS DE FORMULAIRE MODERNES ===== */
+
+.search-form .form-label {
+    font-weight: 600;
+    color: var(--search-text);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    letter-spacing: 0.025em;
+}
+
+.search-form .form-label i {
+    color: #3182ce;
+    font-size: 0.875rem;
+    width: 16px;
+    text-align: center;
+}
+
+.search-form .form-control,
+.search-form .form-select {
+    border: var(--search-border);
+    border-radius: 8px;
+    padding: 0.875rem 1.125rem;
+    font-size: 0.875rem;
+    color: var(--search-text);
+    background: var(--search-bg);
+    transition: var(--search-transition);
+    min-height: 44px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.search-form .form-control:focus,
+.search-form .form-select:focus {
+    border: var(--search-border-focus);
+    box-shadow: var(--search-shadow-focus);
+    outline: none;
+    background: #ffffff;
+}
+
+.search-form .form-control:hover,
+.search-form .form-select:hover {
+    border-color: #9ca3af;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.search-form .form-control::placeholder {
+    color: var(--search-placeholder);
+}
+
+/* ===== BOUTONS DE RECHERCHE ===== */
+
+.search-btn {
+    background: #3182ce;
+    border: 2px solid #3182ce;
+    color: white;
+    border-radius: 8px;
+    padding: 0.875rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: var(--search-transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    box-shadow: 0 2px 4px rgba(49, 130, 206, 0.2);
+}
+
+.search-btn:hover {
+    background: #2c5aa0;
+    border-color: #2c5aa0;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+}
+
+.search-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(49, 130, 206, 0.2);
+}
+
+.clear-btn {
+    border: 2px solid #d1d5db;
+    color: var(--search-text-muted);
+    border-radius: 8px;
+    padding: 0.875rem;
+    font-weight: 500;
+    transition: var(--search-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.clear-btn:hover {
+    background: #f8fafc;
+    border-color: #9ca3af;
+    color: var(--search-text);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.clear-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ===== FILTRES AVANCÉS ===== */
+
+.advanced-filters {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1.5rem;
+}
+
+.filter-section {
+    margin-bottom: 1.5rem;
+}
+
+.filter-section:last-child {
+    margin-bottom: 0;
+}
+
+.filter-section-title {
+    font-weight: 600;
+    color: var(--search-text);
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f1f5f9;
+    letter-spacing: 0.025em;
+}
+
+.filter-section-title i {
+    color: #3182ce;
+    font-size: 0.875rem;
+    width: 16px;
+    text-align: center;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-field-sm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 150px;
+}
+
+/* ===== CHECKBOXES PERSONNALISÉES ===== */
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: var(--search-bg);
+    transition: var(--search-transition);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.custom-checkbox:hover {
+    background: var(--search-bg-hover);
+    border-color: #9ca3af;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.custom-checkbox.checked {
+    border-color: #3182ce;
+    background: #ebf8ff;
+    box-shadow: 0 2px 4px rgba(49, 130, 206, 0.1);
+}
+
+.custom-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #cbd5e0;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: var(--search-transition);
+}
+
+.custom-checkbox input[type="checkbox"]:checked {
+    background: #3182ce;
+    border-color: #3182ce;
+}
+
+.custom-checkbox .form-check-label {
+    font-weight: 500;
+    color: var(--search-text);
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.custom-checkbox .form-check-label i {
+    font-size: 0.875rem;
+}
+
+/* ===== CHAMPS DE DATE MODERNES ===== */
+
+.search-form input[type="date"] {
+    border: var(--search-border);
+    border-radius: 8px;
+    padding: 0.875rem 1.125rem;
+    font-size: 0.875rem;
+    color: var(--search-text);
+    background: var(--search-bg);
+    transition: var(--search-transition);
+    min-height: 44px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.search-form input[type="date"]:focus {
+    border: var(--search-border-focus);
+    box-shadow: var(--search-shadow-focus);
+    outline: none;
+    background: #ffffff;
+}
+
+.search-form input[type="date"]:hover {
+    border-color: #9ca3af;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+@media (max-width: 768px) {
+    .quick-search-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .search-actions {
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+    
+    .filter-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .search-header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .search-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .search-body {
+        padding: 1rem;
+    }
+    
+    .search-field-sm {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 576px) {
+    .search-card {
+        margin-bottom: 1rem;
+    }
+    
+    .search-form .form-control,
+    .search-form .form-select,
+    .search-form input[type="date"] {
+        font-size: 16px; /* Évite le zoom sur iOS */
+    }
+    
+    .search-btn,
+    .clear-btn {
+        min-height: 44px; /* Meilleur touch target */
+    }
+}
+
+/* ===== ANIMATIONS ===== */
+
+@keyframes searchSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.search-body {
+    animation: searchSlideDown 0.3s ease-out;
+}
+
+/* ===== ÉTATS SPÉCIAUX ===== */
+
+.search-form .form-control.is-invalid,
+.search-form .form-select.is-invalid {
+    border-color: #e53e3e;
+    box-shadow: 0 0 0 0.2rem rgba(229, 62, 62, 0.25);
+}
+
+.search-form .form-control.is-valid,
+.search-form .form-select.is-valid {
+    border-color: #38a169;
+    box-shadow: 0 0 0 0.2rem rgba(56, 161, 105, 0.25);
+}
+
+/* ===== CHAMPS DE TRI SPÉCIAUX ===== */
+
+.sort-field {
+    position: relative;
+}
+
+.sort-field .form-select {
+    padding-right: 2.5rem;
+}
+
+.sort-field::after {
+    content: '';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #718096;
+    pointer-events: none;
+}
+
+.sort-field.asc::after {
+    border-top: none;
+    border-bottom: 4px solid #3182ce;
+}
+
+.sort-field.desc::after {
+    border-top: 4px solid #3182ce;
+    border-bottom: none;
+}
+
+/* ===== BADGES DE FILTRES ACTIFS ===== */
+
+.active-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #ebf8ff;
+    color: #3182ce;
+    border: 1px solid #bee3f8;
+    border-radius: 16px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin: 0.25rem;
+}
+
+.active-filter-badge .remove-filter {
+    background: none;
+    border: none;
+    color: #3182ce;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    transition: var(--search-transition);
+}
+
+.active-filter-badge .remove-filter:hover {
+    background: #3182ce;
+    color: white;
+} 

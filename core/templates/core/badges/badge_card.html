@@ -408,9 +408,9 @@
       <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Retour aux détails
       </a>
-      <a href="{% url 'core:download_badge_jpg' badge.id %}" class="btn btn-info">
+      <button id="download-jpg" class="btn btn-info">
         <i class="fas fa-download"></i> Télécharger JPG
-      </a>
+      </button>
       <button onclick="window.print()" class="btn btn-success">
         <i class="fas fa-print"></i> Imprimer
       </button>
@@ -492,4 +492,27 @@
     </div>
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('download-jpg').addEventListener('click', function() {
+    const badgeElement = document.querySelector('.badge-exemple');
+    
+    // Use html2canvas to capture the badge
+    html2canvas(badgeElement, {
+        scale: 2, // Increase resolution
+        useCORS: true, // Enable CORS for external images
+        backgroundColor: '#ffffff' // Ensure white background
+    }).then(canvas => {
+        // Create a download link
+        const link = document.createElement('a');
+        link.download = 'badge_{{ badge.badge_number }}.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 0.99); // JPEG with 90% quality
+        link.click();
+    }).catch(error => {
+        console.error('Error generating badge image:', error);
+        alert('Une erreur s\'est produite lors de la génération de l\'image.');
+    });
+});
+</script>
 {% endblock %}

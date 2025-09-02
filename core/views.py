@@ -44,7 +44,10 @@ from django.template.loader import render_to_string
 from django.conf import settings
 import base64
 from PIL import Image, ImageDraw, ImageFont
+import imgkit
+from html2image import Html2Image
 import io
+import os
 
 # ==================== SYSTÈME DE PERMISSIONS ====================
 
@@ -1595,7 +1598,7 @@ def download_badge_pdf(request, badge_id):
 @login_required
 @require_permission('badge_view')
 def download_badge_jpg(request, badge_id):
-    """Télécharger le badge en JPG"""
+    """Télécharger le badge en JPG - EXACTEMENT comme le HTML avec html2image"""
     try:
         badge = Badge.objects.filter(id=badge_id).first()
         if not badge:
@@ -1604,69 +1607,310 @@ def download_badge_jpg(request, badge_id):
         # En cas de doublons, prendre le plus récent
         badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
     
-    # Créer une image du badge
-    width, height = 400, 600  # Dimensions du badge
+    # Générer le HTML du badge
+    html_content = render_to_string('core/badges/badge_card.html', {
+        'badge': badge,
+        'static_url': settings.STATIC_URL,
+    })
     
-    # Créer une image avec fond blanc
+    try:
+        # Utiliser html2image comme méthode principale
+        hti = Html2Image()
+        
+        # Configuration pour correspondre exactement au design
+        hti.size = (400, 600)
+        hti.output_path = '/tmp'  # Dossier temporaire
+        
+        # Configuration avancée pour un rendu optimal
+        hti.browser_executable = None  # Utiliser le navigateur par défaut
+        hti.custom_flags = [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor'
+        ]
+        
+        # Vérifier si le navigateur est disponible
+        try:
+            # Essayer de trouver Chrome sur Windows
+            chrome_paths = [
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                r"C:\Users\{}\AppData\Local\Google\Chrome\Application\chrome.exe".format(os.getenv('USERNAME', '')),
+            ]
+            
+            chrome_found = False
+            for path in chrome_paths:
+                if os.path.exists(path):
+                    hti.browser_executable = path
+                    chrome_found = True
+                    break
+            
+            if not chrome_found:
+                # Essayer la détection automatique
+                hti.browser_executable = hti.browser_executable or hti.get_browser_executable()
+                
+        except Exception as e:
+            print(f"Erreur détection navigateur: {str(e)}")
+            # Si pas de navigateur, passer directement à imgkit
+            raise Exception("Aucun navigateur compatible trouvé")
+        
+        # Capturer l'image
+        print(f"Utilisation du navigateur: {hti.browser_executable}")
+        hti.screenshot(html_str=html_content, save_as=f'badge_{badge.badge_number}.jpg')
+        
+        # Lire le fichier généré
+        image_path = f'/tmp/badge_{badge.badge_number}.jpg'
+        with open(image_path, 'rb') as f:
+            img_data = f.read()
+        
+        # Supprimer le fichier temporaire
+        try:
+            os.remove(image_path)
+        except:
+            pass
+        
+        # Créer la réponse HTTP
+        response = HttpResponse(img_data, content_type='image/jpeg')
+        response['Content-Disposition'] = f'attachment; filename="badge_{badge.badge_number}.jpg"'
+        
+        return response
+        
+    except Exception as e:
+        # Log l'erreur pour diagnostic
+        print(f"Erreur html2image: {str(e)}")
+        
+        # Fallback vers imgkit si html2image échoue
+        try:
+            messages.warning(request, f"Erreur avec html2image: {str(e)}. Utilisation d'imgkit.")
+            return download_badge_jpg_imgkit(request, badge_id)
+        except Exception as e2:
+            # Fallback vers la méthode PIL si imgkit échoue aussi
+            print(f"Erreur imgkit: {str(e2)}")
+            messages.warning(request, f"Erreur avec imgkit: {str(e2)}. Utilisation de la méthode PIL.")
+            return download_badge_jpg_pil(request, badge_id)
+
+def download_badge_jpg_imgkit(request, badge_id):
+    """Méthode de fallback imgkit pour générer le badge JPG"""
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+    
+    # Générer le HTML du badge
+    html_content = render_to_string('core/badges/badge_card.html', {
+        'badge': badge,
+        'static_url': settings.STATIC_URL,
+    })
+    
+    # Configuration imgkit pour correspondre exactement au design
+    options = {
+        'width': 400,
+        'height': 600,
+        'quality': 95,
+        'format': 'jpg',
+        'encoding': 'UTF-8',
+        'enable-local-file-access': None,
+        'disable-smart-shrinking': None,
+        'zoom': 1.0,
+        'margin-top': '0',
+        'margin-right': '0',
+        'margin-bottom': '0',
+        'margin-left': '0',
+        'no-outline': None,
+        'no-background': None,
+    }
+    
+    try:
+        # Convertir le HTML en image JPG
+        img_data = imgkit.from_string(html_content, False, options=options)
+        
+        # Créer la réponse HTTP
+        response = HttpResponse(img_data, content_type='image/jpeg')
+        response['Content-Disposition'] = f'attachment; filename="badge_{badge.badge_number}.jpg"'
+        
+        return response
+        
+    except Exception as e:
+        print(f"Erreur imgkit: {str(e)}")
+        raise e
+
+def download_badge_jpg_pil(request, badge_id):
+    """Méthode de fallback PIL pour générer le badge JPG"""
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+    
+    # Dimensions exactes du HTML
+    width, height = 400, 600
+    
+    # Créer l'image avec fond blanc
     img = Image.new('RGB', (width, height), color='white')
     draw = ImageDraw.Draw(img)
     
     try:
-        # Essayer de charger une police
+        # Polices similaires au HTML
         font_large = ImageFont.truetype("arial.ttf", 24)
         font_medium = ImageFont.truetype("arial.ttf", 16)
         font_small = ImageFont.truetype("arial.ttf", 12)
+        font_title = ImageFont.truetype("arial.ttf", 14)
+        font_subtitle = ImageFont.truetype("arial.ttf", 10)
+        font_name = ImageFont.truetype("arial.ttf", 20)
+        font_job = ImageFont.truetype("arial.ttf", 24)
     except:
-        # Fallback vers la police par défaut
         font_large = ImageFont.load_default()
         font_medium = ImageFont.load_default()
         font_small = ImageFont.load_default()
+        font_title = ImageFont.load_default()
+        font_subtitle = ImageFont.load_default()
+        font_name = ImageFont.load_default()
+        font_job = ImageFont.load_default()
     
-    # En-tête avec drapeau guinéen (bandes colorées)
-    header_height = 60
+    # 1. EN-TÊTE - Drapeau guinéen
+    header_height = 65
     band_width = width // 3
     
-    # Rouge
-    draw.rectangle([0, 0, band_width, header_height], fill='#e74c3c')
-    # Jaune
-    draw.rectangle([band_width, 0, 2*band_width, header_height], fill='#f1c40f')
-    # Vert
-    draw.rectangle([2*band_width, 0, width, header_height], fill='#27ae60')
+    # Drapeau guinéen avec les mêmes couleurs
+    draw.rectangle([0, 0, band_width, header_height], fill='#e74c3c')  # Rouge
+    draw.rectangle([band_width, 0, 2*band_width, header_height], fill='#f1c40f')  # Jaune
+    draw.rectangle([2*band_width, 0, width, header_height], fill='#27ae60')  # Vert
     
     # Texte de l'en-tête
-    draw.text((10, 15), "REPUBLIQUE DE GUINEE", fill='white', font=font_medium)
-    draw.text((10, 35), "Travail - Justice - Solidarite", fill='white', font=font_small)
+    draw.text((20, 15), "RÉPUBLIQUE DE GUINÉE", fill='white', font=font_title)
+    draw.text((20, 35), "Travail – Justice – Solidarité", fill='white', font=font_subtitle)
     
-    # Zone principale
-    main_start = header_height + 10
-    main_height = height - header_height - 100  # Laisser de l'espace pour le footer
+    # Logo Guinée
+    logo_x = width - 70
+    logo_y = 7
+    draw.ellipse([logo_x, logo_y, logo_x + 50, logo_y + 50], fill='white', outline='white')
+    draw.text((logo_x + 15, logo_y + 15), "GN", fill='#2c3e50', font=font_medium)
+    
+    # 2. ZONE PRINCIPALE
+    main_start = header_height + 16
+    main_padding = 16
+    
+    # Section gauche (60% de la largeur)
+    left_section_x = main_padding
+    left_section_y = main_start
+    left_section_width = int(width * 0.6) - main_padding
+    
+    # Logo Impact Data
+    logo_height = 45
+    logo_width = 120
+    draw.rectangle([left_section_x, left_section_y, left_section_x + logo_width, left_section_y + logo_height], 
+                   fill='white', outline='#d1d5db', width=2)
+    draw.text((left_section_x + 10, left_section_y + 15), "IMPACT DATA", fill='#2c3e50', font=font_medium)
     
     # Titre du métier
-    draw.text((20, main_start + 20), badge.adherent.activity_name.upper(), fill='#27ae60', font=font_large)
+    job_title_y = left_section_y + logo_height + 15
+    job_title = badge.adherent.organisation.name.upper() if badge.adherent.organisation else "ACTIVITÉ"
+    draw.text((left_section_x, job_title_y), job_title, fill='#27ae60', font=font_job)
     
-    # Informations personnelles
-    y_pos = main_start + 80
-    draw.text((20, y_pos), f"Nom: {badge.adherent.full_name}", fill='black', font=font_medium)
-    y_pos += 30
-    draw.text((20, y_pos), f"ID: {badge.adherent.identifiant}", fill='black', font=font_medium)
-    y_pos += 30
-    draw.text((20, y_pos), f"Telephone: {badge.adherent.phone1}", fill='black', font=font_medium)
-    y_pos += 30
-    draw.text((20, y_pos), f"Lieu: {badge.adherent.commune}", fill='#e74c3c', font=font_medium)
+    # Sous-titre pour mécanique
+    if badge.adherent.organisation and badge.adherent.organisation.name.upper() == "MÉCANIQUE":
+        subtitle_y = job_title_y + 30
+        draw.text((left_section_x, subtitle_y), "(TRICYCLE)", fill='#2c3e50', font=font_medium)
     
-    # Numéro de badge
-    y_pos += 40
-    draw.text((20, y_pos), f"Badge: {badge.badge_number}", fill='#2c3e50', font=font_medium)
+    # 3. SECTION DROITE - QR Code et Photo
+    right_section_x = left_section_x + left_section_width + 20
+    right_section_y = main_start + 20
     
-    # Date de validité
-    y_pos += 30
-    draw.text((20, y_pos), f"Valide jusqu'au: {badge.badge_validity.strftime('%d/%m/%Y')}", fill='#2c3e50', font=font_small)
+    # QR Code
+    qr_size = 100
+    qr_x = right_section_x
+    qr_y = right_section_y
+    draw.rectangle([qr_x, qr_y, qr_x + qr_size, qr_y + qr_size], 
+                   fill='white', outline='#2c3e50', width=2)
+    draw.text((qr_x + 35, qr_y + 40), "QR", fill='#2c3e50', font=font_medium)
     
-    # Footer
-    footer_start = height - 50
-    draw.rectangle([0, footer_start, width, height], fill='#2c3e50')
-    draw.text((20, footer_start + 15), "IMPACT DATA", fill='white', font=font_medium)
-    draw.text((width - 150, footer_start + 15), "Badge Officiel", fill='white', font=font_small)
+    # Activité sous le QR
+    activity_y = qr_y + qr_size + 8
+    activity_text = badge.adherent.activity_name or "Activité"
+    draw.text((qr_x + 20, activity_y), activity_text, fill='#e74c3c', font=font_medium)
+    
+    # Photo de profil
+    photo_size = 120
+    photo_x = qr_x + qr_size + 20
+    photo_y = right_section_y
+    
+    draw.ellipse([photo_x, photo_y, photo_x + photo_size, photo_y + photo_size], 
+                 fill='#f8f9fa', outline='#e74c3c', width=4)
+    draw.text((photo_x + 50, photo_y + 50), "PHOTO", fill='#6c757d', font=font_medium)
+    
+    # 4. INFORMATIONS PERSONNELLES
+    info_start_y = photo_y + photo_size + 15
+    
+    # Nom de l'adhérent
+    name_y = info_start_y
+    name_width = draw.textlength(badge.adherent.full_name, font=font_name)
+    name_x = (width - name_width) // 2
+    draw.text((name_x, name_y), badge.adherent.full_name, fill='#2c3e50', font=font_name)
+    
+    # ID avec chiffres dans des cercles
+    id_y = name_y + 30
+    id_label = "ID:"
+    id_label_width = draw.textlength(id_label, font=font_medium)
+    
+    id_digits = str(badge.adherent.identifiant)
+    total_id_width = id_label_width + 5 + len(id_digits) * 30 + 10 + 40
+    id_start_x = (width - total_id_width) // 2
+    
+    draw.text((id_start_x, id_y), id_label, fill='#2c3e50', font=font_medium)
+    
+    digit_x = id_start_x + id_label_width + 5
+    for i, digit in enumerate(id_digits):
+        circle_x = digit_x + i * 30
+        draw.ellipse([circle_x, id_y - 5, circle_x + 25, id_y + 20], 
+                     fill='#17a2b8', outline='#17a2b8')
+        draw.text((circle_x + 8, id_y), digit, fill='white', font=font_small)
+    
+    # Suffix du badge
+    suffix_x = digit_x + len(id_digits) * 30 + 10
+    suffix_text = badge.badge_number[-3:] if len(badge.badge_number) >= 3 else badge.badge_number
+    draw.rectangle([suffix_x, id_y - 5, suffix_x + 40, id_y + 20], 
+                   fill='#6c757d', outline='#6c757d')
+    draw.text((suffix_x + 5, id_y), suffix_text, fill='white', font=font_small)
+    
+    # Contact
+    contact_y = id_y + 30
+    phone_text = badge.adherent.phone1
+    lieu_text = badge.adherent.commune.upper()
+    
+    phone_width = draw.textlength(phone_text, font=font_medium)
+    lieu_width = draw.textlength(lieu_text, font=font_medium)
+    total_contact_width = phone_width + 15 + lieu_width
+    
+    contact_start_x = (width - total_contact_width) // 2
+    draw.text((contact_start_x, contact_y), phone_text, fill='#2c3e50', font=font_medium)
+    draw.text((contact_start_x + phone_width + 15, contact_y), lieu_text, fill='#e74c3c', font=font_medium)
+    
+    # 5. IMAGE URGENCE
+    urgence_y = height - 140
+    urgence_height = 90
+    draw.rectangle([20, urgence_y, width - 20, urgence_y + urgence_height], 
+                   fill='#f8f9fa', outline='#e5e7eb')
+    draw.text((width // 2 - 30, urgence_y + 35), "URGENCE", fill='#dc2626', font=font_large)
+    
+    # 6. FOOTER
+    footer_y = height - 35
+    draw.rectangle([0, footer_y, width, height], fill='white', outline='#e5e7eb')
+    
+    footer_logo_x = 16
+    footer_logo_y = footer_y + 5
+    draw.rectangle([footer_logo_x, footer_logo_y, footer_logo_x + 45, footer_logo_y + 45], 
+                   fill='white', outline='#e5e7eb')
+    draw.text((footer_logo_x + 5, footer_logo_y + 15), "IMPACT", fill='#2c3e50', font=font_small)
+    
+    validite_text = f"Validité {badge.badge_validity.strftime('%B %Y')}"
+    validite_width = draw.textlength(validite_text, font=font_small)
+    validite_x = width - validite_width - 16
+    draw.text((validite_x, footer_y + 15), validite_text, fill='#2c3e50', font=font_small)
     
     # Convertir l'image en bytes
     img_io = BytesIO()

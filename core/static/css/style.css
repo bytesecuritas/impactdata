@@ -99,6 +99,72 @@ body {
     overflow: hidden;
 }
 
+/* ===== STYLES POUR LA VÉRIFICATION DU TÉLÉPHONE ===== */
+
+.phone-check-group {
+    position: relative;
+}
+
+.phone-check-group .input-group {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.phone-check-group .btn-check {
+    border-left: 1px solid var(--border-color);
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    transition: all 0.2s ease;
+}
+
+.phone-check-group .btn-check:hover {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.phone-check-group .btn-check:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.phone-check-group .btn-check .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.phone-status {
+    margin-top: 8px;
+    font-size: 0.875rem;
+}
+
+.phone-status .alert {
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 0;
+}
+
+.phone-status .alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.phone-status .alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.phone-status .alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
 .card:hover {
     box-shadow: var(--card-shadow-hover);
     transform: translateY(-1px);

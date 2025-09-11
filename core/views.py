@@ -820,21 +820,63 @@ def interaction_notifications(request):
 
 @login_required
 @require_permission('adherent_create')
-def adherent_create(request):
-    """Créer un nouvel adhérent"""
+def check_phone_availability(request):
+    if request.method == 'POST':
+        phone = request.POST.get('phone')
+        if phone:
+            exists = Adherent.objects.filter(phone1=phone).exists()
+            return JsonResponse({'available': not exists, 'phone': phone, 'message': 'Numéro disponible' if not exists else 'Ce numéro est déjà utilisé'})
+        return JsonResponse({'error': 'Numéro de téléphone requis'}, status=400)
+    return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+
+@login_required
+@require_permission('adherent_create')
+def phone_verification_step(request):
+    """Étape de vérification du numéro de téléphone avant l'ajout d'adhérent"""
+    if request.method == 'POST':
+        phone = request.POST.get('phone')
+        if phone:
+            # Vérifier si le numéro existe déjà
+            exists = Adherent.objects.filter(phone1=phone).exists()
+            if exists:
+                messages.error(request, f'Le numéro de téléphone {phone} est déjà utilisé par un autre adhérent.')
+                return render(request, 'core/adherents/phone_verification.html', {
+                    'phone': phone,
+                    'error': True
+                })
+            else:
+                # Numéro disponible, rediriger vers le formulaire d'ajout avec le numéro pré-rempli
+                messages.success(request, f'Le numéro {phone} est disponible. Vous pouvez maintenant créer l\'adhérent.')
+                return redirect('core:adherent_create_with_phone', phone=phone)
+        else:
+            messages.error(request, 'Veuillez saisir un numéro de téléphone.')
+    
+    return render(request, 'core/adherents/phone_verification.html')
+
+@login_required
+@require_permission('adherent_create')
+def adherent_create_with_phone(request, phone):
+    """Créer un adhérent avec un numéro de téléphone pré-vérifié"""
     if request.method == 'POST':
         form = AdherentForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             try:
                 adherent = form.save()
-                messages.success(request, f'Adhérent {adherent.identifiant} créé avec succès.')
+                messages.success(request, 'Adhérent créé avec succès.')
                 return redirect('core:adherent_detail', adherent_id=adherent.id)
             except Exception as e:
-                messages.error(request, f'Erreur lors de la création de l\'adhérent: {str(e)}')
+                messages.error(request, f'Erreur lors de la création: {str(e)}')
     else:
-        form = AdherentForm(user=request.user)
+        # Pré-remplir le formulaire avec le numéro vérifié
+        initial_data = {'phone1': phone}
+        form = AdherentForm(user=request.user, initial=initial_data)
     
-    return render(request, 'core/adherents/adherent_form.html', {'form': form, 'title': 'Créer un adhérent'})
+    return render(request, 'core/adherents/adherent_form.html', {
+        'form': form,
+        'title': 'Créer un adhérent',
+        'phone_verified': True,
+        'verified_phone': phone
+    })
 
 @login_required
 @require_permission('adherent_edit')
@@ -851,7 +893,10 @@ def adherent_update(request, adherent_id):
     else:
         form = AdherentForm(instance=adherent, user=request.user)
     
-    return render(request, 'core/adherents/adherent_form.html', {'form': form, 'title': 'Modifier l\'adhérent'})
+    return render(request, 'core/adherents/adherent_form.html', {
+        'form': form,
+        'title': 'Modifier l\'adhérent'
+    })
 
 @login_required
 @require_permission('adherent_delete')

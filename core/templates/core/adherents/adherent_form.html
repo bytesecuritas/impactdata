@@ -142,11 +142,19 @@
                                     <i class="fas fa-phone"></i> Informations de contact
                                 </h5>
                                 
-                                <div class="mb-3">
+                                <div class="mb-3 phone-check-group">
                                     <label for="{{ form.phone1.id_for_label }}" class="form-label">
                                         Téléphone principal <span class="text-danger">*</span>
                                     </label>
-                                    {{ form.phone1 }}
+                                    {% if phone_verified %}
+                                        <div class="alert alert-success mb-2">
+                                            <i class="fas fa-check-circle"></i>
+                                            <strong>Numéro vérifié :</strong> {{ verified_phone }} est disponible
+                                        </div>
+                                    {% endif %}
+                                    <div class="input-group">
+                                        {{ form.phone1 }}
+                                    </div>
                                     {% if form.phone1.errors %}
                                         <div class="text-danger">{{ form.phone1.errors }}</div>
                                     {% endif %}
@@ -366,10 +374,15 @@
 
 <!-- Script pour la gestion des champs selon l'organisation -->
 <script>
+// Gestion simple des champs selon l'organisation
 document.addEventListener('DOMContentLoaded', function() {
     const organizationSelect = document.getElementById('{{ form.organisation.id_for_label }}');
     
-    // Récupérer tous les champs du formulaire (sauf l'organisation elle-même)
+    if (!organizationSelect) {
+        return;
+    }
+    
+    // Récupérer tous les champs du formulaire (sauf l'organisation et le bouton vérifier)
     const formFields = [
         document.getElementById('{{ form.identifiant.id_for_label }}'),
         document.getElementById('{{ form.first_name.id_for_label }}'),
@@ -423,62 +436,60 @@ document.addEventListener('DOMContentLoaded', function() {
         // Si aucune organisation n'est sélectionnée, désactiver tous les champs
         if (!selectedOrganization || selectedOrganization === '') {
             disableAllFields();
-            return;
-        }
-        
-        // Activer tous les champs si une organisation est sélectionnée
-        enableAllFields();
-        
-        const selectedOption = organizationSelect.options[organizationSelect.selectedIndex];
-        const organizationName = selectedOption ? selectedOption.text.toLowerCase() : '';
-        
-        // Règles spécifiques selon l'organisation
-        const medicalInfoField = document.getElementById('{{ form.medical_info.id_for_label }}');
-        const formationProField = document.getElementById('{{ form.formation_pro.id_for_label }}');
-        const distinctionField = document.getElementById('{{ form.distinction.id_for_label }}');
-        const languesField = document.getElementById('{{ form.langues.id_for_label }}');
-        
-        // Désactiver les informations médicales pour les organisations non-santé
-        if (organizationName.includes('entreprise') || organizationName.includes('société') || 
-            organizationName.includes('compagnie') || organizationName.includes('commerce')) {
-            if (medicalInfoField) {
-                medicalInfoField.disabled = true;
-                medicalInfoField.value = '';
-                medicalInfoField.classList.add('form-control', 'disabled');
-                medicalInfoField.parentNode.classList.add('text-muted');
+        } else {
+            enableAllFields();
+            
+            const selectedOption = organizationSelect.options[organizationSelect.selectedIndex];
+            const organizationName = selectedOption ? selectedOption.text.toLowerCase() : '';
+            
+            // Règles spécifiques selon l'organisation
+            const medicalInfoField = document.getElementById('{{ form.medical_info.id_for_label }}');
+            const formationProField = document.getElementById('{{ form.formation_pro.id_for_label }}');
+            const distinctionField = document.getElementById('{{ form.distinction.id_for_label }}');
+            const languesField = document.getElementById('{{ form.langues.id_for_label }}');
+            
+            // Désactiver les informations médicales pour les organisations non-santé
+            if (organizationName.includes('entreprise') || organizationName.includes('société') || 
+                organizationName.includes('compagnie') || organizationName.includes('commerce')) {
+                if (medicalInfoField) {
+                    medicalInfoField.disabled = true;
+                    medicalInfoField.value = '';
+                    medicalInfoField.classList.add('form-control', 'disabled');
+                    medicalInfoField.parentNode.classList.add('text-muted');
+                }
             }
-        }
-        
-        // Désactiver la formation professionnelle pour les organisations simples
-        if (organizationName.includes('association') || organizationName.includes('ong') || 
-            organizationName.includes('organisme') || organizationName.includes('groupe')) {
-            if (formationProField) {
-                formationProField.disabled = true;
-                formationProField.value = '';
-                formationProField.classList.add('form-control', 'disabled');
-                formationProField.parentNode.classList.add('text-muted');
+            
+            // Désactiver la formation professionnelle pour les organisations simples
+            if (organizationName.includes('association') || organizationName.includes('ong') || 
+                organizationName.includes('organisme') || organizationName.includes('groupe')) {
+                if (formationProField) {
+                    formationProField.disabled = true;
+                    formationProField.value = '';
+                    formationProField.classList.add('form-control', 'disabled');
+                    formationProField.parentNode.classList.add('text-muted');
+                }
             }
-        }
-        
-        // Désactiver les distinctions pour les organisations non-prestigieuses
-        if (organizationName.includes('petit') || organizationName.includes('local') || 
-            organizationName.includes('simple')) {
-            if (distinctionField) {
-                distinctionField.disabled = true;
-                distinctionField.value = '';
-                distinctionField.classList.add('form-control', 'disabled');
-                distinctionField.parentNode.classList.add('text-muted');
+            
+            // Désactiver les distinctions pour les organisations non-prestigieuses
+            if (organizationName.includes('petit') || organizationName.includes('local') || 
+                organizationName.includes('simple')) {
+                if (distinctionField) {
+                    distinctionField.disabled = true;
+                    distinctionField.value = '';
+                    distinctionField.classList.add('form-control', 'disabled');
+                    distinctionField.parentNode.classList.add('text-muted');
+                }
             }
-        }
-        
-        // Désactiver les langues pour les organisations locales
-        if (organizationName.includes('local') || organizationName.includes('régional') || 
-            organizationName.includes('communautaire')) {
-            if (languesField) {
-                languesField.disabled = true;
-                languesField.value = '';
-                languesField.classList.add('form-control', 'disabled');
-                languesField.parentNode.classList.add('text-muted');
+            
+            // Désactiver les langues pour les organisations locales
+            if (organizationName.includes('local') || organizationName.includes('régional') || 
+                organizationName.includes('communautaire')) {
+                if (languesField) {
+                    languesField.disabled = true;
+                    languesField.value = '';
+                    languesField.classList.add('form-control', 'disabled');
+                    languesField.parentNode.classList.add('text-muted');
+                }
             }
         }
     }
@@ -489,5 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Appliquer les règles quand l'organisation change
     organizationSelect.addEventListener('change', toggleFieldsBasedOnOrganization);
 });
+
+// Le numéro de téléphone est déjà vérifié, pas besoin de fonction AJAX
 </script>
 {% endblock %} 

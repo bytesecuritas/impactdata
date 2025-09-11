@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Vérification du numéro de téléphone{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-phone"></i> Vérification du numéro de téléphone
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Message d'aide -->
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Étape 1 :</strong> Vérifiez d'abord la disponibilité du numéro de téléphone principal avant de créer l'adhérent.
+                    </div>
+
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Formulaire de vérification -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="phone" class="form-label">
+                                <strong>Numéro de téléphone principal</strong> <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                                <input type="tel" 
+                                       class="form-control form-control-lg" 
+                                       id="phone" 
+                                       name="phone" 
+                                       value="{{ phone|default:'' }}"
+                                       placeholder="Ex: 625212115" 
+                                       required 
+                                       pattern="[0-9]{9,15}"
+                                       title="Veuillez saisir un numéro de téléphone valide (9-15 chiffres)">
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle"></i>
+                                Saisissez le numéro de téléphone principal de l'adhérent à créer.
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:adherent_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour à la liste
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search"></i> Vérifier la disponibilité
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Informations supplémentaires -->
+                    <div class="mt-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="fas fa-question-circle text-primary"></i>
+                                    Pourquoi cette vérification ?
+                                </h6>
+                                <ul class="mb-0">
+                                    <li>Évite la création d'adhérents avec des numéros en double</li>
+                                    <li>Gagne du temps en vérifiant avant de remplir tout le formulaire</li>
+                                    <li>Assure l'unicité des numéros de téléphone dans le système</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

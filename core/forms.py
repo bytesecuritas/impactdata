@@ -123,7 +123,7 @@ class OrganizationForm(forms.ModelForm):
         fields = [
             'name', 'monthly_revenue', 'address',
             'creation_date', 'phone', 'whatsapp', 'category',
-            'number_personnel', 'infos_annexes', 'hobies'
+            'number_personnel', 'infos_annexes'
         ]
         widgets = {
             'identifiant': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -136,7 +136,6 @@ class OrganizationForm(forms.ModelForm):
             'category': forms.Select(attrs={'class': 'form-control'}),
             'number_personnel': forms.NumberInput(attrs={'class': 'form-control'}),
             'infos_annexes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'hobies': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
 # Formulaires pour Catégorie

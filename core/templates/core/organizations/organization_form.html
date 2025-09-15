@@ -2,6 +2,77 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--accent-color);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.875rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.2rem rgba(49, 130, 206, 0.15);
+        transform: translateY(-1px);
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+    
+    .form-text i {
+        color: var(--accent-color);
+        margin-right: 0.5rem;
+    }
+    
+    .text-danger {
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+    
+    .alert-info {
+        background-color: #ebf8ff;
+        border-color: #bee3f8;
+        color: #2c5282;
+    }
+    
+    .required-field {
+        position: relative;
+    }
+    
+    .required-field::after {
+        content: '*';
+        color: #e53e3e;
+        font-weight: bold;
+        margin-left: 0.25rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -15,8 +86,12 @@
                 <div class="card-body">
                     <!-- Message d'aide général -->
                     <div class="alert alert-info mb-4">
-                        <i class="fas fa-lightbulb"></i>
-                        <strong>Conseil :</strong> Commencez par sélectionner une catégorie pour activer tous les champs du formulaire.
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <div>
+                                <strong>Conseil :</strong> Remplissez les champs marqués d'un astérisque rouge (*) qui sont obligatoires. Les autres champs sont optionnels.
+                            </div>
+                        </div>
                     </div>
                     
                     <form method="post">
@@ -30,9 +105,10 @@
                         <div class="row">
                             <!-- Informations générales -->
                             <div class="col-md-6">
-                                <h5 class="text-primary mb-3">
-                                    <i class="fas fa-info-circle"></i> Informations générales
-                                </h5>
+                                <div class="form-section">
+                                    <h5 class="text-primary mb-4">
+                                        <i class="fas fa-info-circle me-2"></i> Informations générales
+                                    </h5>
                                 
                                 <div class="mb-3">
                                     <label for="{{ form.identifiant.id_for_label }}" class="form-label">
@@ -79,39 +155,50 @@
 
                                 <div class="mb-3">
                                     <label for="{{ form.monthly_revenue.id_for_label }}" class="form-label">
-                                        Chiffre d'affaires mensuel
+                                        Chiffre d'affaires mensuel <span class="text-muted">(optionnel)</span>
                                     </label>
                                     {{ form.monthly_revenue }}
                                     {% if form.monthly_revenue.errors %}
                                         <div class="text-danger">{{ form.monthly_revenue.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i>                                         Montant en devise locale
+                                    </div>
+                                </div>
                                 </div>
                             </div>
 
                             <!-- Informations de contact et dates -->
                             <div class="col-md-6">
-                                <h5 class="text-primary mb-3">
-                                    <i class="fas fa-phone"></i> Informations de contact
-                                </h5>
+                                <div class="form-section">
+                                    <h5 class="text-primary mb-4">
+                                        <i class="fas fa-phone me-2"></i> Informations de contact
+                                    </h5>
                                 
                                 <div class="mb-3">
                                     <label for="{{ form.phone.id_for_label }}" class="form-label">
-                                        Téléphone <span class="text-danger">*</span>
+                                        Téléphone <span class="text-muted">(optionnel)</span>
                                     </label>
                                     {{ form.phone }}
                                     {% if form.phone.errors %}
                                         <div class="text-danger">{{ form.phone.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> Numéro de téléphone principal de l'organisation
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="{{ form.whatsapp.id_for_label }}" class="form-label">
-                                        WhatsApp
+                                        WhatsApp <span class="text-muted">(optionnel)</span>
                                     </label>
                                     {{ form.whatsapp }}
                                     {% if form.whatsapp.errors %}
                                         <div class="text-danger">{{ form.whatsapp.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> Numéro WhatsApp de l'organisation
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
@@ -126,12 +213,16 @@
 
                                 <div class="mb-3">
                                     <label for="{{ form.creation_date.id_for_label }}" class="form-label">
-                                        Date de création
+                                        Date de création <span class="text-muted">(optionnel)</span>
                                     </label>
                                     {{ form.creation_date }}
                                     {% if form.creation_date.errors %}
                                         <div class="text-danger">{{ form.creation_date.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i>                                         Date officielle de création de l'organisation
+                                    </div>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -139,40 +230,32 @@
                         <!-- Informations supplémentaires -->
                         <div class="row mt-4">
                             <div class="col-12">
-                                <h5 class="text-primary mb-3">
-                                    <i class="fas fa-plus-circle"></i> Informations supplémentaires
-                                </h5>
-                            </div>
-                            <div class="col-md-6">
+                                <div class="form-section">
+                                    <h5 class="text-primary mb-4">
+                                        <i class="fas fa-plus-circle me-2"></i> Informations supplémentaires
+                                    </h5>
                                 <div class="mb-3">
                                     <label for="{{ form.infos_annexes.id_for_label }}" class="form-label">
-                                        Informations annexes
+                                        Informations annexes <span class="text-muted">(optionnel)</span>
                                     </label>
                                     {{ form.infos_annexes }}
                                     {% if form.infos_annexes.errors %}
                                         <div class="text-danger">{{ form.infos_annexes.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i>                                         Informations supplémentaires sur l'organisation
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.hobies.id_for_label }}" class="form-label">
-                                        Hobbies
-                                    </label>
-                                    {{ form.hobies }}
-                                    {% if form.hobies.errors %}
-                                        <div class="text-danger">{{ form.hobies.errors }}</div>
-                                    {% endif %}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'core:organization_list' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Retour à la liste
+                        <div class="d-flex justify-content-between mt-5 pt-4 border-top">
+                            <a href="{% url 'core:organization_list' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i> Retour à la liste
                             </a>
-                            <button type="submit" class="btn btn-primary" id="submit-btn">
-                                <i class="fas fa-save"></i> {{ submit_text }}
+                            <button type="submit" class="btn btn-primary btn-lg px-4" id="submit-btn">
+                                <i class="fas fa-save me-2"></i> {{ submit_text }}
                             </button>
                         </div>
                     </form>
@@ -197,8 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('{{ form.whatsapp.id_for_label }}'),
         document.getElementById('{{ form.address.id_for_label }}'),
         document.getElementById('{{ form.creation_date.id_for_label }}'),
-        document.getElementById('{{ form.infos_annexes.id_for_label }}'),
-        document.getElementById('{{ form.hobies.id_for_label }}')
+        document.getElementById('{{ form.infos_annexes.id_for_label }}')
     ];
     
     // Fonction pour désactiver tous les champs
@@ -241,7 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Règles spécifiques selon la catégorie
         const monthlyRevenueField = document.getElementById('{{ form.monthly_revenue.id_for_label }}');
-        const hobbiesField = document.getElementById('{{ form.hobies.id_for_label }}');
         
         // Désactiver les champs financiers pour certaines catégories
         if (categoryName.includes('association') || categoryName.includes('ong') || categoryName.includes('organisme')) {
@@ -250,16 +331,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 monthlyRevenueField.value = '';
                 monthlyRevenueField.classList.add('form-control', 'disabled');
                 monthlyRevenueField.parentNode.classList.add('text-muted');
-            }
-        }
-        
-        // Désactiver les hobbies pour certaines catégories
-        if (categoryName.includes('entreprise') || categoryName.includes('société') || categoryName.includes('compagnie')) {
-            if (hobbiesField) {
-                hobbiesField.disabled = true;
-                hobbiesField.value = '';
-                hobbiesField.classList.add('form-control', 'disabled');
-                hobbiesField.parentNode.classList.add('text-muted');
             }
         }
     }

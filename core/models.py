@@ -512,6 +512,8 @@ class Organization(models.Model):
     phone = models.CharField(
         max_length=20,
         unique=True,
+        blank=True,
+        null=True,
         validators=[User.phone_validator],
         verbose_name="Téléphone"
     )

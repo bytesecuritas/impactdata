@@ -78,13 +78,21 @@
                                     <div class="invalid-feedback d-block">{{ form.fonction.errors }}</div>
                                 {% endif %}
                             </div>
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="{{ form.adresse.id_for_label }}" class="form-label">Adresse</label>
                                 {{ form.adresse }}
                                 {% if form.adresse.errors %}
                                     <div class="invalid-feedback d-block">{{ form.adresse.errors }}</div>
                                 {% endif %}
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Photo de profil</label>
+                                {{ form.profile_picture }}
+                                {% if form.profile_picture.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.profile_picture.errors }}</div>
+                                {% endif %}
+                                
+                            </div
                         </div>
 
                         <!-- Contacts d'urgence -->

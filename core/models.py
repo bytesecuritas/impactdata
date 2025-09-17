@@ -131,6 +131,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         validators=[phone_validator]
     )
     email = models.EmailField(unique=True, max_length=100)
+
+    # photo de profil
+    profile_picture = models.ImageField(
+        upload_to='profile_pics/',
+        null=True,
+        blank=True,
+        verbose_name="Photo de profil"
+    )
     
     # Adresse et contacts d'urgence
     adresse = models.TextField(
@@ -539,11 +547,7 @@ class Organization(models.Model):
         verbose_name="Informations annexes",
         help_text="Informations supplémentaires sur l'organisation"
     )
-    hobies = models.TextField(
-        blank=True,
-        verbose_name="Hobbies",
-        help_text="Hobbies ou centres d'intérêt de l'organisation"
-    )
+    
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -653,6 +657,11 @@ class Adherent(models.Model):
         blank=True,
         verbose_name="Distinction",
         help_text="Distinctions ou récompenses reçues par l'adhérent"
+    )
+    hobies = models.TextField(
+        blank=True,
+        verbose_name="Hobbies",
+        help_text="Hobbies ou centres d'intérêt de l'adhérent"
     )
     langues = models.TextField(
         blank=True,

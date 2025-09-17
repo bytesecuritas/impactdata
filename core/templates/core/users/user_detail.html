@@ -140,6 +140,22 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"><i class="fas fa-image"></i> Photo de profil</h5>
+                    </div>
+                <div class="card-body text-center">
+                    {% if user_obj.profile_picture %}
+                        <img src="{{ user_obj.profile_picture.url }}" alt="Photo de profil" class="img-fluid rounded-circle mb-3" style="max-width: 150px; max-height: 150px;">
+                    {% else %}
+                        <i class="fas fa-user-circle fa-5x text-secondary mb-3"></i>
+                        <p class="text-muted">Aucune photo de profil</p>
+                    {% endif %}
+                    <p class="text-muted">Créé le: {{ user_obj.date_joined|date:"d/m/Y H:i" }}</p>
+                    <p class="text-muted">Dernière connexion: {{ user_obj.last_login|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -284,10 +284,10 @@
                         <div class="row mt-4">
                             <div class="col-12">
                                 <h5 class="text-primary mb-3">
-                                    <i class="fas fa-heartbeat"></i> Informations médicales
+                                    <i class="fas fa-heartbeat"></i> Informations médicales et centres d'intérêt
                                 </h5>
                             </div>
-                            <div class="col-12">
+                            <div class="col-6">
                                 <div class="mb-3">
                                     <label for="{{ form.medical_info.id_for_label }}" class="form-label">
                                         Informations médicales
@@ -295,6 +295,17 @@
                                     {{ form.medical_info }}
                                     {% if form.medical_info.errors %}
                                         <div class="text-danger">{{ form.medical_info.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.hobies.id_for_label }}" class="form-label">
+                                        Centres d'intérêt
+                                    </label>
+                                    {{ form.hobies }}
+                                    {% if form.hobies.errors %}
+                                        <div class="text-danger">{{ form.hobies.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>
@@ -400,6 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('{{ form.medical_info.id_for_label }}'),
         document.getElementById('{{ form.formation_pro.id_for_label }}'),
         document.getElementById('{{ form.distinction.id_for_label }}'),
+        document.getElementById('{{ form.hobies.id_for_label }}'),
         document.getElementById('{{ form.langues.id_for_label }}'),
         document.getElementById('{{ form.join_date.id_for_label }}'),
         document.getElementById('{{ form.activity_name.id_for_label }}'),

@@ -12,12 +12,13 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 
-                 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'profile_picture', 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
                  'nom_urg2', 'prenom_urg2', 'telephone_urg2']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control'}),
@@ -46,7 +47,7 @@ class AdherentForm(forms.ModelForm):
             'first_name', 'last_name', 'birth_date', 'type_adherent',
             'commune', 'quartier', 'secteur', 'phone1', 'phone2', 
             'num_urgence1', 'num_urgence2', 'email', 'medical_info',
-            'formation_pro', 'distinction', 'langues', 'join_date', 
+            'formation_pro', 'distinction', 'hobies', 'langues', 'join_date', 
             'organisation', 'profile_picture', 'activity_name', 'badge_validity'
         ]
         widgets = {
@@ -65,6 +66,7 @@ class AdherentForm(forms.ModelForm):
             'medical_info': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'hobies': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'langues': forms.TextInput(attrs={'class': 'form-control'}),
             'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': timezone.now().date()}),
             'organisation': forms.Select(attrs={'class': 'form-select'}),
@@ -222,13 +224,14 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['matricule', 'first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 
-                 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'profile_picture', 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
                  'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'is_active']
         widgets = {
             'matricule': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Matricule du personnel ex:AG1245'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Fodé'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Camara'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder':'king@gmail.com'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'625325458'}),
             'profession': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Electricien, Maçon, ...'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Rôle dans l\'entreprise ex: DRH'}),
@@ -289,7 +292,7 @@ class UserRegistrationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'matricule', 'email', 'telephone', 
+        fields = ['first_name', 'last_name', 'matricule', 'email', 'telephone', 'profile_picture',
                  'profession', 'fonction', 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
                  'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'created_by', 'is_active']
         widgets = {
@@ -297,6 +300,7 @@ class UserRegistrationForm(UserCreationForm):
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Le nom ex: Camara'}),
             'matricule': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Matricule du personnel ex:AG1245'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder':'king@gmail.com'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Numéro de téléphone ex: 625325458'}),
             'profession': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Electricien, Maçon, ...'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control', 'placeholder':'Rôle dans l\'entreprise ex: DGH'}),
@@ -358,13 +362,14 @@ class UserEditForm(forms.ModelForm):
     """Formulaire de modification d'utilisateur"""
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'telephone', 
+        fields = ['first_name', 'last_name', 'email', 'telephone', 'profile_picture',
                  'profession', 'fonction', 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
                  'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'created_by', 'is_active', 'notes']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control'}),
@@ -421,12 +426,13 @@ class ProfileEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email', 'telephone', 'profession', 'fonction', 
-                 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
+                 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 'profile_picture',
                  'nom_urg2', 'prenom_urg2', 'telephone_urg2']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'fonction': forms.TextInput(attrs={'class': 'form-control'}),

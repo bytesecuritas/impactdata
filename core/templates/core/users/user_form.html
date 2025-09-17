@@ -164,6 +164,28 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label for="{{ form.profile_picture.id_for_label }}" class="form-label">
+                                        Photo de profil
+                                    </label>
+                                    {{ form.profile_picture }}
+                                    {% if form.profile_picture.help_text %}
+                                        <div class="form-text">{{ form.profile_picture.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.profile_picture.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.profile_picture.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.instance.pk and form.instance.profile_picture %}
+                                        <div class="mt-2">
+                                            <img src="{{ form.instance.profile_picture.url }}" alt="Photo de profil" class="img-thumbnail" style="max-width: 150px;">
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
                                     <label for="{{ form.role.id_for_label }}" class="form-label">
                                         Rôle <span class="text-danger">*</span>
                                     </label>

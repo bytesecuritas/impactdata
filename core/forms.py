@@ -47,7 +47,7 @@ class AdherentForm(forms.ModelForm):
             'first_name', 'last_name', 'birth_date', 'type_adherent',
             'commune', 'quartier', 'secteur', 'phone1', 'phone2', 
             'num_urgence1', 'num_urgence2', 'email', 'medical_info',
-            'formation_pro', 'distinction', 'hobies', 'langues', 'join_date', 
+            'formation_pro', 'distinction', 'centre_interet', 'langues', 'join_date', 
             'organisation', 'profile_picture', 'activity_name', 'badge_validity'
         ]
         widgets = {
@@ -66,7 +66,7 @@ class AdherentForm(forms.ModelForm):
             'medical_info': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'hobies': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'centre_interet': forms.Select(attrs={'class': 'form-select'}),
             'langues': forms.TextInput(attrs={'class': 'form-control'}),
             'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': timezone.now().date()}),
             'organisation': forms.Select(attrs={'class': 'form-select'}),
@@ -87,6 +87,14 @@ class AdherentForm(forms.ModelForm):
         except Exception:
             # Fallback vers les choix statiques si les valeurs de référence ne sont pas disponibles
             self.fields['type_adherent'].choices = [('', '---------')] + list(Adherent.TYPE_CHOICES)
+        
+        # Utiliser les valeurs de référence pour les centres d'intérêt
+        try:
+            centre_interet_choices = ReferenceValue.get_choices_for_category('centres_d_interet')
+            self.fields['centre_interet'].choices = [('', '---------')] + list(centre_interet_choices)
+        except Exception:
+            # Fallback si les valeurs de référence ne sont pas disponibles
+            self.fields['centre_interet'].choices = [('', '---------')]
         
         # Filtrer les organisations selon le rôle de l'utilisateur
         if user and user.role == 'agent':

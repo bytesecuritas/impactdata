@@ -658,10 +658,14 @@ class Adherent(models.Model):
         verbose_name="Distinction",
         help_text="Distinctions ou récompenses reçues par l'adhérent"
     )
-    hobies = models.TextField(
+    centre_interet = models.ForeignKey(
+        'ReferenceValue',
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        verbose_name="Hobbies",
-        help_text="Hobbies ou centres d'intérêt de l'adhérent"
+        related_name='adherents_centre_interet',
+        verbose_name="Centre d'intérêt",
+        help_text="Centre d'intérêt principal de l'adhérent"
     )
     langues = models.TextField(
         blank=True,
@@ -1362,6 +1366,7 @@ class ReferenceValue(models.Model):
         ('distinction_types', 'Types de distinction'),
         ('language_types', 'Types de langue'),
         ('activity_types', 'Types d\'activité'),
+        ('centres_d_interet', 'Centres d\'intérêt'),
     ]
     
     category = models.CharField(

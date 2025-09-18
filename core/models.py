@@ -658,14 +658,12 @@ class Adherent(models.Model):
         verbose_name="Distinction",
         help_text="Distinctions ou récompenses reçues par l'adhérent"
     )
-    centre_interet = models.ForeignKey(
+    centres_interet = models.ManyToManyField(
         'ReferenceValue',
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
-        related_name='adherents_centre_interet',
-        verbose_name="Centre d'intérêt",
-        help_text="Centre d'intérêt principal de l'adhérent"
+        related_name='adherents_centres_interet',
+        verbose_name="Centres d'intérêt",
+        help_text="Centres d'intérêt de l'adhérent (sélection multiple possible)"
     )
     langues = models.TextField(
         blank=True,

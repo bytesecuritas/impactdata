@@ -27,7 +27,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">
@@ -92,7 +92,7 @@
                                     <div class="invalid-feedback d-block">{{ form.profile_picture.errors }}</div>
                                 {% endif %}
                                 
-                            </div
+                            </div>
                         </div>
 
                         <!-- Contacts d'urgence -->

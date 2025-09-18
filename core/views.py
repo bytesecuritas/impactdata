@@ -452,7 +452,7 @@ def profile(request):
 def edit_profile(request):
     """Vue pour modifier son profil"""
     if request.method == 'POST':
-        form = ProfileEditForm(request.POST, instance=request.user)
+        form = ProfileEditForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Votre profil a été mis à jour avec succès.')

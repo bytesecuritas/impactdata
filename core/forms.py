@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, RolePermission, ReferenceValue, GeneralParameter, SystemLog
+from .widgets import CustomCheckboxSelectMultiple
 
 User = get_user_model()
 
@@ -66,7 +67,7 @@ class AdherentForm(forms.ModelForm):
             'medical_info': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'centres_interet': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+            'centres_interet': CustomCheckboxSelectMultiple(),
             'langues': forms.TextInput(attrs={'class': 'form-control'}),
             'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': timezone.now().date()}),
             'organisation': forms.Select(attrs={'class': 'form-select'}),

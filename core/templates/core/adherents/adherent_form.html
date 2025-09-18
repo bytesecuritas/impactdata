@@ -5,35 +5,65 @@
 {% block extra_css %}
 <style>
     .centres-interet-container {
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 15px;
-        background-color: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .centres-interet-container .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .centres-interet-container .row {
+            grid-template-columns: 1fr;
+        }
     }
     
     .centres-interet-container .form-check {
-        margin-bottom: 10px;
+        margin-bottom: 0;
         padding: 8px 12px;
         border-radius: 6px;
-        transition: background-color 0.2s ease;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        min-height: 44px;
     }
     
     .centres-interet-container .form-check:hover {
-        background-color: #e2e8f0;
+        background-color: #f1f5f9;
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     
     .centres-interet-container .form-check-input {
-        margin-right: 10px;
-        transform: scale(1.1);
+        margin-right: 12px;
+        transform: scale(1.2);
+        border: 2px solid #cbd5e1;
+        transition: all 0.3s ease;
+    }
+    
+    .centres-interet-container .form-check-input:focus {
+        box-shadow: 0 0 0 0.2rem rgba(49, 130, 206, 0.25);
+        border-color: var(--accent-color);
     }
     
     .centres-interet-container .form-check-label {
         font-weight: 500;
         color: var(--text-primary);
         cursor: pointer;
-        margin-left: 5px;
+        margin-left: 8px;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        transition: all 0.3s ease;
     }
     
     .centres-interet-container .form-check-input:checked + .form-check-label {
@@ -45,6 +75,13 @@
         background-color: var(--accent-color);
         border-color: var(--accent-color);
     }
+    
+    .centres-interet-container .form-check:has(.form-check-input:checked) {
+        background-color: #ebf8ff;
+        border-color: var(--accent-color);
+        box-shadow: 0 2px 8px rgba(49, 130, 206, 0.15);
+    }
+    
 </style>
 {% endblock %}
 
@@ -344,19 +381,27 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12">
                                 <div class="mb-3">
                                     <label class="form-label">
+                                        <i class="fas fa-heart text-primary me-2"></i>
                                         Centres d'intérêt <span class="text-muted">(optionnel)</span>
+                                        <span class="badge bg-primary ms-2" id="selection-count">0 sélectionné(s)</span>
                                     </label>
                                     <div class="centres-interet-container">
-                                        {{ form.centres_interet }}
+                                        <div class="row">
+                                            {{ form.centres_interet }}
+                                        </div>
                                     </div>
                                     {% if form.centres_interet.errors %}
-                                        <div class="text-danger">{{ form.centres_interet.errors }}</div>
+                                        <div class="text-danger mt-2">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            {{ form.centres_interet.errors }}
+                                        </div>
                                     {% endif %}
-                                    <div class="form-text">
-                                        <i class="fas fa-info-circle"></i> Sélectionnez un ou plusieurs centres d'intérêt de l'adhérent
+                                    <div class="form-text mt-2">
+                                        <i class="fas fa-info-circle text-info me-1"></i>
+                                        Sélectionnez un ou plusieurs centres d'intérêt de l'adhérent. Vous pouvez cocher plusieurs options.
                                     </div>
                                 </div>
                             </div>
@@ -562,6 +607,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Appliquer les règles quand l'organisation change
     organizationSelect.addEventListener('change', toggleFieldsBasedOnOrganization);
+    
+    // Gestion du compteur de sélections pour les centres d'intérêt
+    const centresInteretCheckboxes = document.querySelectorAll('input[name="centres_interet"]');
+    const selectionCount = document.getElementById('selection-count');
+    
+    function updateSelectionCount() {
+        const checkedCount = document.querySelectorAll('input[name="centres_interet"]:checked').length;
+        selectionCount.textContent = `${checkedCount} sélectionné${checkedCount > 1 ? 's' : ''}`;
+        
+        if (checkedCount > 0) {
+            selectionCount.className = 'badge bg-success ms-2';
+        } else {
+            selectionCount.className = 'badge bg-secondary ms-2';
+        }
+    }
+    
+    // Ajouter les événements aux checkboxes
+    centresInteretCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectionCount);
+    });
+    
+    // Initialiser le compteur
+    updateSelectionCount();
 });
 
 // Le numéro de téléphone est déjà vérifié, pas besoin de fonction AJAX

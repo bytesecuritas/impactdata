@@ -370,7 +370,7 @@ def superviseur_dashboard(request):
     
     # Obtenir les agents assignés au superviseur
     assigned_agents = User.objects.filter(
-        Q(created_by=request.user) | Q(role='agent')
+        Q(created_by=request.user) & Q(role='agent')
     ).filter(role='agent')
     
     # Statistiques des agents
@@ -383,10 +383,13 @@ def superviseur_dashboard(request):
         stats.update_stats()
         agents_stats.append(stats)
     
-    # Objectifs assignés
+    # Objectifs assignés - mettre à jour la progression
     objectives = UserObjective.objects.filter(
         assigned_by=request.user
     ).order_by('-created_at')[:10]
+    # Mettre à jour la progression de tous les objectifs assignés par ce superviseur
+    for objective in objectives:
+        objective.update_progress()
     
     # Statistiques globales
     total_organizations = sum(stats.organizations_count for stats in agents_stats)
@@ -412,19 +415,18 @@ def agent_dashboard(request):
     
     # Statistiques de l'agent
     organizations_count = Organization.objects.filter(created_by=request.user).count()
-    adherents_count = Adherent.objects.filter(
-        organisation__in=Organization.objects.filter(created_by=request.user)
-    ).count()
+    adherents_count = Adherent.objects.filter(created_by=request.user).count()
     interactions_count = Interaction.objects.filter(personnel=request.user).count()
     
-    # Objectifs assignés
+    # Objectifs assignés - mettre à jour la progression
     objectives = UserObjective.objects.filter(user=request.user).order_by('-created_at')
+    # Mettre à jour la progression de tous les objectifs de cet agent
+    for objective in objectives:
+        objective.update_progress()
     
     # Dernières activités
     recent_organizations = Organization.objects.filter(created_by=request.user).order_by('-created_at')[:5]
-    recent_adherents = Adherent.objects.filter(
-        organisation__in=Organization.objects.filter(created_by=request.user)
-    ).order_by('-created_at')[:5]
+    recent_adherents = Adherent.objects.filter(created_by=request.user).order_by('-created_at')[:5]
     recent_interactions = Interaction.objects.filter(personnel=request.user).order_by('-created_at')[:5]
     
     context = {
@@ -452,7 +454,7 @@ def profile(request):
 def edit_profile(request):
     """Vue pour modifier son profil"""
     if request.method == 'POST':
-        form = ProfileEditForm(request.POST, instance=request.user)
+        form = ProfileEditForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Votre profil a été mis à jour avec succès.')
@@ -800,11 +802,11 @@ def interaction_notifications(request):
         # Les superviseurs voient les interactions de leurs agents
         overdue_interactions = overdue_interactions.filter(
             Q(personnel=request.user) | Q(auteur=request.user) |
-            Q(personnel__created_by=request.user)
+            Q(personnel__created_by=request.user) | Q(auteur__created_by=request.user)
         )
         due_soon_interactions = due_soon_interactions.filter(
             Q(personnel=request.user) | Q(auteur=request.user) |
-            Q(personnel__created_by=request.user)
+            Q(personnel__created_by=request.user) | Q(auteur__created_by=request.user)
         )
     
     context = {
@@ -861,7 +863,9 @@ def adherent_create_with_phone(request, phone):
         form = AdherentForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             try:
-                adherent = form.save()
+                adherent = form.save(commit=False)
+                adherent.created_by = request.user
+                adherent.save()
                 messages.success(request, 'Adhérent créé avec succès.')
                 return redirect('core:adherent_detail', adherent_id=adherent.id)
             except Exception as e:
@@ -883,6 +887,10 @@ def adherent_create_with_phone(request, phone):
 def adherent_update(request, adherent_id):
     """Modifier un adhérent"""
     adherent = get_object_or_404(Adherent, id=adherent_id)
+
+    # Vérifier que l'agent ne peut modifier que ses propres adhérents
+    if request.user.role == 'agent' and adherent.created_by != request.user:
+        return HttpResponseForbidden("Accès refusé: vous ne pouvez modifier que les adhérents créer par vous même.")
     
     if request.method == 'POST':
         form = AdherentForm(request.POST, request.FILES, instance=adherent, user=request.user)
@@ -903,6 +911,10 @@ def adherent_update(request, adherent_id):
 def adherent_delete(request, adherent_id):
     """Supprimer un adhérent"""
     adherent = get_object_or_404(Adherent, id=adherent_id)
+
+    # Vérifier que l'agent ne peut supprimer que ses propres adhérents
+    if request.user.role == 'agent' and adherent.created_by != request.user:
+        return HttpResponseForbidden("Accès refusé: vous ne pouvez supprimer que les adhérents créer par vous même.")
     
     if request.method == 'POST':
         adherent.delete()
@@ -938,7 +950,7 @@ def organization_update(request, organization_id):
     
     # Vérifier que l'agent ne peut modifier que ses propres organisations
     if request.user.role == 'agent' and organization.created_by != request.user:
-        return HttpResponseForbidden("Accès refusé")
+        return HttpResponseForbidden("Accès refusé: vous ne pouvez modifier que les organisations créer par vous même.")
     
     if request.method == 'POST':
         form = OrganizationForm(request.POST, instance=organization)
@@ -959,7 +971,7 @@ def organization_delete(request, organization_id):
     
     # Vérifier que l'agent ne peut supprimer que ses propres organisations
     if request.user.role == 'agent' and organization.created_by != request.user:
-        return HttpResponseForbidden("Accès refusé")
+        return HttpResponseForbidden("Accès refusé: vous ne pouvez supprimer que les organisations créer par vous même.")
     
     if request.method == 'POST':
         organization.delete()
@@ -1055,14 +1067,12 @@ def interaction_create(request):
 @login_required
 def interaction_update(request, interaction_id):
     """Modifier une interaction"""
-    # if not (is_admin(request.user) or is_agent(request.user) or is_supervisor(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
     
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
-    # Vérifier que le superviseur ne peut modifier que ses propres interactions
-    if is_agent(request.user) :
-        return HttpResponseForbidden("Accès refusé")
+    # Vérifier que l'agent ne peut modifier que ses propres interactions
+    if is_agent(request.user and interaction.auteur != request.user and interaction.personnel != request.user) :
+        return HttpResponseForbidden("Accès refusé: vous ne pouvez modifier que les interactions où vous êtes auteur ou personnel assigné.")
     
     if request.method == 'POST':
         form = InteractionForm(request.POST, instance=interaction, user=request.user)
@@ -1078,14 +1088,12 @@ def interaction_update(request, interaction_id):
 @login_required
 def interaction_delete(request, interaction_id):
     """Supprimer une interaction"""
-    # if not (is_admin(request.user) or is_agent(request.user) or is_supervisor(request.user)):
-    #     return HttpResponseForbidden("Accès refusé")
     
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
-    # Vérifier que le superviseur ne peut supprimer que ses propres interactions
-    if is_agent(request.user) :
-        return HttpResponseForbidden("Accès refusé")
+    # Vérifier que l'agent ne peut supprimer que ses propres interactions
+    if is_agent(request.user and interaction.auteur != request.user and interaction.personnel != request.user) :
+        return HttpResponseForbidden("Accès refusé: vous ne pouvez supprimer que les interactions où vous êtes auteur ou personnel assigné.")
     
     if request.method == 'POST':
         interaction.delete()
@@ -1165,9 +1173,7 @@ class UserDetailView(PermissionRequiredMixin, DetailView):
         if user_obj.role == 'agent':
             context['stats'] = {
                 'organizations_count': Organization.objects.filter(created_by=user_obj).count(),
-                'adherents_count': Adherent.objects.filter(
-                    organisation__in=Organization.objects.filter(created_by=user_obj)
-                ).count(),
+                'adherents_count': Adherent.objects.filter(created_by=user_obj).count(),
                 'interactions_count': Interaction.objects.filter(personnel=user_obj).count(),
                 'categories_count': Category.objects.filter(
                     organizations__created_by=user_obj
@@ -1246,6 +1252,18 @@ class UserUpdateView(PermissionRequiredMixin, UpdateView):
             return UserEditForm
         else:
             return UserForm
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        
+        # Configurer le champ created_by pour les admins
+        if self.request.user.role == 'admin' or self.request.user.is_superuser:
+            # Les admins peuvent assigner des superviseurs comme créateurs
+            form.fields['created_by'].queryset = User.objects.filter(role='superviseur')
+            form.fields['created_by'].label = "Assigné à (Superviseur)"
+            form.fields['created_by'].help_text = "Sélectionnez le superviseur responsable de cet agent"
+        
+        return form
     
     def form_valid(self, form):
         user = form.save(commit=False)
@@ -2027,12 +2045,15 @@ class ObjectiveListView(PermissionRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
+        # Mettre à jour automatiquement tous les objectifs avant de les afficher
+        UserObjective.update_all_objectives()
+        
         if self.request.user.role == 'admin':
-            return UserObjective.objects.all()
+            return UserObjective.objects.all().order_by('-created_at')
         elif self.request.user.role == 'superviseur':
-            return UserObjective.objects.filter(assigned_by=self.request.user)
+            return UserObjective.objects.filter(assigned_by=self.request.user).order_by('-created_at')
         else:
-            return UserObjective.objects.filter(user=self.request.user)
+            return UserObjective.objects.filter(user=self.request.user).order_by('-created_at')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2052,6 +2073,12 @@ class ObjectiveDetailView(PermissionRequiredMixin, DetailView):
             return UserObjective.objects.filter(assigned_by=self.request.user)
         else:
             return UserObjective.objects.filter(user=self.request.user)
+    
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        # Mettre à jour la progression de cet objectif spécifique
+        obj.update_progress()
+        return obj
 
 class ObjectiveCreateView(PermissionRequiredMixin, CreateView):
     permission_required = 'objective_create'
@@ -2100,6 +2127,14 @@ class ObjectiveUpdateView(PermissionRequiredMixin, UpdateView):
             # return UserObjective.objects.filter(user=self.request.user)
             raise PermissionDenied("Vous n'avez pas les permissions pour modifier les objectifs.")
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.request.user.role=='superviseur':
+            form.fields['user'].queryset = User.objects.filter(
+                role='agent',
+                created_by=self.request.user
+            )
+        return form
     
     def form_valid(self, form):
         messages.success(self.request, "Objectif mis à jour avec succès.")

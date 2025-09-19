@@ -701,6 +701,15 @@ class Adherent(models.Model):
         verbose_name="Photo de profil"
     )
 
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_adherents',
+        verbose_name="Créé par"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1043,20 +1052,17 @@ class UserObjective(models.Model):
         if self.objective_type == 'organizations':
             self.base_value = Organization.objects.filter(created_by=self.user).count()
         elif self.objective_type == 'adherents':
-            self.base_value = Adherent.objects.filter(
-                organisation__in=Organization.objects.filter(created_by=self.user)
-            ).count()
+            self.base_value = Adherent.objects.filter(created_by=self.user).count()
         elif self.objective_type == 'interactions':
             self.base_value = Interaction.objects.filter(personnel=self.user).count()
     
     def update_progress(self):
         """Met à jour la progression de l'objectif"""
+        total_count = 0
         if self.objective_type == 'organizations':
             total_count = Organization.objects.filter(created_by=self.user).count()
         elif self.objective_type == 'adherents':
-            total_count = Adherent.objects.filter(
-                organisation__in=Organization.objects.filter(created_by=self.user)
-            ).count()
+            total_count = Adherent.objects.filter(created_by=self.user).count()
         elif self.objective_type == 'interactions':
             total_count = Interaction.objects.filter(personnel=self.user).count()
         
@@ -1174,9 +1180,7 @@ class SupervisorStats(models.Model):
         self.categories_count = Category.objects.filter(
             organizations__created_by=self.agent
         ).distinct().count()
-        self.adherents_count = Adherent.objects.filter(
-            organisation__in=Organization.objects.filter(created_by=self.agent)
-        ).count()
+        self.adherents_count = Adherent.objects.filter(created_by=self.agent).count()
         self.interactions_count = Interaction.objects.filter(personnel=self.agent).count()
         self.save()
 
@@ -1210,10 +1214,10 @@ def update_objectives_on_organization_delete(sender, instance, **kwargs):
 @receiver(post_save, sender=Adherent)
 def update_objectives_on_adherent_save(sender, instance, created, **kwargs):
     """Met à jour les objectifs quand un adhérent est créé ou modifié"""
-    if created and instance.organisation.created_by:
+    if created and instance.created_by:
         # Mettre à jour tous les objectifs de type 'adherents' pour le créateur de l'organisation
         objectives = UserObjective.objects.filter(
-            user=instance.organisation.created_by,
+            user=instance.created_by,
             objective_type='adherents',
             status__in=['pending', 'in_progress']
         )
@@ -1223,9 +1227,9 @@ def update_objectives_on_adherent_save(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=Adherent)
 def update_objectives_on_adherent_delete(sender, instance, **kwargs):
     """Met à jour les objectifs quand un adhérent est supprimé"""
-    if instance.organisation.created_by:
+    if instance.created_by:
         objectives = UserObjective.objects.filter(
-            user=instance.organisation.created_by,
+            user=instance.created_by,
             objective_type='adherents',
             status__in=['pending', 'in_progress']
         )

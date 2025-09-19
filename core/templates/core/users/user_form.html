@@ -198,12 +198,15 @@
                                         </div>
                                     {% endif %}
                                 </div>
-                                {% if user.role == 'admin' %}
+                                {% if request.user.role == 'admin' or request.user.is_superuser %}
                                 <div class="mb-3">
                                     <label for="{{ form.created_by.id_for_label }}" class="form-label">
-                                        Assigné à
+                                        {{ form.created_by.label|default:"Assigné à" }}
                                     </label>
                                     {{ form.created_by }}
+                                    {% if form.created_by.help_text %}
+                                        <div class="form-text">{{ form.created_by.help_text }}</div>
+                                    {% endif %}
                                     {% if form.created_by.errors %}
                                         <div class="invalid-feedback d-block">
                                             {% for error in form.created_by.errors %}

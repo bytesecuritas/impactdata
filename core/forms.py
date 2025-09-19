@@ -100,13 +100,13 @@ class AdherentForm(forms.ModelForm):
             # Fallback si les valeurs de référence ne sont pas disponibles
             self.fields['centres_interet'].queryset = ReferenceValue.objects.none()
         
-        # Filtrer les organisations selon le rôle de l'utilisateur
-        if user and user.role == 'agent':
-            self.fields['organisation'].queryset = Organization.objects.filter(created_by=user)
-        elif user and user.role == 'superviseur':
-            # Les superviseurs peuvent voir les organisations de leurs agents
-            agent_ids = User.objects.filter(role='agent').values_list('id', flat=True)
-            self.fields['organisation'].queryset = Organization.objects.filter(created_by__id__in=agent_ids)
+        # # Filtrer les organisations selon le rôle de l'utilisateur
+        # if user and user.role == 'agent':
+        #     self.fields['organisation'].queryset = Organization.objects.filter(created_by=user)
+        # elif user and user.role == 'superviseur':
+        #     # Les superviseurs peuvent voir les organisations de leurs agents
+        #     agent_ids = User.objects.filter(role='agent').values_list('id', flat=True)
+        #     self.fields['organisation'].queryset = Organization.objects.filter(created_by__id__in=agent_ids)
 
     def clean(self):
         cleaned_data = super().clean()

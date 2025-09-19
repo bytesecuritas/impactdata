@@ -163,7 +163,7 @@
 
 .badge-photo-container {
     position: relative;
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 20px;
@@ -239,7 +239,7 @@
     align-items: center;
     justify-content: center;
     gap: 15px;
-    margin-top: 5px;
+    margin-top: -10px;
 }
 
 .badge-tel {
@@ -306,6 +306,7 @@
     object-fit: contain;
     display: block;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    margin-bottom: 35px;
 }
 
 .badge-urgence:hover {
@@ -352,7 +353,7 @@
     height: 35px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 0 16px;
     border-radius: 0 0 8px 8px;
     position: relative;
@@ -487,7 +488,6 @@
 
     <!-- Footer -->
     <div class="badge-footer">
-      <img src="{% static 'images/impactdata.jpg' %}" class="badge-logo-babaly-footer" alt="Impact Data">
       <span class="badge-validite">Validité {{ badge.badge_validity|date:'F Y' }}</span>
     </div>
   </div>

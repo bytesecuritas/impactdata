@@ -1054,7 +1054,7 @@ class UserObjective(models.Model):
         elif self.objective_type == 'adherents':
             self.base_value = Adherent.objects.filter(created_by=self.user).count()
         elif self.objective_type == 'interactions':
-            self.base_value = Interaction.objects.filter(personnel=self.user).count()
+            self.base_value = Interaction.objects.filter(auteur=self.user).count()
     
     def update_progress(self):
         """Met à jour la progression de l'objectif"""
@@ -1064,7 +1064,7 @@ class UserObjective(models.Model):
         elif self.objective_type == 'adherents':
             total_count = Adherent.objects.filter(created_by=self.user).count()
         elif self.objective_type == 'interactions':
-            total_count = Interaction.objects.filter(personnel=self.user).count()
+            total_count = Interaction.objects.filter(auteur=self.user).count()
         
         # La valeur actuelle est ce qui a été créé après l'assignation de l'objectif
         base_val = self.base_value or 0

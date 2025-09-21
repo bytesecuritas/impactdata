@@ -2222,7 +2222,7 @@ def objective_actions(request, pk):
     
     elif objective.objective_type == 'interactions':
         interactions = Interaction.objects.filter(
-            personnel=agent,
+            auteur=agent,
             created_at__gte=objective_created_at
         ).order_by('-created_at')
         

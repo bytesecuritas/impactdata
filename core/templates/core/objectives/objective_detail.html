@@ -13,6 +13,10 @@
                         <i class="fas fa-bullseye"></i> Objectif : {{ objective.get_objective_type_display }}
                     </h3>
                     <div class="btn-group">
+                        <!-- Bouton pour voir les actions effectuées -->
+                        <a href="{% url 'core:objective_actions' objective.pk %}" class="btn btn-info">
+                            <i class="fas fa-list-check"></i> Voir les actions
+                        </a>
                         {% if user.role != 'agent' %}
                         <a href="{% url 'core:objective_update' objective.pk %}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Modifier

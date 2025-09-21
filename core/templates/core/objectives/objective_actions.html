@@ -1,0 +1,169 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Actions de l'objectif{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-list-check"></i> Actions effectuées pour l'objectif
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'core:objective_detail' objective.pk %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à l'objectif
+            </a>
+        </div>
+    </div>
+
+    <!-- Informations de l'objectif -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3"><i class="fas fa-bullseye"></i> Informations de l'objectif</h5>
+                            <table class="table table-borderless">
+                                <tr><td><strong>Agent:</strong></td><td>{{ agent.get_full_name }}</td></tr>
+                                <tr><td><strong>Type d'objectif:</strong></td><td>{{ objective_type_display }}</td></tr>
+                                <tr><td><strong>Valeur actuelle:</strong></td><td>{{ objective.current_value }} / {{ objective.target_increment }}</td></tr>
+                                <tr><td><strong>Statut:</strong></td><td>
+                                    <span class="badge {% if objective.status == 'completed' %}bg-success{% elif objective.status == 'failed' %}bg-danger{% elif objective.status == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ objective.get_status_display }}
+                                    </span>
+                                </td></tr>
+                                <tr><td><strong>Date limite:</strong></td><td>{{ objective.deadline|date:"d/m/Y" }}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="mb-3"><i class="fas fa-chart-line"></i> Progression</h5>
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ objective.progress_percentage }}%">
+                                    {{ objective.progress_percentage|floatformat:1 }}%
+                                </div>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Période:</strong> Actions créées depuis le {{ objective.created_at|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des actions -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks"></i> Actions effectuées ({{ total_actions }})
+                    </h5>
+                    <span class="badge bg-primary">{{ total_actions }} action{{ total_actions|pluralize }}</span>
+                </div>
+                <div class="card-body">
+                    {% if actions %}
+                        <div class="list-group list-group-flush">
+                            {% for action in actions %}
+                            <div class="list-group-item border-0 px-0 mb-3">
+                                <div class="d-flex align-items-start">
+                                    <!-- Icône selon le type -->
+                                    <div class="flex-shrink-0 me-3">
+                                        {% if action.type == 'organization' %}
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                <i class="fas fa-building fa-lg"></i>
+                                            </div>
+                                        {% elif action.type == 'adherent' %}
+                                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user fa-lg"></i>
+                                            </div>
+                                        {% elif action.type == 'interaction' %}
+                                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                <i class="fas fa-comments fa-lg"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Contenu de l'action -->
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">{{ action.title }}</h6>
+                                                <p class="mb-1 text-muted">{{ action.description }}</p>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock"></i> 
+                                                    Créé le {{ action.created_at|date:"d/m/Y à H:i" }}
+                                                </small>
+                                            </div>
+                                            <div class="text-end">
+                                                <a href="{{ action.url }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Voir
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucune action effectuée</h5>
+                            <p class="text-muted">
+                                L'agent n'a pas encore créé d'éléments pour cet objectif depuis son assignation.
+                            </p>
+                            <div class="mt-3">
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Objectif créé le {{ objective.created_at|date:"d/m/Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques supplémentaires -->
+    {% if actions %}
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Statistiques</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h4 class="text-primary mb-1">{{ total_actions }}</h4>
+                                <small class="text-muted">Actions effectuées</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h4 class="text-warning mb-1">{{ objective.current_value }}</h4>
+                                <small class="text-muted">Progression actuelle</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3">
+                                <h4 class="text-success mb-1">{{ objective.target_increment }}</h4>
+                                <small class="text-muted">Objectif à atteindre</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -2164,6 +2164,89 @@ class ObjectiveDeleteView(PermissionRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 @login_required
+def objective_actions(request, pk):
+    """Vue pour afficher les actions effectuées par un agent pour un objectif"""
+    try:
+        objective = UserObjective.objects.get(pk=pk)
+    except UserObjective.DoesNotExist:
+        messages.error(request, "Objectif non trouvé.")
+        return redirect('core:objective_list')
+    
+    # Vérifier les permissions
+    if request.user.role == 'agent':
+        if objective.user != request.user:
+            raise PermissionDenied("Vous ne pouvez voir que vos propres objectifs.")
+    elif request.user.role == 'superviseur':
+        if objective.assigned_by != request.user:
+            raise PermissionDenied("Vous ne pouvez voir que les objectifs que vous avez assignés.")
+    # Admin peut voir tous les objectifs
+    
+    # Récupérer les éléments créés par l'agent pour cet objectif
+    agent = objective.user
+    objective_created_at = objective.created_at
+    
+    # Filtrer les éléments créés après l'assignation de l'objectif
+    actions = []
+    
+    if objective.objective_type == 'organizations':
+        organizations = Organization.objects.filter(
+            created_by=agent,
+            created_at__gte=objective_created_at
+        ).order_by('-created_at')
+        
+        for org in organizations:
+            actions.append({
+                'type': 'organization',
+                'object': org,
+                'created_at': org.created_at,
+                'title': org.name,
+                'description': f"Organisation créée dans la catégorie {org.category.name}",
+                'url': f"/organizations/{org.id}/"
+            })
+    
+    elif objective.objective_type == 'adherents':
+        adherents = Adherent.objects.filter(
+            created_by=agent,
+            created_at__gte=objective_created_at
+        ).order_by('-created_at')
+        
+        for adherent in adherents:
+            actions.append({
+                'type': 'adherent',
+                'object': adherent,
+                'created_at': adherent.created_at,
+                'title': adherent.full_name,
+                'description': f"Adhérent ajouté à {adherent.organisation.name}",
+                'url': f"/adherents/{adherent.id}/"
+            })
+    
+    elif objective.objective_type == 'interactions':
+        interactions = Interaction.objects.filter(
+            personnel=agent,
+            created_at__gte=objective_created_at
+        ).order_by('-created_at')
+        
+        for interaction in interactions:
+            actions.append({
+                'type': 'interaction',
+                'object': interaction,
+                'created_at': interaction.created_at,
+                'title': f"Interaction avec {interaction.adherent.full_name}",
+                'description': f"Statut: {interaction.get_status_display()}",
+                'url': f"/interactions/{interaction.id}/"
+            })
+    
+    context = {
+        'objective': objective,
+        'actions': actions,
+        'agent': agent,
+        'total_actions': len(actions),
+        'objective_type_display': objective.get_objective_type_display(),
+    }
+    
+    return render(request, 'core/objectives/objective_actions.html', context)
+
+@login_required
 def refresh_objectives(request):
     """Vue pour rafraîchir manuellement les objectifs"""
     if request.user.role not in ['admin', 'superviseur']:

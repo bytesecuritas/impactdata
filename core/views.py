@@ -2191,7 +2191,7 @@ def objective_actions(request, pk):
     if objective.objective_type == 'organizations':
         organizations = Organization.objects.filter(
             created_by=agent,
-            created_at__gte=objective_created_at
+            # created_at__gte=objective_created_at
         ).order_by('-created_at')
         
         for org in organizations:
@@ -2207,7 +2207,7 @@ def objective_actions(request, pk):
     elif objective.objective_type == 'adherents':
         adherents = Adherent.objects.filter(
             created_by=agent,
-            created_at__gte=objective_created_at
+            # created_at__gte=objective_created_at
         ).order_by('-created_at')
         
         for adherent in adherents:
@@ -2223,7 +2223,7 @@ def objective_actions(request, pk):
     elif objective.objective_type == 'interactions':
         interactions = Interaction.objects.filter(
             auteur=agent,
-            created_at__gte=objective_created_at
+            # created_at__gte=objective_created_at
         ).order_by('-created_at')
         
         for interaction in interactions:

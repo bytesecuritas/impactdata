@@ -2201,7 +2201,7 @@ def objective_actions(request, pk):
                 'created_at': org.created_at,
                 'title': org.name,
                 'description': f"Organisation créée dans la catégorie {org.category.name}",
-                'url': reverse('core:organization_detail', kwargs={'organization_id': org.id})
+                'url': '/core' + reverse('core:organization_detail', kwargs={'organization_id': org.id})
             })
     
     elif objective.objective_type == 'adherents':
@@ -2217,7 +2217,7 @@ def objective_actions(request, pk):
                 'created_at': adherent.created_at,
                 'title': adherent.full_name,
                 'description': f"Adhérent ajouté à {adherent.organisation.name}",
-                'url': reverse('core:adherent_detail', kwargs={'adherent_id': adherent.id})
+                'url': '/core' + reverse('core:adherent_detail', kwargs={'adherent_id': adherent.id})
             })
     
     elif objective.objective_type == 'interactions':
@@ -2233,7 +2233,7 @@ def objective_actions(request, pk):
                 'created_at': interaction.created_at,
                 'title': f"Interaction avec {interaction.adherent.full_name}",
                 'description': f"Statut: {interaction.get_status_display()}",
-                'url': reverse('core:interaction_detail', kwargs={'interaction_id': interaction.id})
+                'url': '/core' + reverse('core:interaction_detail', kwargs={'interaction_id': interaction.id})
             })
     
     context = {

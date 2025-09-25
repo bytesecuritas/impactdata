@@ -1278,12 +1278,23 @@ class UserDeleteView(PermissionRequiredMixin, DeleteView):
     template_name = 'core/users/user_confirm_delete.html'
     context_object_name = 'user_obj'
     success_url = reverse_lazy('core:user_list')
-    
+
     def dispatch(self, request, *args, **kwargs):
+        user_obj = self.get_object()
+        # Empêcher la suppression de soi-même
+        if request.user == user_obj:
+            messages.error(request, "Vous ne pouvez pas supprimer votre propre compte.")
+            raise PermissionDenied("Suppression de soi-même interdite.")
+        # Empêcher la suppression du dernier admin
+        if user_obj.role == 'admin':
+            admin_count = User.objects.filter(role='admin', is_active=True).count()
+            if admin_count <= 1:
+                messages.error(request, "Impossible de supprimer le dernier administrateur.")
+                raise PermissionDenied("Suppression du dernier administrateur interdite.")
         if not is_admin(request.user):
             raise PermissionDenied("Seuls les administrateurs peuvent supprimer des utilisateurs.")
         return super().dispatch(request, *args, **kwargs)
-    
+
     def delete(self, request, *args, **kwargs):
         messages.success(request, "Utilisateur supprimé avec succès.")
         return super().delete(request, *args, **kwargs)
@@ -2191,7 +2202,7 @@ def objective_actions(request, pk):
     if objective.objective_type == 'organizations':
         organizations = Organization.objects.filter(
             created_by=agent,
-            created_at__gte=objective_created_at
+            # created_at__gte=objective_created_at
         ).order_by('-created_at')
         
         for org in organizations:
@@ -2207,7 +2218,7 @@ def objective_actions(request, pk):
     elif objective.objective_type == 'adherents':
         adherents = Adherent.objects.filter(
             created_by=agent,
-            created_at__gte=objective_created_at
+            # created_at__gte=objective_created_at
         ).order_by('-created_at')
         
         for adherent in adherents:
@@ -2222,8 +2233,8 @@ def objective_actions(request, pk):
     
     elif objective.objective_type == 'interactions':
         interactions = Interaction.objects.filter(
-            personnel=agent,
-            created_at__gte=objective_created_at
+            auteur=agent,
+            # created_at__gte=objective_created_at
         ).order_by('-created_at')
         
         for interaction in interactions:

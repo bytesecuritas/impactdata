@@ -825,8 +825,8 @@ class Interaction(models.Model):
     )
     auteur = models.ForeignKey(
         'User',
-        on_delete=models.CASCADE,
-        default=1,
+        null=True,
+        on_delete=models.SET_NULL,
         related_name='interactions_created',
         verbose_name="Auteur"
     )

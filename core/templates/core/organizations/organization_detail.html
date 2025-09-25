@@ -259,7 +259,6 @@
                                 <th>Identifiant</th>
                                 <th>Adhérent</th>
                                 <th>Type</th>
-                                <th>Badge</th>
                                 <th>Date d'adhésion</th>
                                 <th>Actions</th>
                             </tr>
@@ -293,20 +292,7 @@
                                         {{ adherent.get_type_adherent_display }}
                                     </span>
                                 </td>
-                                <td>
-                                    <div class="badge-status">
-                                        {% if adherent.is_badge_valid %}
-                                            <span class="badge badge-success">
-                                                <i class="fas fa-check-circle"></i> Valide
-                                            </span>
-                                        {% else %}
-                                            <span class="badge badge-danger">
-                                                <i class="fas fa-times-circle"></i> Expiré
-                                            </span>
-                                        {% endif %}
-                                        <div class="badge-date">{{ adherent.badge_validity|date:"d/m/Y" }}</div>
-                                    </div>
-                                </td>
+                                
                                 <td>
                                     <span class="join-date">{{ adherent.join_date|date:"d/m/Y" }}</span>
                                 </td>

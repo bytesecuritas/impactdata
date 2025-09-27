@@ -199,6 +199,11 @@ class InteractionForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
+        # Définir l'utilisateur connecté comme valeur par défaut
+        if user and not self.instance.pk:  # Seulement pour les nouvelles instances
+            self.fields['personnel'].initial = user
+            self.fields['personnel'].widget.attrs['readonly'] = True  # Optionnel: rendre le champ en lecture seule
+        
         # Utiliser les valeurs de référence pour le statut
         try:
             from core.models import ReferenceValue
@@ -376,7 +381,8 @@ class UserEditForm(forms.ModelForm):
         model = User
         fields = ['first_name', 'last_name', 'email', 'telephone', 'profile_picture',
                  'profession', 'fonction', 'adresse', 'nom_urg1', 'prenom_urg1', 'telephone_urg1', 
-                 'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'created_by', 'is_active', 'notes']
+                 'nom_urg2', 'prenom_urg2', 'telephone_urg2', 'role', 'created_by', 'is_active', 'notes'
+                ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),

@@ -1071,7 +1071,7 @@ def interaction_update(request, interaction_id):
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
     # Vérifier que l'agent ne peut modifier que ses propres interactions
-    if is_agent(request.user and interaction.auteur != request.user and interaction.personnel != request.user) :
+    if is_agent(request.user) and (interaction.auteur != request.user and interaction.personnel != request.user) :
         return HttpResponseForbidden("Accès refusé: vous ne pouvez modifier que les interactions où vous êtes auteur ou personnel assigné.")
     
     if request.method == 'POST':
@@ -1092,7 +1092,7 @@ def interaction_delete(request, interaction_id):
     interaction = get_object_or_404(Interaction, id=interaction_id)
     
     # Vérifier que l'agent ne peut supprimer que ses propres interactions
-    if is_agent(request.user and interaction.auteur != request.user and interaction.personnel != request.user) :
+    if is_agent(request.user) and (interaction.auteur != request.user and interaction.personnel != request.user) :
         return HttpResponseForbidden("Accès refusé: vous ne pouvez supprimer que les interactions où vous êtes auteur ou personnel assigné.")
     
     if request.method == 'POST':

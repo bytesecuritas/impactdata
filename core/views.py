@@ -2424,15 +2424,17 @@ def personnel_search_api(request):
         return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
     
     query = request.GET.get('q', '').strip()
-    if len(query) < 2:
-        return JsonResponse({'results': []})
     
-    # Recherche dans les champs matricule, first_name, last_name
-    personnel = User.objects.filter(
-        Q(matricule__icontains=query) |
-        Q(first_name__icontains=query) |
-        Q(last_name__icontains=query)
-    ).filter(is_active=True).order_by('matricule')[:10]
+    if len(query) < 2:
+        # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
+        personnel = User.objects.filter(is_active=True).order_by('matricule')[:50]
+    else:
+        # Recherche dans les champs matricule, first_name, last_name
+        personnel = User.objects.filter(
+            Q(matricule__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).filter(is_active=True).order_by('matricule')[:50]
     
     results = []
     for person in personnel:
@@ -2452,25 +2454,27 @@ def adherent_search_api(request):
         return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
     
     query = request.GET.get('q', '').strip()
-    if len(query) < 2:
-        return JsonResponse({'results': []})
     
-    # Recherche dans les champs id, identifiant, phone1, phone2, first_name, last_name
-    adherents = Adherent.objects.filter(
-        Q(id__icontains=query) |
-        Q(identifiant__icontains=query) |
-        Q(phone1__icontains=query) |
-        Q(phone2__icontains=query) |
-        Q(first_name__icontains=query) |
-        Q(last_name__icontains=query)
-    ).order_by('id')[:10]
+    if len(query) < 2:
+        # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
+        adherents = Adherent.objects.all().order_by('id')[:50]
+    else:
+        # Recherche dans les champs id, identifiant, phone1, phone2, first_name, last_name
+        adherents = Adherent.objects.filter(
+            Q(id__icontains=query) |
+            Q(identifiant__icontains=query) |
+            Q(phone1__icontains=query) |
+            Q(phone2__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).order_by('id')[:50]
     
     results = []
     for adherent in adherents:
         phone_info = f" - {adherent.phone1}" if adherent.phone1 else ""
         results.append({
             'id': adherent.id,
-            'text': f"ID: {adherent.id} - {adherent.first_name} {adherent.last_name}{phone_info}",
+            'text': f"ID: {adherent.identifiant} - {adherent.first_name} {adherent.last_name}{phone_info}",
             'identifiant': adherent.identifiant,
             'name': f"{adherent.first_name} {adherent.last_name}",
             'phone': adherent.phone1 or adherent.phone2
@@ -2485,14 +2489,16 @@ def organization_search_api(request):
         return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
     
     query = request.GET.get('q', '').strip()
-    if len(query) < 2:
-        return JsonResponse({'results': []})
     
-    # Recherche dans les champs name et identifiant
-    organizations = Organization.objects.filter(
-        Q(name__icontains=query) |
-        Q(identifiant__icontains=query)
-    ).order_by('name')[:10]
+    if len(query) < 2:
+        # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
+        organizations = Organization.objects.all().order_by('name')[:50]
+    else:
+        # Recherche dans les champs name et identifiant
+        organizations = Organization.objects.filter(
+            Q(name__icontains=query) |
+            Q(identifiant__icontains=query)
+        ).order_by('name')[:50]
     
     results = []
     for org in organizations:
@@ -2512,13 +2518,15 @@ def category_search_api(request):
         return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
     
     query = request.GET.get('q', '').strip()
-    if len(query) < 2:
-        return JsonResponse({'results': []})
     
-    # Recherche dans le champ name
-    categories = Category.objects.filter(
-        name__icontains=query
-    ).order_by('name')[:10]
+    if len(query) < 2:
+        # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
+        categories = Category.objects.all().order_by('name')[:50]
+    else:
+        # Recherche dans le champ name
+        categories = Category.objects.filter(
+            name__icontains=query
+        ).order_by('name')[:50]
     
     results = []
     for category in categories:

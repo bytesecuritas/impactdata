@@ -1,41 +1,23 @@
 /**
- * JavaScript pour les champs select avec recherche
+ * JavaScript pour les champs select avec fonctionnalité de recherche
+ * Comportement : Affiche tous les éléments au clic, filtre en temps réel pendant la saisie
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 Initialisation des champs select avec recherche...');
+    console.log('🔍 Initialisation des champs searchable-select...');
     
-    // Attendre un peu pour que le DOM soit complètement chargé
-    setTimeout(function() {
-        initAllSearchableSelects();
-    }, 100);
-});
-
-function initAllSearchableSelects() {
     const searchableSelects = document.querySelectorAll('.searchable-select');
-    console.log(`📋 Trouvé ${searchableSelects.length} champs select avec recherche`);
+    console.log(`📋 Trouvé ${searchableSelects.length} champs select`);
     
     searchableSelects.forEach((select, index) => {
         console.log(`🔧 Initialisation du champ ${index + 1}`);
         initSearchableSelect(select);
     });
-}
+});
 
 function initSearchableSelect(selectElement) {
-    console.log('🚀 Initialisation d\'un champ select:', selectElement);
-    
     const container = selectElement.closest('.searchable-select-container');
-    if (!container) {
-        console.error('❌ Conteneur non trouvé pour:', selectElement);
-        return;
-    }
-    
     const searchOverlay = container.querySelector('.search-overlay');
-    if (!searchOverlay) {
-        console.error('❌ Overlay de recherche non trouvé');
-        return;
-    }
-    
     const searchInput = searchOverlay.querySelector('.search-input');
     const resultsContainer = searchOverlay.querySelector('.search-results');
     const searchUrl = selectElement.dataset.searchUrl;
@@ -48,40 +30,24 @@ function initSearchableSelect(selectElement) {
         searchUrl: searchUrl
     });
     
-    // Événement sur le select pour afficher la recherche
-    selectElement.addEventListener('focus', function() {
-        console.log('👆 Focus sur le select');
-        showSearch();
-    });
+    // Variable pour stocker tous les éléments
+    let allItems = [];
+    let isInitialized = false;
     
+    // Événement sur le select
     selectElement.addEventListener('click', function(e) {
         console.log('🖱️ Clic sur le select');
         e.preventDefault();
         showSearch();
     });
     
-    // Événement sur l'input de recherche
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            console.log('⌨️ Saisie dans la recherche:', e.target.value);
-            handleSearch(e.target.value);
-        });
-        
-        searchInput.addEventListener('keydown', function(e) {
-            handleKeydown(e);
-        });
-        
-        // IMPORTANT: Empêcher la propagation des événements
-        searchInput.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-        
-        searchInput.addEventListener('focus', function(e) {
-            e.stopPropagation();
-        });
-    }
+    // Événement sur l'input
+    searchInput.addEventListener('input', function(e) {
+        console.log('⌨️ Saisie:', e.target.value);
+        handleSearch(e.target.value);
+    });
     
-    // Fermer la recherche en cliquant ailleurs
+    // Fermer en cliquant ailleurs
     document.addEventListener('click', function(e) {
         if (!container.contains(e.target)) {
             hideSearch();
@@ -90,43 +56,27 @@ function initSearchableSelect(selectElement) {
     
     function showSearch() {
         console.log('👁️ Affichage de la recherche');
-        if (searchOverlay) {
-            searchOverlay.style.display = 'block';
-            if (searchInput) {
-                // Délai pour s'assurer que l'overlay est affiché
-                setTimeout(function() {
-                    searchInput.focus();
-                    searchInput.value = '';
-                }, 10);
-            }
-            if (resultsContainer) {
-                resultsContainer.innerHTML = '';
-            }
+        searchOverlay.style.display = 'block';
+        setTimeout(function() {
+            searchInput.focus();
+            searchInput.value = '';
+        }, 10);
+        
+        // Charger tous les éléments au premier clic
+        if (!isInitialized) {
+            loadAllItems();
+        } else {
+            // Afficher tous les éléments
+            displayResults(allItems);
         }
     }
     
     function hideSearch() {
         console.log('🙈 Masquage de la recherche');
-        if (searchOverlay) {
-            searchOverlay.style.display = 'none';
-        }
+        searchOverlay.style.display = 'none';
     }
     
-    async function handleSearch(query) {
-        if (!searchUrl) {
-            console.error('❌ URL de recherche non définie');
-            return;
-        }
-        
-        if (query.length < 2) {
-            if (resultsContainer) {
-                resultsContainer.innerHTML = '';
-            }
-            return;
-        }
-        
-        console.log('🔍 Recherche:', query);
-        
+    async function loadAllItems() {
         try {
             // Corriger l'URL pour inclure le préfixe /core/
             let fullUrl = searchUrl;
@@ -135,7 +85,8 @@ function initSearchableSelect(selectElement) {
             }
             console.log('🔗 URL complète:', fullUrl);
             
-            const response = await fetch(`${fullUrl}?q=${encodeURIComponent(query)}`);
+            // Charger tous les éléments (sans paramètre q ou avec q vide)
+            const response = await fetch(`${fullUrl}?q=`);
             console.log('📡 Réponse:', response.status, response.statusText);
             
             if (!response.ok) {
@@ -143,14 +94,53 @@ function initSearchableSelect(selectElement) {
             }
             
             const data = await response.json();
-            console.log('📊 Résultats:', data);
-            displayResults(data.results);
+            console.log('📊 Tous les éléments:', data);
+            allItems = data.results || [];
+            isInitialized = true;
+            
+            // Afficher tous les éléments
+            displayResults(allItems);
         } catch (error) {
-            console.error('❌ Erreur lors de la recherche:', error);
+            console.error('❌ Erreur lors du chargement:', error);
+            allItems = [];
             if (resultsContainer) {
                 resultsContainer.innerHTML = `<div class="search-error">Erreur: ${error.message}</div>`;
             }
         }
+    }
+    
+    function handleSearch(query) {
+        console.log('🔍 Recherche:', query);
+        
+        if (!isInitialized) {
+            return;
+        }
+        
+        // Filtrer les éléments localement
+        const filteredItems = filterItemsLocally(query);
+        displayResults(filteredItems);
+    }
+    
+    function filterItemsLocally(query) {
+        if (!query || query.length < 2) {
+            return allItems;
+        }
+        
+        const lowerQuery = query.toLowerCase();
+        return allItems.filter(item => {
+            // Convertir en string et vérifier si la valeur existe avant d'appeler toLowerCase
+            const text = String(item.text || '').toLowerCase();
+            const matricule = String(item.matricule || '').toLowerCase();
+            const identifiant = String(item.identifiant || '').toLowerCase();
+            const phone = String(item.phone || '');
+            const name = String(item.name || '').toLowerCase();
+
+            return text.includes(lowerQuery) ||
+                   matricule.includes(lowerQuery) ||
+                   identifiant.includes(lowerQuery) ||
+                   phone.includes(query) ||
+                   name.includes(lowerQuery);
+        });
     }
     
     function displayResults(results) {
@@ -170,16 +160,17 @@ function initSearchableSelect(selectElement) {
             <div class="search-result-item" data-value="${result.id}" data-text="${result.text}">
                 <div class="result-text">${result.text}</div>
                 ${result.matricule ? `<div class="result-matricule">Matricule: ${result.matricule}</div>` : ''}
+                ${result.identifiant ? `<div class="result-identifiant">ID: ${result.identifiant}</div>` : ''}
                 ${result.phone ? `<div class="result-phone">Tél: ${result.phone}</div>` : ''}
             </div>
         `).join('');
         
         resultsContainer.innerHTML = resultsHtml;
         
-        // Ajouter les événements aux résultats
+        // Événements sur les résultats
         resultsContainer.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', function() {
-                console.log('✅ Sélection d\'un résultat:', item.dataset.text);
+                console.log('✅ Sélection:', item.dataset.text);
                 selectResult(item);
             });
         });
@@ -189,51 +180,8 @@ function initSearchableSelect(selectElement) {
         const value = resultItem.dataset.value;
         const text = resultItem.dataset.text;
         
-        console.log('🎯 Sélection:', { value, text });
-        
-        // Mettre à jour le select
         selectElement.value = value;
-        
-        // Déclencher l'événement change
         selectElement.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        // Masquer la recherche
         hideSearch();
-    }
-    
-    function handleKeydown(e) {
-        const results = resultsContainer ? resultsContainer.querySelectorAll('.search-result-item') : [];
-        
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const current = resultsContainer ? resultsContainer.querySelector('.search-result-item.highlighted') : null;
-            if (current) {
-                current.classList.remove('highlighted');
-                const next = current.nextElementSibling;
-                if (next) {
-                    next.classList.add('highlighted');
-                }
-            } else if (results.length > 0) {
-                results[0].classList.add('highlighted');
-            }
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const current = resultsContainer ? resultsContainer.querySelector('.search-result-item.highlighted') : null;
-            if (current) {
-                current.classList.remove('highlighted');
-                const prev = current.previousElementSibling;
-                if (prev) {
-                    prev.classList.add('highlighted');
-                }
-            }
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            const highlighted = resultsContainer ? resultsContainer.querySelector('.search-result-item.highlighted') : null;
-            if (highlighted) {
-                selectResult(highlighted);
-            }
-        } else if (e.key === 'Escape') {
-            hideSearch();
-        }
     }
 }

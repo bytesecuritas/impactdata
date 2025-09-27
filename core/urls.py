@@ -117,10 +117,19 @@ urlpatterns = [
     path('badges/<int:badge_id>/download-jpg/', views.download_badge_jpg, name='download_badge_jpg'),
     path('badges/scan/', views.badge_qr_scan, name='badge_qr_scan'),
     
+    # API pour les suggestions de recherche
+    path('api/personnel/search/', views.personnel_search_api, name='personnel_search_api'),
+    path('api/adherent/search/', views.adherent_search_api, name='adherent_search_api'),
+    path('api/organization/search/', views.organization_search_api, name='organization_search_api'),
+    path('api/category/search/', views.category_search_api, name='category_search_api'),
+    
     # Badge Generation for Adherents
     path('adherents/<int:adherent_id>/generate-badge/', views.generate_badge, name='generate_badge'),
     
     # ==================== RECHERCHE GLOBALE ====================
     path('search/', views.global_search, name='global_search'),
     path('search/suggestions/', views.search_suggestions, name='search_suggestions'),
+    
+    # ==================== TEST ====================
+    path('test-final/', views.test_final, name='test_final'),
 ]

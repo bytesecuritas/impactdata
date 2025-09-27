@@ -2415,6 +2415,121 @@ def settings_dashboard(request):
     }
     return render(request, 'core/settings/settings_dashboard.html', context)
 
+
+# ==================== VUES AJAX POUR LES SUGGESTIONS ====================
+
+def personnel_search_api(request):
+    """API pour la recherche de personnel par matricule, prénom ou nom"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Recherche dans les champs matricule, first_name, last_name
+    personnel = User.objects.filter(
+        Q(matricule__icontains=query) |
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query)
+    ).filter(is_active=True).order_by('matricule')[:10]
+    
+    results = []
+    for person in personnel:
+        results.append({
+            'id': person.id,
+            'text': f"{person.matricule} - {person.get_full_name()}",
+            'matricule': person.matricule,
+            'name': person.get_full_name()
+        })
+    
+    return JsonResponse({'results': results})
+
+
+def adherent_search_api(request):
+    """API pour la recherche d'adhérents par ID, matricule, téléphone, prénom ou nom"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Recherche dans les champs id, identifiant, phone1, phone2, first_name, last_name
+    adherents = Adherent.objects.filter(
+        Q(id__icontains=query) |
+        Q(identifiant__icontains=query) |
+        Q(phone1__icontains=query) |
+        Q(phone2__icontains=query) |
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query)
+    ).order_by('id')[:10]
+    
+    results = []
+    for adherent in adherents:
+        phone_info = f" - {adherent.phone1}" if adherent.phone1 else ""
+        results.append({
+            'id': adherent.id,
+            'text': f"ID: {adherent.id} - {adherent.first_name} {adherent.last_name}{phone_info}",
+            'identifiant': adherent.identifiant,
+            'name': f"{adherent.first_name} {adherent.last_name}",
+            'phone': adherent.phone1 or adherent.phone2
+        })
+    
+    return JsonResponse({'results': results})
+
+
+def organization_search_api(request):
+    """API pour la recherche d'organisations par nom"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Recherche dans les champs name et identifiant
+    organizations = Organization.objects.filter(
+        Q(name__icontains=query) |
+        Q(identifiant__icontains=query)
+    ).order_by('name')[:10]
+    
+    results = []
+    for org in organizations:
+        results.append({
+            'id': org.id,
+            'text': f"{org.name} ({org.identifiant})",
+            'name': org.name,
+            'identifiant': org.identifiant
+        })
+    
+    return JsonResponse({'results': results})
+
+
+def category_search_api(request):
+    """API pour la recherche de catégories par nom"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Recherche dans le champ name
+    categories = Category.objects.filter(
+        name__icontains=query
+    ).order_by('name')[:10]
+    
+    results = []
+    for category in categories:
+        results.append({
+            'id': category.id,
+            'text': category.name,
+            'name': category.name
+        })
+    
+    return JsonResponse({'results': results})
+
 # ==================== GESTION DES RÔLES ET PERMISSIONS ====================
 
 @login_required
@@ -3478,4 +3593,11 @@ def search_suggestions(request):
             })
     
     return JsonResponse({'suggestions': suggestions})
+
+
+def test_final(request):
+    """
+    Vue pour tester les champs select avec recherche
+    """
+    return render(request, 'core/test_final.html')
     

@@ -1,0 +1,187 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Test Final - Searchable Select{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Test Final - Champs Select avec Recherche</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Test Personnel (avec API réelle)</label>
+                <div class="searchable-select-container">
+                    <select class="form-select searchable-select" data-search-url="/api/personnel/search/" data-search-fields="matricule,first_name,last_name" data-placeholder="Rechercher par matricule...">
+                        <option value="">Rechercher par matricule...</option>
+                    </select>
+                    <div class="search-overlay">
+                        <input type="text" class="form-control search-input" placeholder="Rechercher par matricule..." autocomplete="off">
+                        <div class="search-results"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Test Adhérent (avec API réelle)</label>
+                <div class="searchable-select-container">
+                    <select class="form-select searchable-select" data-search-url="/api/adherent/search/" data-search-fields="id,identifiant,phone1,phone2,first_name,last_name" data-placeholder="Rechercher par ID, téléphone...">
+                        <option value="">Rechercher par ID, téléphone...</option>
+                    </select>
+                    <div class="search-overlay">
+                        <input type="text" class="form-control search-input" placeholder="Rechercher par ID, téléphone..." autocomplete="off">
+                        <div class="search-results"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <h3>Instructions :</h3>
+        <ol>
+            <li><strong>Cliquez</strong> sur un champ select</li>
+            <li><strong>Tapez</strong> du texte (ex: "AG" ou "625")</li>
+            <li><strong>Vérifiez</strong> les logs dans la console (F12)</li>
+            <li><strong>Vérifiez</strong> que les APIs sont appelées</li>
+        </ol>
+    </div>
+    
+    <div class="mt-4">
+        <h3>Résultat :</h3>
+        <p id="result">Aucune sélection</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Test final - Initialisation...');
+    
+    const searchableSelects = document.querySelectorAll('.searchable-select');
+    console.log(`📋 Trouvé ${searchableSelects.length} champs select`);
+    
+    searchableSelects.forEach((select, index) => {
+        console.log(`🔧 Initialisation du champ ${index + 1}`);
+        initSearchableSelect(select);
+    });
+});
+
+function initSearchableSelect(selectElement) {
+    const container = selectElement.closest('.searchable-select-container');
+    const searchOverlay = container.querySelector('.search-overlay');
+    const searchInput = searchOverlay.querySelector('.search-input');
+    const resultsContainer = searchOverlay.querySelector('.search-results');
+    const searchUrl = selectElement.dataset.searchUrl;
+    
+    console.log('✅ Éléments trouvés:', {
+        container: !!container,
+        searchOverlay: !!searchOverlay,
+        searchInput: !!searchInput,
+        resultsContainer: !!resultsContainer,
+        searchUrl: searchUrl
+    });
+    
+    // Événement sur le select
+    selectElement.addEventListener('click', function(e) {
+        console.log('🖱️ Clic sur le select');
+        e.preventDefault();
+        showSearch();
+    });
+    
+    // Événement sur l'input
+    searchInput.addEventListener('input', function(e) {
+        console.log('⌨️ Saisie:', e.target.value);
+        handleSearch(e.target.value);
+    });
+    
+    // Fermer en cliquant ailleurs
+    document.addEventListener('click', function(e) {
+        if (!container.contains(e.target)) {
+            hideSearch();
+        }
+    });
+    
+    function showSearch() {
+        console.log('👁️ Affichage de la recherche');
+        searchOverlay.style.display = 'block';
+        setTimeout(function() {
+            searchInput.focus();
+            searchInput.value = '';
+        }, 10);
+        resultsContainer.innerHTML = '';
+    }
+    
+    function hideSearch() {
+        console.log('🙈 Masquage de la recherche');
+        searchOverlay.style.display = 'none';
+    }
+    
+    async function handleSearch(query) {
+        if (query.length < 2) {
+            resultsContainer.innerHTML = '';
+            return;
+        }
+        
+        console.log('🔍 Recherche:', query);
+        
+        try {
+            // Corriger l'URL pour inclure le préfixe /core/
+            const fullUrl = searchUrl.startsWith('/') ? searchUrl : `/core${searchUrl}`;
+            console.log('🔗 URL complète:', fullUrl);
+            
+            const response = await fetch(`${fullUrl}?q=${encodeURIComponent(query)}`);
+            console.log('📡 Réponse:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📊 Résultats:', data);
+            displayResults(data.results);
+        } catch (error) {
+            console.error('❌ Erreur lors de la recherche:', error);
+            resultsContainer.innerHTML = `<div class="search-error">Erreur: ${error.message}</div>`;
+        }
+    }
+    
+    function displayResults(results) {
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<div class="search-no-results">Aucun résultat trouvé</div>';
+            return;
+        }
+        
+        console.log('📋 Affichage de', results.length, 'résultats');
+        
+        const resultsHtml = results.map(result => `
+            <div class="search-result-item" data-value="${result.id}" data-text="${result.text}">
+                <div class="result-text">${result.text}</div>
+                ${result.matricule ? `<div class="result-matricule">Matricule: ${result.matricule}</div>` : ''}
+                ${result.phone ? `<div class="result-phone">Tél: ${result.phone}</div>` : ''}
+            </div>
+        `).join('');
+        
+        resultsContainer.innerHTML = resultsHtml;
+        
+        // Événements sur les résultats
+        resultsContainer.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', function() {
+                console.log('✅ Sélection:', item.dataset.text);
+                selectResult(item);
+            });
+        });
+    }
+    
+    function selectResult(resultItem) {
+        const value = resultItem.dataset.value;
+        const text = resultItem.dataset.text;
+        
+        selectElement.value = value;
+        document.getElementById('result').textContent = `Sélectionné: ${text}`;
+        hideSearch();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Searchable Select</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .searchable-select-container {
+            position: relative;
+        }
+
+        .searchable-select-container .searchable-select {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 16px 12px;
+            padding-right: 2.5rem;
+        }
+
+        .search-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .search-overlay .search-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+            border-radius: 0.375rem;
+            background: transparent;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1001;
+        }
+
+        .search-result-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            transition: all 0.2s ease;
+        }
+
+        .search-result-item:hover,
+        .search-result-item.highlighted {
+            background-color: #f8f9fa;
+            border-left: 3px solid #3182ce;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Test des Champs Select avec Recherche</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Personnel (Test)</label>
+                    <div class="searchable-select-container">
+                        <select class="form-select searchable-select" data-search-url="/api/personnel/search/" data-search-fields="matricule,first_name,last_name" data-placeholder="Rechercher par matricule...">
+                            <option value="">Rechercher par matricule...</option>
+                            <option value="1">AG001 - Jean Dupont</option>
+                            <option value="2">AG002 - Marie Martin</option>
+                            <option value="3">AG003 - Pierre Durand</option>
+                        </select>
+                        <div class="search-overlay">
+                            <input type="text" class="form-control search-input" placeholder="Rechercher par matricule..." autocomplete="off">
+                            <div class="search-results"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Adhérent (Test)</label>
+                    <div class="searchable-select-container">
+                        <select class="form-select searchable-select" data-search-url="/api/adherent/search/" data-search-fields="id,identifiant,phone1,phone2,first_name,last_name" data-placeholder="Rechercher par ID, téléphone...">
+                            <option value="">Rechercher par ID, téléphone...</option>
+                            <option value="1">ID: 1 - Jean Dupont - 625325458</option>
+                            <option value="2">ID: 2 - Marie Martin - 625325459</option>
+                            <option value="3">ID: 3 - Pierre Durand - 625325460</option>
+                        </select>
+                        <div class="search-overlay">
+                            <input type="text" class="form-control search-input" placeholder="Rechercher par ID, téléphone..." autocomplete="off">
+                            <div class="search-results"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3>Instructions de Test :</h3>
+            <ol>
+                <li><strong>Cliquez</strong> sur un champ select</li>
+                <li><strong>Tapez</strong> du texte (ex: "AG" ou "625")</li>
+                <li><strong>Voyez</strong> les suggestions apparaître</li>
+                <li><strong>Sélectionnez</strong> une option</li>
+            </ol>
+        </div>
+        
+        <div class="mt-4">
+            <h3>Résultat :</h3>
+            <p id="result">Aucune sélection</p>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript de test
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Test des champs select avec recherche...');
+            
+            const searchableSelects = document.querySelectorAll('.searchable-select');
+            console.log(`📋 Trouvé ${searchableSelects.length} champs select`);
+            
+            searchableSelects.forEach((select, index) => {
+                console.log(`🔧 Initialisation du champ ${index + 1}`);
+                initSearchableSelect(select);
+            });
+        });
+
+        function initSearchableSelect(selectElement) {
+            const container = selectElement.closest('.searchable-select-container');
+            const searchOverlay = container.querySelector('.search-overlay');
+            const searchInput = searchOverlay.querySelector('.search-input');
+            const resultsContainer = searchOverlay.querySelector('.search-results');
+            
+            // Événement sur le select
+            selectElement.addEventListener('focus', function() {
+                console.log('👆 Focus sur le select');
+                showSearch();
+            });
+            
+            selectElement.addEventListener('click', function(e) {
+                console.log('🖱️ Clic sur le select');
+                e.preventDefault();
+                showSearch();
+            });
+            
+            // Événement sur l'input de recherche
+            searchInput.addEventListener('input', function(e) {
+                console.log('⌨️ Saisie:', e.target.value);
+                handleSearch(e.target.value);
+            });
+            
+            // Fermer en cliquant ailleurs
+            document.addEventListener('click', function(e) {
+                if (!container.contains(e.target)) {
+                    hideSearch();
+                }
+            });
+            
+            function showSearch() {
+                console.log('👁️ Affichage de la recherche');
+                searchOverlay.style.display = 'block';
+                searchInput.focus();
+                searchInput.value = '';
+                resultsContainer.innerHTML = '';
+            }
+            
+            function hideSearch() {
+                console.log('🙈 Masquage de la recherche');
+                searchOverlay.style.display = 'none';
+            }
+            
+            function handleSearch(query) {
+                if (query.length < 2) {
+                    resultsContainer.innerHTML = '';
+                    return;
+                }
+                
+                // Simulation de résultats
+                const mockResults = [
+                    { id: '1', text: 'AG001 - Jean Dupont', matricule: 'AG001' },
+                    { id: '2', text: 'AG002 - Marie Martin', matricule: 'AG002' },
+                    { id: '3', text: 'AG003 - Pierre Durand', matricule: 'AG003' }
+                ].filter(result => 
+                    result.text.toLowerCase().includes(query.toLowerCase()) ||
+                    result.matricule.toLowerCase().includes(query.toLowerCase())
+                );
+                
+                displayResults(mockResults);
+            }
+            
+            function displayResults(results) {
+                if (results.length === 0) {
+                    resultsContainer.innerHTML = '<div class="search-no-results">Aucun résultat trouvé</div>';
+                    return;
+                }
+                
+                const resultsHtml = results.map(result => `
+                    <div class="search-result-item" data-value="${result.id}" data-text="${result.text}">
+                        <div class="result-text">${result.text}</div>
+                        <div class="result-matricule">Matricule: ${result.matricule}</div>
+                    </div>
+                `).join('');
+                
+                resultsContainer.innerHTML = resultsHtml;
+                
+                // Événements sur les résultats
+                resultsContainer.querySelectorAll('.search-result-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        console.log('✅ Sélection:', item.dataset.text);
+                        selectResult(item);
+                    });
+                });
+            }
+            
+            function selectResult(resultItem) {
+                const value = resultItem.dataset.value;
+                const text = resultItem.dataset.text;
+                
+                // Mettre à jour le select
+                selectElement.value = value;
+                
+                // Afficher le résultat
+                document.getElementById('result').textContent = `Sélectionné: ${text}`;
+                
+                // Masquer la recherche
+                hideSearch();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, RolePermission, ReferenceValue, GeneralParameter, SystemLog
-from .widgets import CustomCheckboxSelectMultiple
+from .widgets import CustomCheckboxSelectMultiple, PersonnelSearchWidget, AdherentSearchWidget, OrganizationSearchWidget, CategorySearchWidget
 
 User = get_user_model()
 
@@ -70,7 +70,7 @@ class AdherentForm(forms.ModelForm):
             'centres_interet': CustomCheckboxSelectMultiple(),
             'langues': forms.TextInput(attrs={'class': 'form-control'}),
             'join_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': timezone.now().date()}),
-            'organisation': forms.Select(attrs={'class': 'form-select'}),
+            'organisation': OrganizationSearchWidget(attrs={'class': 'form-select'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'activity_name': forms.TextInput(attrs={'class': 'form-control'}),
             'badge_validity': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min':timezone.now().date()}),
@@ -147,7 +147,7 @@ class OrganizationForm(forms.ModelForm):
             'creation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max':timezone.now().date()}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'whatsapp': forms.TextInput(attrs={'class': 'form-control'}),
-            'category': forms.Select(attrs={'class': 'form-control'}),
+            'category': CategorySearchWidget(attrs={'class': 'form-control'}),
             'number_personnel': forms.NumberInput(attrs={'class': 'form-control'}),
             'infos_annexes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -188,8 +188,8 @@ class InteractionForm(forms.ModelForm):
         ]
         widgets = {
             'identifiant': forms.TextInput(attrs={'class': 'form-control'}),
-            'personnel': forms.Select(attrs={'class': 'form-control'}),
-            'adherent': forms.Select(attrs={'class': 'form-control'}),
+            'personnel': PersonnelSearchWidget(attrs={'class': 'form-control'}),
+            'adherent': AdherentSearchWidget(attrs={'class': 'form-control'}),
             'report': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'due_date': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local', 'min': timezone.now().strftime('%Y-%m-%dT%H:%M')  }),
             'status': forms.Select(attrs={'class': 'form-control'}),

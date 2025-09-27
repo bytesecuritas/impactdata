@@ -47,6 +47,9 @@
                                     {% if form.personnel.errors %}
                                         <div class="text-danger">{{ form.personnel.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">
+                                        <i class="fas fa-search"></i> Tapez le matricule, prénom ou nom pour rechercher
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
@@ -58,7 +61,7 @@
                                         <div class="text-danger">{{ form.adherent.errors }}</div>
                                     {% endif %}
                                     <div class="form-text">
-                                        <i class="fas fa-info-circle"></i> Veuillez sélectionner un adhérent pour activer les autres champs.
+                                        <i class="fas fa-search"></i> Tapez l'ID, matricule, téléphone, prénom ou nom pour rechercher
                                     </div>
                                 </div>
 

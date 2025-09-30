@@ -804,6 +804,8 @@ class Adherent(models.Model):
         return None
     
     def is_badge_valid(self):
+        if self.badge_validity is None:
+            return False
         return self.badge_validity > timezone.now().date()
 
 
@@ -969,6 +971,7 @@ class Badge(models.Model):
         from datetime import date
         return (
             self.status == 'active' and 
+            self.adherent.badge_validity is not None and
             self.adherent.badge_validity >= date.today()
         )
     def revoke(self, reason="", revoked_by=None):

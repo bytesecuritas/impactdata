@@ -2492,13 +2492,13 @@ def organization_search_api(request):
     
     if len(query) < 2:
         # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
-        organizations = Organization.objects.all().order_by('name')[:50]
+        organizations = Organization.objects.all().order_by('name')[:500]
     else:
         # Recherche dans les champs name et identifiant
         organizations = Organization.objects.filter(
             Q(name__icontains=query) |
             Q(identifiant__icontains=query)
-        ).order_by('name')[:50]
+        ).order_by('name')[:500]
     
     results = []
     for org in organizations:

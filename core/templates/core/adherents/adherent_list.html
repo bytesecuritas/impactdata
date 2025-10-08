@@ -54,6 +54,42 @@
         color: #3182ce;
     }
     
+    /* Style pour les centres d'intérêt dans les filtres */
+    .centres-interet-filter {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem;
+        background: white;
+    }
+    
+    .centres-interet-filter .form-check {
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .centres-interet-filter .form-check:hover {
+        background-color: #f8fafc;
+    }
+    
+    .centres-interet-filter .form-check-input {
+        cursor: pointer;
+    }
+    
+    .centres-interet-filter .form-check-label {
+        cursor: pointer;
+        margin-left: 0.5rem;
+        color: #4a5568;
+        font-size: 0.875rem;
+    }
+    
+    .centres-interet-filter .form-check-input:checked + .form-check-label {
+        color: #3182ce;
+        font-weight: 600;
+    }
     
     .btn-action {
         width: 32px;
@@ -191,6 +227,23 @@
                             <div class="mb-3">
                                 <label class="form-label">{{ search_form.activity_name.label }}</label>
                                 {{ search_form.activity_name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Centres d'Intérêt -->
+                    <div class="col-md-6">
+                        <div class="filter-section">
+                            <h6><i class="fas fa-heart me-2"></i>Centres d'Intérêt</h6>
+                            <div class="mb-3">
+                                <label class="form-label">{{ search_form.centres_interet.label }}</label>
+                                <div class="centres-interet-filter">
+                                    {{ search_form.centres_interet }}
+                                </div>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Sélectionnez un ou plusieurs centres d'intérêt pour filtrer
+                                </small>
                             </div>
                         </div>
                     </div>

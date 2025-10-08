@@ -2427,7 +2427,7 @@ def personnel_search_api(request):
     
     if len(query) < 2:
         # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
-        personnel = User.objects.filter(is_active=True).order_by('matricule')[:50]
+        personnel = User.objects.filter(is_active=True).order_by('matricule')
     else:
         # Recherche dans les champs matricule, first_name, last_name
         personnel = User.objects.filter(
@@ -2457,7 +2457,7 @@ def adherent_search_api(request):
     
     if len(query) < 2:
         # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
-        adherents = Adherent.objects.all().order_by('id')[:50]
+        adherents = Adherent.objects.all().order_by('id')
     else:
         # Recherche dans les champs id, identifiant, phone1, phone2, first_name, last_name
         adherents = Adherent.objects.filter(
@@ -2467,7 +2467,7 @@ def adherent_search_api(request):
             Q(phone2__icontains=query) |
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query)
-        ).order_by('id')[:50]
+        ).order_by('id')[:500]
     
     results = []
     for adherent in adherents:
@@ -2492,7 +2492,7 @@ def organization_search_api(request):
     
     if len(query) < 2:
         # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
-        organizations = Organization.objects.all().order_by('name')[:500]
+        organizations = Organization.objects.all().order_by('name')
     else:
         # Recherche dans les champs name et identifiant
         organizations = Organization.objects.filter(
@@ -2521,12 +2521,12 @@ def category_search_api(request):
     
     if len(query) < 2:
         # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
-        categories = Category.objects.all().order_by('name')[:50]
+        categories = Category.objects.all().order_by('name')
     else:
         # Recherche dans le champ name
         categories = Category.objects.filter(
             name__icontains=query
-        ).order_by('name')[:50]
+        ).order_by('name')[:500]
     
     results = []
     for category in categories:

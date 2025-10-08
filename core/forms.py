@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, RolePermission, ReferenceValue, GeneralParameter, SystemLog
+from .models import Adherent, Organization, Category, Interaction, Badge, UserObjective, RolePermission, ReferenceValue, GeneralParameter, SystemLog
 from .widgets import CustomCheckboxSelectMultiple, PersonnelSearchWidget, AdherentSearchWidget, OrganizationSearchWidget, CategorySearchWidget
 
 User = get_user_model()
@@ -675,61 +675,81 @@ class UserObjectiveForm(forms.ModelForm):
 
 class InteractionSearchForm(forms.Form):
     """Formulaire de recherche avancée pour les interactions"""
-    personnel = forms.ModelChoiceField(
-        queryset=User.objects.filter(role__in=['agent', 'superviseur']).order_by('first_name', 'last_name'),
+    keywords = forms.CharField(
         required=False,
-        label="Personnel",
-        empty_label="Tous les personnels"
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Rechercher dans les rapports...'
+        })
     )
-    adherent = forms.ModelChoiceField(
-        queryset=Adherent.objects.all().order_by('last_name', 'first_name'),
-        required=False,
-        label="Adhérent",
-        empty_label="Tous les adhérents"
-    )
+    
     status = forms.ChoiceField(
-        choices=[('', 'Tous les statuts')],
+        choices=[('', 'Tous les statuts')] + list(Interaction.STATUS_CHOICES),
         required=False,
-        label="Statut"
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
+    
+    personnel = forms.ModelChoiceField(
+        queryset=User.objects.filter(is_active=True),
+        required=False,
+        empty_label="Tout le personnel",
+        widget=forms.Select(attrs={
+            'class': 'form-select select2-basic',
+            'data-placeholder': 'Sélectionner un personnel'
+        })
+    )
+    
+    adherent = forms.ModelChoiceField(
+        queryset=Adherent.objects.all(),
+        required=False,
+        empty_label="Tous les adhérents",
+        widget=forms.Select(attrs={
+            'class': 'form-select select2-basic',
+            'data-placeholder': 'Sélectionner un adhérent'
+        })
+    )
+    
+    auteur = forms.ModelChoiceField(
+        queryset=User.objects.filter(is_active=True),
+        required=False,
+        empty_label="Tous les auteurs",
+        widget=forms.Select(attrs={
+            'class': 'form-select select2-basic',
+            'data-placeholder': 'Sélectionner un auteur'
+        })
+    )
+    
     due_date_from = forms.DateField(
         required=False,
-        label="Date d'échéance (début)",
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(attrs={
+            'class': 'form-control datepicker',
+            'type': 'date'
+        })
     )
+    
     due_date_to = forms.DateField(
         required=False,
-        label="Date d'échéance (fin)",
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(attrs={
+            'class': 'form-control datepicker',
+            'type': 'date'
+        })
     )
-    keywords = forms.CharField(
-        max_length=100,
-        required=False,
-        label="Mots-clés",
-        widget=forms.TextInput(attrs={'placeholder': 'Rechercher dans les rapports...'})
-    )
+    
     overdue_only = forms.BooleanField(
         required=False,
-        label="En retard uniquement",
-        initial=False
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+    
     due_soon = forms.BooleanField(
         required=False,
-        label="Échéance proche (7 jours)",
-        initial=False
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Utiliser les valeurs de référence pour le statut
-        try:
-            from core.models import ReferenceValue
-            status_choices = ReferenceValue.get_choices_for_category('interaction_status')
-            self.fields['status'].choices = [('', 'Tous les statuts')] + list(status_choices)
-        except Exception:
-            # Fallback vers les choix statiques si les valeurs de référence ne sont pas disponibles
-            self.fields['status'].choices = [('', 'Tous les statuts')] + list(Interaction.STATUS_CHOICES)
+        self.fields['personnel'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+        self.fields['auteur'].queryset = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+        self.fields['adherent'].queryset = Adherent.objects.all().order_by('last_name', 'first_name')
 
 # ==================== FORMULAIRES POUR LES PARAMÈTRES DE L'APPLICATION ====================
 

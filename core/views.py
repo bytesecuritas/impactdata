@@ -484,33 +484,103 @@ def change_password(request):
 @login_required
 @require_permission('adherent_view')
 def adherent_list(request):
-    """Liste des adhérents"""
-    adherents = Adherent.objects.all().order_by('last_name', 'first_name')
+    """Liste des adhérents avec recherche et filtres avancés"""
+    adherents = Adherent.objects.select_related('organisation', 'created_by').prefetch_related('centres_interet').all()
     
-    # Filtrage par recherche
+    # Formulaire de recherche
     search_form = AdherentSearchForm(request.GET)
+    
+    # Appliquer les filtres si le formulaire est valide
     if search_form.is_valid():
+        # Recherche globale
         search = search_form.cleaned_data.get('search')
-        type_adherent = search_form.cleaned_data.get('type_adherent')
-        organisation = search_form.cleaned_data.get('organisation')
-        join_date_from = search_form.cleaned_data.get('join_date_from')
-        join_date_to = search_form.cleaned_data.get('join_date_to')
-
         if search:
             adherents = adherents.filter(
                 Q(last_name__icontains=search) |
                 Q(first_name__icontains=search) |
-                Q(id__icontains=search)
+                Q(identifiant__icontains=search) |
+                Q(phone1__icontains=search) |
+                Q(phone2__icontains=search) |
+                Q(email__icontains=search) |
+                Q(commune__icontains=search) |
+                Q(quartier__icontains=search) |
+                Q(secteur__icontains=search)
             )
+        
+        # Filtres spécifiques
+        type_adherent = search_form.cleaned_data.get('type_adherent')
         if type_adherent:
             adherents = adherents.filter(type_adherent=type_adherent)
+        
+        organisation = search_form.cleaned_data.get('organisation')
         if organisation:
             adherents = adherents.filter(organisation=organisation)
+        
+        # Localisation
+        commune = search_form.cleaned_data.get('commune')
+        if commune:
+            adherents = adherents.filter(commune__icontains=commune)
+        
+        quartier = search_form.cleaned_data.get('quartier')
+        if quartier:
+            adherents = adherents.filter(quartier__icontains=quartier)
+        
+        secteur = search_form.cleaned_data.get('secteur')
+        if secteur:
+            adherents = adherents.filter(secteur__icontains=secteur)
+        
+        # Dates d'adhésion
+        join_date_from = search_form.cleaned_data.get('join_date_from')
         if join_date_from:
             adherents = adherents.filter(join_date__gte=join_date_from)
+        
+        join_date_to = search_form.cleaned_data.get('join_date_to')
         if join_date_to:
             adherents = adherents.filter(join_date__lte=join_date_to)
-
+        
+        # Statut du badge
+        badge_status = search_form.cleaned_data.get('badge_status')
+        if badge_status:
+            from datetime import date, timedelta
+            today = date.today()
+            
+            if badge_status == 'valid':
+                adherents = adherents.filter(
+                    badge_validity__isnull=False,
+                    badge_validity__gte=today
+                )
+            elif badge_status == 'expired':
+                adherents = adherents.filter(
+                    Q(badge_validity__isnull=True) |
+                    Q(badge_validity__lt=today)
+                )
+            elif badge_status == 'expiring_soon':
+                # Expire dans les 30 prochains jours
+                thirty_days_later = today + timedelta(days=30)
+                adherents = adherents.filter(
+                    badge_validity__gte=today,
+                    badge_validity__lte=thirty_days_later
+                )
+        
+        # Centres d'intérêt
+        centres_interet = search_form.cleaned_data.get('centres_interet')
+        if centres_interet:
+            # Filtrer les adhérents qui ont au moins un des centres d'intérêt sélectionnés
+            adherents = adherents.filter(centres_interet__in=centres_interet).distinct()
+        
+        # Activité
+        activity_name = search_form.cleaned_data.get('activity_name')
+        if activity_name:
+            adherents = adherents.filter(activity_name__icontains=activity_name)
+        
+        # Créé par
+        created_by = search_form.cleaned_data.get('created_by')
+        if created_by:
+            adherents = adherents.filter(created_by=created_by)
+    
+    # Tri par défaut
+    adherents = adherents.order_by('last_name', 'first_name')
+    
     # Pagination
     paginator = Paginator(adherents, 20)
     page_number = request.GET.get('page')
@@ -519,7 +589,7 @@ def adherent_list(request):
     context = {
         'page_obj': page_obj,
         'search_form': search_form,
-        'adherents': adherents,
+        'adherents': page_obj,
         'total_count': adherents.count(),
         'can_create': has_permission(request.user, 'adherent_create'),
         'can_edit': has_permission(request.user, 'adherent_edit'),

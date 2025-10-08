@@ -464,32 +464,108 @@ class ProfileEditForm(forms.ModelForm):
         }
 
 class AdherentSearchForm(forms.Form):
-    """Formulaire de recherche d'adhérents"""
+    """Formulaire de recherche avancée d'adhérents"""
+    # Recherche textuelle globale
     search = forms.CharField(
         required=False,
+        label="Recherche globale",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Nom, prénom, identifiant...'
+            'placeholder': 'Nom, prénom, identifiant, téléphone, email...'
         })
     )
+    
+    # Filtres de base
     type_adherent = forms.ChoiceField(
         choices=[('', 'Tous les types')],
         required=False,
+        label="Type d'adhérent",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     organisation = forms.ModelChoiceField(
         queryset=Organization.objects.all(),
         required=False,
+        label="Organisation",
         empty_label="Toutes les organisations",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    
+    # Localisation
+    commune = forms.CharField(
+        required=False,
+        label="Commune",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Filtrer par commune...'
+        })
+    )
+    quartier = forms.CharField(
+        required=False,
+        label="Quartier",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Filtrer par quartier...'
+        })
+    )
+    secteur = forms.CharField(
+        required=False,
+        label="Secteur",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Filtrer par secteur...'
+        })
+    )
+    
+    # Dates
     join_date_from = forms.DateField(
         required=False,
+        label="Date d'adhésion (du)",
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
     join_date_to = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min':join_date_from})
+        label="Date d'adhésion (au)",
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    
+    # Badge
+    badge_status = forms.ChoiceField(
+        choices=[
+            ('', 'Tous les badges'),
+            ('valid', 'Badge valide'),
+            ('expired', 'Badge expiré'),
+            ('expiring_soon', 'Expire bientôt (30 jours)')
+        ],
+        required=False,
+        label="Statut du badge",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    # Centres d'intérêt
+    centres_interet = forms.ModelMultipleChoiceField(
+        queryset=None,
+        required=False,
+        label="Centres d'intérêt",
+        widget=forms.CheckboxSelectMultiple()
+    )
+    
+    # Activité
+    activity_name = forms.CharField(
+        required=False,
+        label="Activité",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Filtrer par activité...'
+        })
+    )
+    
+    # Créé par
+    created_by = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        label="Créé par",
+        empty_label="Tous les créateurs",
+        widget=forms.Select(attrs={'class': 'form-select'})
     )
 
     def __init__(self, *args, **kwargs):
@@ -503,6 +579,25 @@ class AdherentSearchForm(forms.Form):
         except Exception:
             # Fallback vers les choix statiques si les valeurs de référence ne sont pas disponibles
             self.fields['type_adherent'].choices = [('', 'Tous les types')] + list(Adherent.TYPE_CHOICES)
+        
+        # Centres d'intérêt depuis ReferenceValue
+        try:
+            from core.models import ReferenceValue
+            self.fields['centres_interet'].queryset = ReferenceValue.objects.filter(
+                category='centres_d_interet',
+                is_active=True
+            ).order_by('sort_order', 'label')
+        except Exception:
+            self.fields['centres_interet'].queryset = ReferenceValue.objects.none()
+        
+        # Utilisateurs (créateurs)
+        try:
+            from core.models import User
+            self.fields['created_by'].queryset = User.objects.filter(
+                is_active=True
+            ).order_by('first_name', 'last_name')
+        except Exception:
+            self.fields['created_by'].queryset = User.objects.none()
 
 class OrganizationSearchForm(forms.Form):
     """Formulaire de recherche d'organisations"""

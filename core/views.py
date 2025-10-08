@@ -3442,7 +3442,6 @@ def global_search(request):
                 Q(medical_info__icontains=query) |
                 Q(formation_pro__icontains=query) |
                 Q(distinction__icontains=query) |
-                Q(hobies__icontains=query) |
                 Q(langues__icontains=query) |
                 Q(activity_name__icontains=query) |
                 Q(organisation__name__icontains=query)

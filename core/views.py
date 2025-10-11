@@ -740,24 +740,13 @@ def interaction_list(request):
     search_form = InteractionSearchForm(request.GET)
     
     # Base queryset
-    if request.user.role == 'agent':
-        interactions = Interaction.objects.filter(
-            Q(auteur=request.user) | Q(personnel=request.user)
-            ).select_related('personnel', 'adherent', 'auteur')
-    elif request.user.role == 'superviseur':
-        # Les superviseurs voient les interactions de leurs agents
-        interactions = Interaction.objects.filter(
-            Q(personnel=request.user) | Q(auteur=request.user) | 
-            Q(personnel__created_by=request.user) | 
-            Q(auteur__created_by=request.user)
-        ).select_related('personnel', 'adherent', 'auteur')
-    else:
-        interactions = Interaction.objects.select_related('personnel', 'adherent', 'auteur').all()
+    interactions = Interaction.objects.select_related('personnel', 'adherent', 'auteur').all()
     
     # Appliquer les filtres si le formulaire est valide
     if search_form.is_valid():
         personnel = search_form.cleaned_data.get('personnel')
         adherent = search_form.cleaned_data.get('adherent')
+        auteur = search_form.cleaned_data.get('auteur')
         status = search_form.cleaned_data.get('status')
         due_date_from = search_form.cleaned_data.get('due_date_from')
         due_date_to = search_form.cleaned_data.get('due_date_to')
@@ -772,6 +761,9 @@ def interaction_list(request):
         if adherent:
             interactions = interactions.filter(adherent=adherent)
         
+        if auteur:
+            interactions = interactions.filter(auteur=auteur)
+        
         if status:
             interactions = interactions.filter(status=status)
         
@@ -785,7 +777,10 @@ def interaction_list(request):
             interactions = interactions.filter(report__icontains=keywords)
         
         if overdue_only:
-            interactions = interactions.filter(due_date__lt=timezone.now())
+            interactions = interactions.filter(
+                due_date__lt=timezone.now(),
+                status__in=['in_progress', 'pending']
+            )
         
         if due_soon:
             # Interactions dont l'échéance est dans les 7 prochains jours
@@ -800,16 +795,20 @@ def interaction_list(request):
     # Tri par défaut
     interactions = interactions.order_by('-created_at')
     
+    # Calculer le nombre total filtré avant la pagination
+    filtered_count = interactions.count()
+    
     # Pagination
     paginator = Paginator(interactions, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     # Notifications pour les interactions en retard ou proches de l'échéance
+    # UTILISER les interactions FILTRÉES au lieu de toutes les interactions
     notifications = []
     
-    # Interactions en retard
-    overdue_interactions = Interaction.objects.filter(
+    # Interactions en retard (à partir des interactions déjà filtrées)
+    overdue_interactions = interactions.filter(
         due_date__lt=timezone.now(),
         status__in=['in_progress', 'pending']
     )
@@ -821,10 +820,10 @@ def interaction_list(request):
             'count': overdue_interactions.count()
         })
     
-    # Interactions dont l'échéance approche (7 jours)
+    # Interactions dont l'échéance approche (7 jours) (à partir des interactions déjà filtrées)
     from datetime import timedelta
     seven_days_from_now = timezone.now() + timedelta(days=7)
-    due_soon_interactions = Interaction.objects.filter(
+    due_soon_interactions = interactions.filter(
         due_date__gte=timezone.now(),
         due_date__lte=seven_days_from_now,
         status__in=['in_progress', 'pending']
@@ -840,7 +839,7 @@ def interaction_list(request):
     context = {
         'interactions': page_obj,
         'total_interactions': Interaction.objects.count(),
-        'filtered_count': interactions.count(),
+        'filtered_count': filtered_count,
         'search_form': search_form,
         'notifications': notifications,
         'overdue_interactions': overdue_interactions[:5],  # Limiter à 5 pour l'affichage

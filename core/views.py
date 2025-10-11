@@ -496,7 +496,29 @@ def adherent_list(request):
         # Recherche globale (fonctionne toujours)
         search = request.GET.get('search', '').strip()
         if search:
-            adherents = adherents.filter(
+            # Séparer la requête en mots pour recherche multi-mots
+            query_words = search.split()
+            adherent_query = Q()
+            
+            # Si plusieurs mots, essayer de chercher prénom + nom
+            if len(query_words) >= 2:
+                # Chercher toutes les combinaisons possibles de prénom et nom
+                for i in range(len(query_words)):
+                    for j in range(i+1, len(query_words)+1):
+                        potential_first_name = ' '.join(query_words[:i+1])
+                        potential_last_name = ' '.join(query_words[i+1:j])
+                        
+                        if potential_first_name and potential_last_name:
+                            adherent_query |= (
+                                Q(first_name__icontains=potential_first_name) &
+                                Q(last_name__icontains=potential_last_name)
+                            ) | (
+                                Q(first_name__icontains=potential_last_name) &
+                                Q(last_name__icontains=potential_first_name)
+                            )
+            
+            # Ajouter aussi la recherche classique sur tous les champs
+            adherent_query |= (
                 Q(last_name__icontains=search) |
                 Q(first_name__icontains=search) |
                 Q(identifiant__icontains=search) |
@@ -507,6 +529,8 @@ def adherent_list(request):
                 Q(quartier__icontains=search) |
                 Q(secteur__icontains=search)
             )
+            
+            adherents = adherents.filter(adherent_query).distinct()
     
     # Appliquer les autres filtres si le formulaire est valide
     if search_form.is_valid():

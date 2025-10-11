@@ -490,10 +490,11 @@ def adherent_list(request):
     # Formulaire de recherche
     search_form = AdherentSearchForm(request.GET)
     
-    # Appliquer les filtres si le formulaire est valide
-    if search_form.is_valid():
-        # Recherche globale
-        search = search_form.cleaned_data.get('search')
+    # Appliquer les filtres (même si le formulaire n'est pas complètement valide)
+    # On récupère les valeurs directement de request.GET pour la recherche
+    if request.GET:
+        # Recherche globale (fonctionne toujours)
+        search = request.GET.get('search', '').strip()
         if search:
             adherents = adherents.filter(
                 Q(last_name__icontains=search) |
@@ -506,7 +507,9 @@ def adherent_list(request):
                 Q(quartier__icontains=search) |
                 Q(secteur__icontains=search)
             )
-        
+    
+    # Appliquer les autres filtres si le formulaire est valide
+    if search_form.is_valid():
         # Filtres spécifiques
         type_adherent = search_form.cleaned_data.get('type_adherent')
         if type_adherent:
@@ -3484,6 +3487,7 @@ def get_permission_category(permission_code):
 def global_search(request):
     """
     Vue de recherche globale dans toute la plateforme.
+    Gère les recherches avec plusieurs mots (ex: "mory koulibaly")
     """
     query = request.GET.get('q', '').strip()
     search_type = request.GET.get('type', 'all')
@@ -3497,9 +3501,32 @@ def global_search(request):
     }
     
     if query:
+        # Séparer la requête en mots pour recherche multi-mots
+        query_words = query.split()
+        
         # Recherche dans les adhérents
         if search_type in ['all', 'adherents']:
-            adherents = Adherent.objects.filter(
+            adherent_query = Q()
+            
+            # Si plusieurs mots, essayer de chercher prénom + nom
+            if len(query_words) >= 2:
+                # Chercher toutes les combinaisons possibles de prénom et nom
+                for i in range(len(query_words)):
+                    for j in range(i+1, len(query_words)+1):
+                        potential_first_name = ' '.join(query_words[:i+1])
+                        potential_last_name = ' '.join(query_words[i+1:j])
+                        
+                        if potential_first_name and potential_last_name:
+                            adherent_query |= (
+                                Q(first_name__icontains=potential_first_name) &
+                                Q(last_name__icontains=potential_last_name)
+                            ) | (
+                                Q(first_name__icontains=potential_last_name) &
+                                Q(last_name__icontains=potential_first_name)
+                            )
+            
+            # Ajouter aussi la recherche classique sur tous les champs
+            adherent_query |= (
                 Q(first_name__icontains=query) |
                 Q(last_name__icontains=query) |
                 Q(identifiant__icontains=query) |
@@ -3515,7 +3542,9 @@ def global_search(request):
                 Q(langues__icontains=query) |
                 Q(activity_name__icontains=query) |
                 Q(organisation__name__icontains=query)
-            ).select_related('organisation')[:10]
+            )
+            
+            adherents = Adherent.objects.filter(adherent_query).select_related('organisation').distinct()[:10]
             
             results['adherents'] = adherents
         
@@ -3535,7 +3564,26 @@ def global_search(request):
         
         # Recherche dans les utilisateurs
         if search_type in ['all', 'users']:
-            users = User.objects.filter(
+            user_query = Q()
+            
+            # Si plusieurs mots, essayer de chercher prénom + nom
+            if len(query_words) >= 2:
+                for i in range(len(query_words)):
+                    for j in range(i+1, len(query_words)+1):
+                        potential_first_name = ' '.join(query_words[:i+1])
+                        potential_last_name = ' '.join(query_words[i+1:j])
+                        
+                        if potential_first_name and potential_last_name:
+                            user_query |= (
+                                Q(first_name__icontains=potential_first_name) &
+                                Q(last_name__icontains=potential_last_name)
+                            ) | (
+                                Q(first_name__icontains=potential_last_name) &
+                                Q(last_name__icontains=potential_first_name)
+                            )
+            
+            # Ajouter aussi la recherche classique sur tous les champs
+            user_query |= (
                 Q(first_name__icontains=query) |
                 Q(last_name__icontains=query) |
                 Q(matricule__icontains=query) |
@@ -3550,7 +3598,9 @@ def global_search(request):
                 Q(nom_urg2__icontains=query) |
                 Q(prenom_urg2__icontains=query) |
                 Q(telephone_urg2__icontains=query)
-            )[:10]
+            )
+            
+            users = User.objects.filter(user_query).distinct()[:10]
             
             results['users'] = users
         

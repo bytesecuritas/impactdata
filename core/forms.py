@@ -471,7 +471,9 @@ class AdherentSearchForm(forms.Form):
         label="Recherche globale",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Nom, prénom, identifiant, téléphone, email...'
+            'placeholder': 'Nom, prénom, identifiant, téléphone, email...',
+            'autocomplete': 'off',
+            'id': 'id_search'
         })
     )
     
@@ -549,28 +551,24 @@ class AdherentSearchForm(forms.Form):
         widget=forms.CheckboxSelectMultiple()
     )
     
-    # Situation médicale
-    has_medical_info = forms.ChoiceField(
-        choices=[
-            ('', 'Tous'),
-            ('yes', 'Avec situation médicale'),
-            ('no', 'Sans situation médicale')
-        ],
+    # Situation médicale (recherche textuelle)
+    medical_info = forms.CharField(
         required=False,
         label="Situation médicale",
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Rechercher dans les infos médicales...'
+        })
     )
     
-    # Distinction
-    has_distinction = forms.ChoiceField(
-        choices=[
-            ('', 'Tous'),
-            ('yes', 'Avec distinction'),
-            ('no', 'Sans distinction')
-        ],
+    # Distinction (recherche textuelle)
+    distinction = forms.CharField(
         required=False,
         label="Distinction",
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Rechercher dans les distinctions...'
+        })
     )
     
     # Catégorie d'organisation

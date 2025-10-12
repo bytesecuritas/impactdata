@@ -595,21 +595,15 @@ def adherent_list(request):
             # Filtrer les adhérents qui ont au moins un des centres d'intérêt sélectionnés
             adherents = adherents.filter(centres_interet__in=centres_interet).distinct()
         
-        # Situation médicale
-        has_medical_info = search_form.cleaned_data.get('has_medical_info')
-        if has_medical_info:
-            if has_medical_info == 'yes':
-                adherents = adherents.exclude(Q(medical_info='') | Q(medical_info__isnull=True))
-            elif has_medical_info == 'no':
-                adherents = adherents.filter(Q(medical_info='') | Q(medical_info__isnull=True))
+        # Situation médicale (recherche textuelle)
+        medical_info = search_form.cleaned_data.get('medical_info')
+        if medical_info:
+            adherents = adherents.filter(medical_info__icontains=medical_info)
         
-        # Distinction
-        has_distinction = search_form.cleaned_data.get('has_distinction')
-        if has_distinction:
-            if has_distinction == 'yes':
-                adherents = adherents.exclude(Q(distinction='') | Q(distinction__isnull=True))
-            elif has_distinction == 'no':
-                adherents = adherents.filter(Q(distinction='') | Q(distinction__isnull=True))
+        # Distinction (recherche textuelle)
+        distinction = search_form.cleaned_data.get('distinction')
+        if distinction:
+            adherents = adherents.filter(distinction__icontains=distinction)
         
         # Catégorie d'organisation
         organisation_category = search_form.cleaned_data.get('organisation_category')

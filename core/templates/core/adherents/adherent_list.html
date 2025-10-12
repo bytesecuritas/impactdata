@@ -360,12 +360,20 @@
                         <div class="filter-section">
                             <h6><i class="fas fa-heartbeat me-2"></i>Santé & Distinction</h6>
                             <div class="mb-3">
-                                <label class="form-label">{{ search_form.has_medical_info.label }}</label>
-                                {{ search_form.has_medical_info }}
+                                <label class="form-label">{{ search_form.medical_info.label }}</label>
+                                {{ search_form.medical_info }}
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Rechercher dans les informations médicales (ex: diabète, allergie...)
+                                </small>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">{{ search_form.has_distinction.label }}</label>
-                                {{ search_form.has_distinction }}
+                                <label class="form-label">{{ search_form.distinction.label }}</label>
+                                {{ search_form.distinction }}
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Rechercher dans les distinctions (ex: médaille, prix...)
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -643,8 +651,21 @@ document.addEventListener('DOMContentLoaded', function() {
 function initSearchSuggestions() {
     const searchInput = document.querySelector('#id_search');
     const suggestionsContainer = document.getElementById('search-suggestions');
+    
+    if (!searchInput) {
+        console.error('❌ Champ de recherche non trouvé');
+        return;
+    }
+    
+    if (!suggestionsContainer) {
+        console.error('❌ Conteneur de suggestions non trouvé');
+        return;
+    }
+    
     const suggestionsList = suggestionsContainer.querySelector('.suggestions-list');
     const suggestionsLoading = suggestionsContainer.querySelector('.suggestions-loading');
+    
+    console.log('✅ Suggestions de recherche initialisées');
     
     if (!searchInput) return;
     
@@ -654,6 +675,7 @@ function initSearchSuggestions() {
     // Événement de saisie dans le champ de recherche
     searchInput.addEventListener('input', function(e) {
         const query = e.target.value.trim();
+        console.log('🔍 Recherche:', query);
         
         // Annuler le timeout précédent
         clearTimeout(searchTimeout);
@@ -666,17 +688,21 @@ function initSearchSuggestions() {
         // Si la requête est vide ou trop courte, masquer les suggestions
         if (query.length < 2) {
             suggestionsContainer.style.display = 'none';
+            console.log('⚠️ Requête trop courte');
             return;
         }
         
         // Attendre 300ms avant de lancer la recherche
         searchTimeout = setTimeout(function() {
+            console.log('⏳ Lancement de la recherche pour:', query);
             fetchSuggestions(query);
         }, 300);
     });
     
     // Fonction pour récupérer les suggestions
     function fetchSuggestions(query) {
+        console.log('📡 Fetching suggestions...');
+        
         // Afficher le loader
         suggestionsContainer.style.display = 'block';
         suggestionsLoading.style.display = 'block';
@@ -686,18 +712,24 @@ function initSearchSuggestions() {
         currentRequest = new XMLHttpRequest();
         currentRequest.open('GET', `/api/adherent/search/?q=${encodeURIComponent(query)}`, true);
         
+        console.log('🌐 URL API:', `/api/adherent/search/?q=${encodeURIComponent(query)}`);
+        
         currentRequest.onload = function() {
+            console.log('📥 Réponse reçue, status:', currentRequest.status);
             suggestionsLoading.style.display = 'none';
             
             if (currentRequest.status === 200) {
                 const data = JSON.parse(currentRequest.responseText);
+                console.log('📊 Résultats:', data.results);
                 displaySuggestions(data.results);
             } else {
+                console.error('❌ Erreur API:', currentRequest.status);
                 suggestionsList.innerHTML = '<div class="no-suggestions">Erreur lors de la recherche</div>';
             }
         };
         
         currentRequest.onerror = function() {
+            console.error('❌ Erreur réseau');
             suggestionsLoading.style.display = 'none';
             suggestionsList.innerHTML = '<div class="no-suggestions">Erreur lors de la recherche</div>';
         };
@@ -707,6 +739,8 @@ function initSearchSuggestions() {
     
     // Fonction pour afficher les suggestions
     function displaySuggestions(results) {
+        console.log('🎨 Affichage de', results.length, 'suggestions');
+        
         if (results.length === 0) {
             suggestionsList.innerHTML = '<div class="no-suggestions"><i class="fas fa-search me-2"></i>Aucun adhérent trouvé</div>';
             return;
@@ -735,6 +769,8 @@ function initSearchSuggestions() {
                 </div>
             `;
         }).join('');
+        
+        console.log('✅ Suggestions affichées');
     }
     
     // Fermer les suggestions en cliquant ailleurs

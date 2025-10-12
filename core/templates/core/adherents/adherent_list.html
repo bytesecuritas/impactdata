@@ -105,6 +105,104 @@
     .btn-action:hover {
         transform: translateY(-2px);
     }
+    
+    /* Suggestions de recherche */
+    .search-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #d1d5db;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 1000;
+        margin-top: -1px;
+    }
+    
+    .suggestions-loading {
+        padding: 1rem;
+        text-align: center;
+        color: #718096;
+        font-size: 0.875rem;
+    }
+    
+    .suggestions-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .suggestion-item {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f8fafc;
+        border-left: 3px solid #3182ce;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .suggestion-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #718096;
+        flex-shrink: 0;
+    }
+    
+    .suggestion-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .suggestion-info {
+        flex: 1;
+    }
+    
+    .suggestion-name {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 0.25rem;
+    }
+    
+    .suggestion-details {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+    
+    .suggestion-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        background: #ebf8ff;
+        color: #3182ce;
+    }
+    
+    .no-suggestions {
+        padding: 1rem;
+        text-align: center;
+        color: #718096;
+        font-size: 0.875rem;
+    }
 </style>
 {% endblock %}
 
@@ -126,13 +224,22 @@
 
     <!-- Barre de recherche principale -->
     <div class="search-bar-main">
-        <form method="get" action="">
+        <form method="get" action="" id="adherent-search-form">
             <div class="row g-3 align-items-end">
                 <div class="col-md-9">
                     <label class="form-label fw-semibold">
                         <i class="fas fa-search text-primary me-2"></i>Recherche rapide
                     </label>
-                    {{ search_form.search }}
+                    <div class="position-relative">
+                        {{ search_form.search }}
+                        <!-- Conteneur des suggestions -->
+                        <div id="search-suggestions" class="search-suggestions" style="display: none;">
+                            <div class="suggestions-loading" style="display: none;">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Recherche en cours...
+                            </div>
+                            <div class="suggestions-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-primary w-100">
@@ -244,6 +351,32 @@
                                     <i class="fas fa-info-circle me-1"></i>
                                     Sélectionnez un ou plusieurs centres d'intérêt pour filtrer
                                 </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Situation médicale et Distinction -->
+                    <div class="col-md-6">
+                        <div class="filter-section">
+                            <h6><i class="fas fa-heartbeat me-2"></i>Santé & Distinction</h6>
+                            <div class="mb-3">
+                                <label class="form-label">{{ search_form.has_medical_info.label }}</label>
+                                {{ search_form.has_medical_info }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ search_form.has_distinction.label }}</label>
+                                {{ search_form.has_distinction }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Catégorie d'organisation -->
+                    <div class="col-md-6">
+                        <div class="filter-section">
+                            <h6><i class="fas fa-tags me-2"></i>Catégorie d'organisation</h6>
+                            <div class="mb-3">
+                                <label class="form-label">{{ search_form.organisation_category.label }}</label>
+                                {{ search_form.organisation_category }}
                             </div>
                         </div>
                     </div>
@@ -501,6 +634,124 @@ document.addEventListener('DOMContentLoaded', function() {
     if (hasFilters) {
         toggleFilters();
     }
+    
+    // Gestion des suggestions de recherche
+    initSearchSuggestions();
 });
+
+// Fonction pour initialiser les suggestions de recherche
+function initSearchSuggestions() {
+    const searchInput = document.querySelector('#id_search');
+    const suggestionsContainer = document.getElementById('search-suggestions');
+    const suggestionsList = suggestionsContainer.querySelector('.suggestions-list');
+    const suggestionsLoading = suggestionsContainer.querySelector('.suggestions-loading');
+    
+    if (!searchInput) return;
+    
+    let searchTimeout;
+    let currentRequest;
+    
+    // Événement de saisie dans le champ de recherche
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+        
+        // Annuler le timeout précédent
+        clearTimeout(searchTimeout);
+        
+        // Annuler la requête précédente
+        if (currentRequest) {
+            currentRequest.abort();
+        }
+        
+        // Si la requête est vide ou trop courte, masquer les suggestions
+        if (query.length < 2) {
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+        
+        // Attendre 300ms avant de lancer la recherche
+        searchTimeout = setTimeout(function() {
+            fetchSuggestions(query);
+        }, 300);
+    });
+    
+    // Fonction pour récupérer les suggestions
+    function fetchSuggestions(query) {
+        // Afficher le loader
+        suggestionsContainer.style.display = 'block';
+        suggestionsLoading.style.display = 'block';
+        suggestionsList.innerHTML = '';
+        
+        // Créer une nouvelle requête AJAX
+        currentRequest = new XMLHttpRequest();
+        currentRequest.open('GET', `/api/adherent/search/?q=${encodeURIComponent(query)}`, true);
+        
+        currentRequest.onload = function() {
+            suggestionsLoading.style.display = 'none';
+            
+            if (currentRequest.status === 200) {
+                const data = JSON.parse(currentRequest.responseText);
+                displaySuggestions(data.results);
+            } else {
+                suggestionsList.innerHTML = '<div class="no-suggestions">Erreur lors de la recherche</div>';
+            }
+        };
+        
+        currentRequest.onerror = function() {
+            suggestionsLoading.style.display = 'none';
+            suggestionsList.innerHTML = '<div class="no-suggestions">Erreur lors de la recherche</div>';
+        };
+        
+        currentRequest.send();
+    }
+    
+    // Fonction pour afficher les suggestions
+    function displaySuggestions(results) {
+        if (results.length === 0) {
+            suggestionsList.innerHTML = '<div class="no-suggestions"><i class="fas fa-search me-2"></i>Aucun adhérent trouvé</div>';
+            return;
+        }
+        
+        suggestionsList.innerHTML = results.map(function(adherent) {
+            const photoHtml = adherent.profile_picture 
+                ? `<img src="${adherent.profile_picture}" alt="${adherent.name}">`
+                : `<i class="fas fa-user"></i>`;
+            
+            return `
+                <div class="suggestion-item" onclick="window.location.href='/core/adherents/${adherent.id}/'">
+                    <div class="suggestion-avatar">
+                        ${photoHtml}
+                    </div>
+                    <div class="suggestion-info">
+                        <div class="suggestion-name">${adherent.name}</div>
+                        <div class="suggestion-details">
+                            <i class="fas fa-id-card me-1"></i>${adherent.identifiant}
+                            ${adherent.phone ? `<i class="fas fa-phone ms-2 me-1"></i>${adherent.phone}` : ''}
+                        </div>
+                    </div>
+                    <div class="suggestion-badge">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Fermer les suggestions en cliquant ailleurs
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+    
+    // Gérer les touches du clavier
+    searchInput.addEventListener('keydown', function(e) {
+        const items = suggestionsList.querySelectorAll('.suggestion-item');
+        
+        if (e.key === 'Escape') {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+}
 </script>
 {% endblock %}

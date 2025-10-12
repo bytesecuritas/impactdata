@@ -595,6 +595,27 @@ def adherent_list(request):
             # Filtrer les adhérents qui ont au moins un des centres d'intérêt sélectionnés
             adherents = adherents.filter(centres_interet__in=centres_interet).distinct()
         
+        # Situation médicale
+        has_medical_info = search_form.cleaned_data.get('has_medical_info')
+        if has_medical_info:
+            if has_medical_info == 'yes':
+                adherents = adherents.exclude(Q(medical_info='') | Q(medical_info__isnull=True))
+            elif has_medical_info == 'no':
+                adherents = adherents.filter(Q(medical_info='') | Q(medical_info__isnull=True))
+        
+        # Distinction
+        has_distinction = search_form.cleaned_data.get('has_distinction')
+        if has_distinction:
+            if has_distinction == 'yes':
+                adherents = adherents.exclude(Q(distinction='') | Q(distinction__isnull=True))
+            elif has_distinction == 'no':
+                adherents = adherents.filter(Q(distinction='') | Q(distinction__isnull=True))
+        
+        # Catégorie d'organisation
+        organisation_category = search_form.cleaned_data.get('organisation_category')
+        if organisation_category:
+            adherents = adherents.filter(organisation__category=organisation_category)
+        
         # Activité
         activity_name = search_form.cleaned_data.get('activity_name')
         if activity_name:
@@ -2552,28 +2573,51 @@ def adherent_search_api(request):
     query = request.GET.get('q', '').strip()
     
     if len(query) < 2:
-        # Si pas de requête ou moins de 2 caractères, retourner tous les éléments
-        adherents = Adherent.objects.all().order_by('id')
+        # Si pas de requête ou moins de 2 caractères, retourner quelques éléments
+        adherents = Adherent.objects.all().order_by('id')[:10]
     else:
-        # Recherche dans les champs id, identifiant, phone1, phone2, first_name, last_name
-        adherents = Adherent.objects.filter(
+        # Séparer la requête en mots pour recherche multi-mots
+        query_words = query.split()
+        adherent_query = Q()
+        
+        # Si plusieurs mots, essayer de chercher prénom + nom
+        if len(query_words) >= 2:
+            for i in range(len(query_words)):
+                for j in range(i+1, len(query_words)+1):
+                    potential_first_name = ' '.join(query_words[:i+1])
+                    potential_last_name = ' '.join(query_words[i+1:j])
+                    
+                    if potential_first_name and potential_last_name:
+                        adherent_query |= (
+                            Q(first_name__icontains=potential_first_name) &
+                            Q(last_name__icontains=potential_last_name)
+                        ) | (
+                            Q(first_name__icontains=potential_last_name) &
+                            Q(last_name__icontains=potential_first_name)
+                        )
+        
+        # Ajouter aussi la recherche classique
+        adherent_query |= (
             Q(id__icontains=query) |
             Q(identifiant__icontains=query) |
             Q(phone1__icontains=query) |
             Q(phone2__icontains=query) |
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query)
-        ).order_by('id')[:500]
+        )
+        
+        adherents = Adherent.objects.filter(adherent_query).distinct().order_by('last_name', 'first_name')[:10]
     
     results = []
     for adherent in adherents:
-        phone_info = f" - {adherent.phone1}" if adherent.phone1 else ""
+        profile_picture_url = adherent.profile_picture.url if adherent.profile_picture else None
         results.append({
             'id': adherent.id,
-            'text': f"ID: {adherent.identifiant} - {adherent.first_name} {adherent.last_name}{phone_info}",
+            'text': f"ID: {adherent.identifiant} - {adherent.first_name} {adherent.last_name}",
             'identifiant': adherent.identifiant,
             'name': f"{adherent.first_name} {adherent.last_name}",
-            'phone': adherent.phone1 or adherent.phone2
+            'phone': adherent.phone1 or adherent.phone2,
+            'profile_picture': profile_picture_url
         })
     
     return JsonResponse({'results': results})

@@ -549,6 +549,39 @@ class AdherentSearchForm(forms.Form):
         widget=forms.CheckboxSelectMultiple()
     )
     
+    # Situation médicale
+    has_medical_info = forms.ChoiceField(
+        choices=[
+            ('', 'Tous'),
+            ('yes', 'Avec situation médicale'),
+            ('no', 'Sans situation médicale')
+        ],
+        required=False,
+        label="Situation médicale",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    # Distinction
+    has_distinction = forms.ChoiceField(
+        choices=[
+            ('', 'Tous'),
+            ('yes', 'Avec distinction'),
+            ('no', 'Sans distinction')
+        ],
+        required=False,
+        label="Distinction",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    # Catégorie d'organisation
+    organisation_category = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        label="Catégorie d'organisation",
+        empty_label="Toutes les catégories",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
     # Activité
     activity_name = forms.CharField(
         required=False,
@@ -589,6 +622,13 @@ class AdherentSearchForm(forms.Form):
             ).order_by('sort_order', 'label')
         except Exception:
             self.fields['centres_interet'].queryset = ReferenceValue.objects.none()
+        
+        # Catégories d'organisation
+        try:
+            from core.models import Category
+            self.fields['organisation_category'].queryset = Category.objects.all().order_by('name')
+        except Exception:
+            self.fields['organisation_category'].queryset = Category.objects.none()
         
         # Utilisateurs (créateurs)
         try:

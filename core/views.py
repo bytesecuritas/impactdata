@@ -3688,6 +3688,7 @@ def global_search(request):
                 Q(notes__icontains=query) |
                 Q(adherent__first_name__icontains=query) |
                 Q(adherent__last_name__icontains=query) |
+                Q(adherent__identifiant__icontains=query) |
                 Q(issued_by__first_name__icontains=query) |
                 Q(issued_by__last_name__icontains=query)
             ).select_related('adherent', 'issued_by')[:10]

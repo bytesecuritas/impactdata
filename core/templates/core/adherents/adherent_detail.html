@@ -56,10 +56,12 @@
         <a href="{% url 'core:badge_detail' adherent.badges.first.pk %}" class="btn btn-primary me-2">
                 <p class="mb-0">
                     Badge :
-                    {% if adherent.is_badge_valid %}
-                        <span class="badge bg-success ms-2">Valide</span>
-                    {% else %}
+                    {% if adherent.badges.first.status == 'active' %}
+                        <span class="badge bg-success ms-2">Actif</span>
+                    {% elif adherent.badges.first.status == 'expired' %}
                         <span class="badge bg-danger ms-2">Expiré</span>
+                    {% elif adherent.badges.first.status == 'revoked' %}
+                        <span class="badge bg-warning ms-2">Revoqué</span>
                     {% endif %}
                 </p>
         </a>

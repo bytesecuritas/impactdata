@@ -2545,7 +2545,7 @@ def personnel_search_api(request):
             Q(matricule__icontains=query) |
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query)
-        ).filter(is_active=True).order_by('matricule')[:50]
+        ).filter(is_active=True).order_by('matricule')
     
     results = []
     for person in personnel:
@@ -2568,7 +2568,7 @@ def adherent_search_api(request):
     
     if len(query) < 2:
         # Si pas de requête ou moins de 2 caractères, retourner quelques éléments
-        adherents = Adherent.objects.all().order_by('id')[:10]
+        adherents = Adherent.objects.all().order_by('id')
     else:
         # Séparer la requête en mots pour recherche multi-mots
         query_words = query.split()
@@ -2600,7 +2600,7 @@ def adherent_search_api(request):
             Q(last_name__icontains=query)
         )
         
-        adherents = Adherent.objects.filter(adherent_query).distinct().order_by('last_name', 'first_name')[:10]
+        adherents = Adherent.objects.filter(adherent_query).distinct().order_by('last_name', 'first_name')
     
     results = []
     for adherent in adherents:
@@ -2660,7 +2660,7 @@ def category_search_api(request):
         # Recherche dans le champ name
         categories = Category.objects.filter(
             name__icontains=query
-        ).order_by('name')[:500]
+        ).order_by('name')
     
     results = []
     for category in categories:

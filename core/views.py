@@ -2632,7 +2632,7 @@ def organization_search_api(request):
         organizations = Organization.objects.filter(
             Q(name__icontains=query) |
             Q(identifiant__icontains=query)
-        ).order_by('name')[:500]
+        ).order_by('name')
     
     results = []
     for org in organizations:

@@ -891,6 +891,12 @@ class Badge(models.Model):
         ('revoked', 'Révoqué'),
     )
     
+    TEMPLATE_CHOICES = (
+        ('template1', 'Modèle 1 (Classique)'),
+        ('template2', 'Modèle 2 (Moderne)'),
+        ('template3', 'Modèle 3 (Élégant)'),
+    )
+    
     adherent = models.ForeignKey(
         Adherent,
         on_delete=models.CASCADE,
@@ -913,6 +919,12 @@ class Badge(models.Model):
         choices=STATUS_CHOICES,
         default='active',
         verbose_name="Statut"
+    )
+    template = models.CharField(
+        max_length=20,
+        choices=TEMPLATE_CHOICES,
+        default='template1',
+        verbose_name="Modèle de badge"
     )
     issued_date = models.DateTimeField(
         auto_now_add=True,

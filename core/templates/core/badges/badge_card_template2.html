@@ -1,0 +1,452 @@
+{% load static %}
+
+{% block title %}Carte Badge - {{ badge.badge_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+.badge-exemple { 
+    width: 400px; 
+    height: 600px;
+    border-radius: 20px; 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+    padding: 0; 
+    font-family: 'Inter', Arial, sans-serif; 
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* En-tête avec fond dégradé */
+.badge-header {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    height: 75px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    z-index: 2;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.badge-logo-guinee {
+    height: 50px;
+    width: auto;
+    z-index: 3;
+    position: absolute;
+    right: 20px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    object-fit: contain;
+}
+
+.badge-republique {
+    text-align: center;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.badge-republique-title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    line-height: 1.3;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.badge-devise {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    line-height: 1.2;
+    opacity: 0.95;
+}
+
+/* Zone principale avec fond dégradé */
+.badge-main {
+    flex: 1;
+    background: #f8f9fa;
+    position: relative;
+    display: flex;
+    padding: 20px 16px;
+    z-index: 1;
+    border-radius: 0;
+}
+
+{% if badge.activity_image %}
+.badge-main::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('{{ badge.activity_image.url }}');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.15;
+    z-index: 1;
+}
+{% endif %}
+
+.badge-main-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Photo centrée en haut */
+.badge-photo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    margin-bottom: 15px;
+    margin-left: 25px;
+    z-index: 3;
+}
+
+.badge-photo-cercle {
+    border-radius: 50%;
+    border: 5px solid #667eea;
+    overflow: hidden;
+    width: 140px;
+    height: 140px;
+    position: relative;
+    z-index: 3;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    background: white;
+}
+
+.badge-photo-cercle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Logo et activité au-dessus de la photo */
+.badge-logo-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.badge-logo-babaly {
+    height: 40px;
+    margin-bottom: 8px;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 4px;
+    background: white;
+    object-fit: contain;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.badge-job-title {
+    color: #667eea;
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1.3;
+    text-align: center;
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+}
+
+.badge-job-subtitle {
+    color: #764ba2;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Section infos personnelles */
+.badge-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 6px;
+    margin-bottom: 10px;
+    z-index: 3;
+}
+
+.badge-nom {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1e3c72;
+    text-align: center;
+    margin-bottom: 10px;
+    line-height: 1.2;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+}
+
+.badge-id-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.badge-id-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e3c72;
+    margin-right: 8px;
+}
+
+.badge-id-digit {
+    background: #764ba2;
+    color: white;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 2px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.badge-id-suffix {
+    background: #667eea;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.badge-contact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 8px;
+}
+
+.badge-tel {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e3c72;
+    margin: 0;
+}
+
+.badge-lieu {
+    font-size: 15px;
+    font-weight: 700;
+    color: #764ba2;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+/* QR Code à droite */
+.badge-qr-section {
+    position: absolute;
+    right: 16px;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+}
+
+.badge-qr img {
+    width: 90px;
+    height: 90px;
+    border: 3px solid #667eea;
+    border-radius: 10px;
+    background: white;
+    padding: 3px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+.badge-apprenti {
+    color: #764ba2;
+    font-family: 'Pacifico', cursive;
+    font-size: 14px;
+    margin-top: 6px;
+    text-align: center;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+}
+
+/* Image urgence */
+.badge-urgence-bottom {
+    background: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    min-height: 90px;
+}
+
+.badge-urgence-full-image {
+    width: 100%;
+    height: auto;
+    max-height: 130px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    margin-bottom: 30px;
+}
+
+/* Footer */
+.badge-footer {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border-radius: 0 0 20px 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.badge-validite {
+    font-family: 'Pacifico', cursive;
+    font-size: 14px;
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+@media print {
+    .badge-exemple {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }} - Modèle 2
+    </h1>
+    <div>
+      <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Retour aux détails
+      </a>
+      <button id="download-jpg" class="btn btn-info">
+        <i class="fas fa-download"></i> Télécharger JPG
+      </button>
+      <button onclick="window.print()" class="btn btn-success">
+        <i class="fas fa-print"></i> Imprimer
+      </button>
+    </div>
+  </div>
+
+  <div class="badge-exemple">
+    <div class="badge-header">
+      <div class="badge-republique">
+        <div class="badge-republique-title">RÉPUBLIQUE DE GUINÉE</div>
+        <div class="badge-devise">Travail – Justice – Solidarité</div>
+      </div>
+      <img src="{% static 'images/guinee_logo.png' %}" class="badge-logo-guinee" alt="Guinée">
+    </div>
+
+    <div class="badge-main">
+      <div class="badge-main-content">
+        <!-- QR Code à droite -->
+        <div class="badge-qr-section">
+          <div class="badge-qr">
+            {% if badge.qr_code %}
+              <img src="{{ badge.qr_code.url }}" alt="QR Code">
+            {% endif %}
+          </div>
+          <div class="badge-apprenti">{{ badge.adherent.activity_name|default:"Activité" }}</div>
+        </div>
+
+        <!-- Section logo et titre -->
+        <div class="badge-logo-section">
+          <img src="{% static 'images/impactdata.png' %}" class="badge-logo-babaly" alt="Impact Data">
+          <div class="badge-job-title">{{ badge.adherent.organisation.name|upper }}</div>
+          {% if badge.adherent.organisation.name|upper == "MÉCANIQUE" %}
+            <div class="badge-job-subtitle">(TRICYCLE)</div>
+          {% endif %}
+        </div>
+
+        <!-- Photo centrée -->
+        <div class="badge-photo-section">
+          <div class="badge-photo-cercle">
+            {% if badge.adherent.profile_picture %}
+              <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo">
+            {% else %}
+              <img src="{% static 'img/default_avatar.png' %}" alt="Photo">
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Informations personnelles -->
+        <div class="badge-info-section">
+          <div class="badge-nom">{{ badge.adherent.full_name }}</div>
+          
+          <div class="badge-id-container">
+            <span class="badge-id-label">ID:</span>
+            {% for digit in badge.adherent.identifiant %}
+              <span class="badge-id-digit">{{ digit }}</span>
+            {% endfor %}
+            <span class="badge-id-suffix">{{ badge.badge_number|slice:'-3:' }}</span>
+          </div>
+
+          <div class="badge-contact">
+            <span class="badge-tel">{{ badge.adherent.phone1 }}</span>
+            <span class="badge-lieu">{{ badge.adherent.commune|upper }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="badge-urgence-bottom">
+      <img src="{% static 'images/urgence.png' %}" class="badge-urgence-full-image" alt="Urgence">
+    </div>
+
+    <div class="badge-footer">
+      <span class="badge-validite">Validité {{ badge.badge_validity|date:'F Y' }}</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('download-jpg').addEventListener('click', function() {
+    const badgeElement = document.querySelector('.badge-exemple');
+    html2canvas(badgeElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'badge_{{ badge.badge_number }}.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 0.99);
+        link.click();
+    }).catch(error => {
+        console.error('Error generating badge image:', error);
+        alert('Une erreur s\'est produite lors de la génération de l\'image.');
+    });
+});
+</script>
+{% endblock %}
+

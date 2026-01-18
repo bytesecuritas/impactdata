@@ -1547,12 +1547,15 @@ def generate_badge(request, adherent_id):
         try:
             # Récupérer l'image d'activité si fournie
             activity_image = request.FILES.get('activity_image')
+            # Récupérer le template choisi (par défaut template1)
+            template = request.POST.get('template', 'template1')
             
             badge = Badge.objects.create(
                 adherent=adherent,
                 issued_by=request.user,
                 badge_validity=adherent.badge_validity,
                 activity_name=adherent.activity_name,
+                template=template,
                 notes=f"Badge généré le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
             )
             

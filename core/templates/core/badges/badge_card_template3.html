@@ -1,0 +1,511 @@
+{% load static %}
+
+{% block title %}Carte Badge - {{ badge.badge_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/badge-styles.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+.badge-exemple { 
+    width: 400px; 
+    height: 600px;
+    border-radius: 20px; 
+    background: #ffffff;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3); 
+    padding: 0; 
+    font-family: 'Inter', Arial, sans-serif; 
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 3px solid #ff6b6b;
+}
+
+/* En-tête avec drapeau guinéen */
+.badge-header {
+    background: linear-gradient(to right, #e74c3c 33.33%, #f1c40f 33.33%, #f1c40f 66.66%, #27ae60 66.66%);
+    height: 65px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.badge-logo-guinee {
+    height: 50px;
+    width: auto;
+    z-index: 3;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    object-fit: contain;
+    background: transparent;
+}
+
+.badge-republique {
+    text-align: left;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    z-index: 3;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 50px;
+}
+
+.badge-republique-title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    line-height: 1.3;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.badge-devise {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    line-height: 1.2;
+    opacity: 0.95;
+}
+
+/* Zone principale avec bande latérale */
+.badge-main {
+    flex: 1;
+    background: #ffffff;
+    position: relative;
+    display: flex;
+    padding: 0;
+    z-index: 1;
+    border-radius: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Bande latérale gauche */
+.badge-main::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 12px;
+    height: 100%;
+    background: linear-gradient(180deg, #ff6b6b 0%, #4ecdc4 100%);
+    z-index: 1;
+}
+
+{% if badge.activity_image %}
+.badge-main::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('{{ badge.activity_image.url }}');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.2;
+    z-index: 1;
+}
+{% endif %}
+
+.badge-main-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    padding-left: 24px;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Section supérieure avec logo en haut */
+.badge-top-section {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-bottom: 4px;
+    z-index: 3;
+    flex-wrap: nowrap;
+}
+
+.badge-logo-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.badge-logo-babaly {
+    height: 34px;
+    margin-bottom: 3px;
+    border: 2px solid #4ecdc4;
+    border-radius: 6px;
+    padding: 2px;
+    background: #e0f7fa;
+    object-fit: contain;
+    box-shadow: 0 2px 6px rgba(78, 205, 196, 0.3);
+    width: auto;
+    max-width: 160px;
+}
+
+.badge-job-title {
+    color: #ff6b6b;
+    font-weight: 800;
+    font-size: 13px;
+    line-height: 1.2;
+    margin-bottom: 3px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    max-width: 180px;
+    word-wrap: break-word;
+}
+
+.badge-job-subtitle {
+    color: #4ecdc4;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Section photo et QR côte à côte */
+.badge-photo-qr-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+    z-index: 3;
+    gap: 8px;
+}
+
+/* QR Code à droite */
+.badge-qr-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+    flex-shrink: 0;
+}
+
+.badge-qr img {
+    width: 80px;
+    height: 80px;
+    border: 3px solid #ff6b6b;
+    border-radius: 8px;
+    background: white;
+    padding: 2px;
+    box-shadow: 0 3px 8px rgba(255, 107, 107, 0.3);
+}
+
+.badge-apprenti {
+    color: #4ecdc4;
+    font-family: 'Pacifico', cursive;
+    font-size: 12px;
+    margin-top: 4px;
+    text-align: center;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Photo à gauche */
+.badge-photo-section {
+    display: flex;
+    justify-content: flex-start;
+    z-index: 3;
+    flex-shrink: 0;
+    margin-left: 50px;
+    margin-top: 10px;
+}
+
+.badge-photo-cercle {
+    border-radius: 50%;
+    border: 4px solid #4ecdc4;
+    overflow: hidden;
+    width: 100px;
+    height: 100px;
+    position: relative;
+    z-index: 3;
+    box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+    background: white;
+    flex-shrink: 0;
+}
+
+.badge-photo-cercle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Informations personnelles */
+.badge-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+    position: relative;
+    margin-top: 0;
+}
+
+.badge-nom {
+    font-size: 16px;
+    font-weight: 800;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 3px;
+    line-height: 1.2;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+    word-wrap: break-word;
+    padding: 0 5px;
+}
+
+.badge-id-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 3px;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    padding: 3px 6px;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    gap: 2px;
+}
+
+.badge-id-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-right: 6px;
+}
+
+.badge-id-digit {
+    background: #ff6b6b;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 1px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.badge-id-suffix {
+    background: #4ecdc4;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.badge-contact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    margin-top: 1px;
+    padding: 4px 6px;
+    border-radius: 12px;
+    width: 100%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.badge-tel {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.badge-lieu {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ff6b6b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+/* Image urgence */
+.badge-urgence-bottom {
+    background: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    min-height: 60px;
+    max-height: 90px;
+    flex-shrink: 0;
+}
+
+.badge-urgence-full-image {
+    width: 100%;
+    height: auto;
+    max-height: 90px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    margin-bottom: 20px;
+}
+
+/* Footer avec fond dégradé */
+.badge-footer {
+    background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border-radius: 0 0 17px 17px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.badge-validite {
+    font-family: 'Pacifico', cursive;
+    font-size: 15px;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+@media print {
+    .badge-exemple {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="fas fa-id-card"></i> Carte Badge {{ badge.badge_number }} - Modèle 3
+    </h1>
+    <div>
+      <a href="{% url 'core:badge_detail' badge.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Retour aux détails
+      </a>
+      <button id="download-jpg" class="btn btn-info">
+        <i class="fas fa-download"></i> Télécharger JPG
+      </button>
+      <button onclick="window.print()" class="btn btn-success">
+        <i class="fas fa-print"></i> Imprimer
+      </button>
+    </div>
+  </div>
+
+  <div class="badge-exemple">
+    <div class="badge-header">
+      <div class="badge-republique">
+        <div class="badge-republique-title">RÉPUBLIQUE DE GUINÉE</div>
+        <div class="badge-devise">Travail – Justice – Solidarité</div>
+      </div>
+      <img src="{% static 'images/guinee_logo.png' %}" class="badge-logo-guinee" alt="Guinée">
+    </div>
+
+    <div class="badge-main">
+      <div class="badge-main-content">
+        <!-- Section supérieure avec logo -->
+        <div class="badge-top-section">
+          <div class="badge-logo-section">
+            <img src="{% static 'images/impactdata.png' %}" class="badge-logo-babaly" alt="Impact Data">
+            <div class="badge-job-title">{{ badge.adherent.organisation.name|upper }}</div>
+            {% if badge.adherent.organisation.name|upper == "MÉCANIQUE" %}
+              <div class="badge-job-subtitle">(TRICYCLE)</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Photo et QR côte à côte -->
+        <div class="badge-photo-qr-section">
+          <div class="badge-photo-section">
+            <div class="badge-photo-cercle">
+              {% if badge.adherent.profile_picture %}
+                <img src="{{ badge.adherent.profile_picture.url }}" alt="Photo">
+              {% else %}
+                <img src="{% static 'img/default_avatar.png' %}" alt="Photo">
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="badge-qr-section">
+            <div class="badge-qr">
+              {% if badge.qr_code %}
+                <img src="{{ badge.qr_code.url }}" alt="QR Code">
+              {% endif %}
+            </div>
+            <div class="badge-apprenti">{{ badge.adherent.activity_name|default:"Activité" }}</div>
+          </div>
+        </div>
+
+        <!-- Informations personnelles -->
+        <div class="badge-info-section">
+          <div class="badge-nom">{{ badge.adherent.full_name }}</div>
+          
+          <div class="badge-id-container">
+            <span class="badge-id-label">ID:</span>
+            {% for digit in badge.adherent.identifiant %}
+              <span class="badge-id-digit">{{ digit }}</span>
+            {% endfor %}
+            <span class="badge-id-suffix">{{ badge.badge_number|slice:'-3:' }}</span>
+          </div>
+
+          <div class="badge-contact">
+            <span class="badge-tel">{{ badge.adherent.phone1 }}</span>
+            <span class="badge-lieu">{{ badge.adherent.commune|upper }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="badge-urgence-bottom">
+      <img src="{% static 'images/urgence.png' %}" class="badge-urgence-full-image" alt="Urgence">
+    </div>
+
+    <div class="badge-footer">
+      <span class="badge-validite">Validité {{ badge.badge_validity|date:'F Y' }}</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('download-jpg').addEventListener('click', function() {
+    const badgeElement = document.querySelector('.badge-exemple');
+    html2canvas(badgeElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'badge_{{ badge.badge_number }}.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 0.99);
+        link.click();
+    }).catch(error => {
+        console.error('Error generating badge image:', error);
+        alert('Une erreur s\'est produite lors de la génération de l\'image.');
+    });
+});
+</script>
+{% endblock %}
+

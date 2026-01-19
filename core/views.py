@@ -1507,9 +1507,15 @@ def badge_card(request, badge_id):
         badge = Badge.objects.filter(id=badge_id).first()
         if not badge:
             raise Http404("Badge non trouvé")
+        # touver les distinctions de l'adhérent
+        distinctions = badge.adherent.distinction.split(',')
+        badge.distinctions = distinctions
     except Badge.MultipleObjectsReturned:
         # En cas de doublons, prendre le plus récent
         badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+        # touver les distinctions de l'adhérent
+        distinctions = badge.adherent.distinction.split(',')
+        badge.distinctions = distinctions
     
     context = {
         'badge': badge,

@@ -1493,6 +1493,7 @@ def badge_detail(request, badge_id):
     
     context = {
         'badge': badge,
+        'can_change_template': has_permission(request.user, 'badge_edit'),
     }
     return render(request, 'core/badges/badge_detail.html', context)
 
@@ -1646,6 +1647,33 @@ def reactivate_badge(request, badge_id):
     badge.reactivate(reactivated_by=request.user.get_full_name())
     messages.success(request, f"Badge {badge.badge_number} réactivé avec succès.")
     return redirect('core:badge_list')
+
+@login_required
+@require_permission('badge_edit')
+def change_badge_template(request, badge_id):
+    """Changer le modèle du badge"""
+    try:
+        badge = Badge.objects.filter(id=badge_id).first()
+        if not badge:
+            raise Http404("Badge non trouvé")
+    except Badge.MultipleObjectsReturned:
+        # En cas de doublons, prendre le plus récent
+        badge = Badge.objects.filter(id=badge_id).order_by('-issued_date').first()
+
+    if request.method != 'POST':
+        messages.error(request, "Méthode non autorisée.")
+        return redirect('core:badge_detail', badge_id=badge_id)
+
+    selected_template = request.POST.get('template')
+    valid_templates = [t[0] for t in Badge.TEMPLATE_CHOICES]
+    if selected_template not in valid_templates:
+        messages.error(request, "Modèle de badge invalide.")
+        return redirect('core:badge_detail', badge_id=badge_id)
+
+    badge.template = selected_template
+    badge.save()
+    messages.success(request, f"Modèle de badge mis à jour: {badge.get_template_display()}.")
+    return redirect('core:badge_detail', badge_id=badge_id)
 
 @login_required
 @require_permission('badge_view')

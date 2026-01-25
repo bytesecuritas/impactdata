@@ -58,7 +58,12 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Template:</strong></td>
-                                    <td>{{ badge.template.name|default:"Template par défaut" }}</td>
+                                    <td>
+                                        {{ badge.get_template_display|default:"Template par défaut" }}
+                                        {% if can_change_template %}
+                                            <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#changeTemplateModal">Changer</button>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                             </table>
                         </div>
@@ -311,9 +316,15 @@
                         </a>
                     {% endif %}
                     
-                    <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info btn-block">
+                    <a href="{% url 'core:download_badge_pdf' badge.id %}" class="btn btn-info btn-block mb-2">
                         <i class="fas fa-download"></i> Télécharger PDF
                     </a>
+
+                    {% if can_change_template %}
+                    <button type="button" class="btn btn-outline-primary btn-block" data-bs-toggle="modal" data-bs-target="#changeTemplateModal">
+                        <i class="fas fa-paint-brush"></i> Changer le modèle
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -347,4 +358,74 @@
     </div>
 </div>
 {% endif %}
-{% endblock %} 
+
+{% if can_change_template %}
+<!-- Modal pour changer le modèle du badge -->
+<div class="modal fade" id="changeTemplateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Changer le modèle du badge</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'core:change_badge_template' badge.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="template" class="form-label">Sélectionnez un modèle</label>
+                        <select id="template" name="template" class="form-select">
+                            <option value="template1" {% if badge.template == 'template1' %}selected{% endif %}>Modèle 1</option>
+                            <option value="template2" {% if badge.template == 'template2' %}selected{% endif %}>Modèle 2</option>
+                            <option value="template3" {% if badge.template == 'template3' %}selected{% endif %}>Modèle 3</option>
+                        </select>
+                    </div>
+
+                    <div id="templatePreview" class="border rounded p-2" style="max-height: 380px; overflow: auto; background: #f8f9fa;">
+                        <div class="preview-pane" data-template="template1" style="{% if badge.template != 'template1' %}display:none;{% endif %}">
+                            <div class="preview-scale" style="transform: scale(0.8); transform-origin: top left; width: 520px;">
+                                {% include 'core/badges/badge_card_template1.html' %}
+                            </div>
+                        </div>
+                        <div class="preview-pane" data-template="template2" style="{% if badge.template != 'template2' %}display:none;{% endif %}">
+                            <div class="preview-scale" style="transform: scale(0.8); transform-origin: top left; width: 520px;">
+                                {% include 'core/badges/badge_card_template2.html' %}
+                            </div>
+                        </div>
+                        <div class="preview-pane" data-template="template3" style="{% if badge.template != 'template3' %}display:none;{% endif %}">
+                            <div class="preview-scale" style="transform: scale(0.8); transform-origin: top left; width: 520px;">
+                                {% include 'core/badges/badge_card_template3.html' %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-muted mt-2">Prévisualisation live du modèle sélectionné (non enregistrée).</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if can_change_template %}
+<script>
+(function(){
+  const selectEl = document.getElementById('template');
+  function showPane(templateValue){
+    document.querySelectorAll('#templatePreview .preview-pane').forEach(function(pane){
+      pane.style.display = (pane.dataset.template === templateValue) ? '' : 'none';
+    });
+  }
+  if (selectEl){
+    showPane(selectEl.value);
+    selectEl.addEventListener('change', function(){
+      showPane(this.value);
+    });
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -55,7 +55,7 @@ class Command(BaseCommand):
             self.initialize_organization_categories()
             
             # Initialiser les centres d'intérêt
-            self.initialize_centres_d_interet()
+            #self.initialize_centres_d_interet()
         
         self.stdout.write(self.style.SUCCESS('Initialisation terminée avec succès!'))
 

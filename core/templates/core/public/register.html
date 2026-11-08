@@ -1,0 +1,191 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Inscription - {{ organisation.name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 760px; margin-top: 40px; margin-bottom: 40px;">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">
+                <i class="fas fa-user-plus"></i> Rejoindre {{ organisation.name }}
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-lightbulb"></i>
+                Remplissez ce formulaire pour soumettre votre demande d'adhésion.
+                Les champs marqués d'un <span class="text-danger">*</span> sont obligatoires.
+                Un superviseur examinera votre demande avant de la valider.
+            </div>
+
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <h5 class="text-primary mb-3"><i class="fas fa-user"></i> Identité</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom <span class="text-danger">*</span></label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}<div class="text-danger">{{ form.first_name.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom <span class="text-danger">*</span></label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}<div class="text-danger">{{ form.last_name.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.birth_date.id_for_label }}" class="form-label">Date de naissance</label>
+                            {{ form.birth_date }}
+                            {% if form.birth_date.errors %}<div class="text-danger">{{ form.birth_date.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.type_adherent.id_for_label }}" class="form-label">Type d'adhérent <span class="text-danger">*</span></label>
+                            {{ form.type_adherent }}
+                            {% if form.type_adherent.errors %}<div class="text-danger">{{ form.type_adherent.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="text-primary mb-3 mt-3"><i class="fas fa-phone"></i> Contact</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.phone1.id_for_label }}" class="form-label">Téléphone principal <span class="text-danger">*</span></label>
+                            {{ form.phone1 }}
+                            {% if form.phone1.errors %}<div class="text-danger">{{ form.phone1.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.phone2.id_for_label }}" class="form-label">Téléphone secondaire</label>
+                            {{ form.phone2 }}
+                            {% if form.phone2.errors %}<div class="text-danger">{{ form.phone2.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}<div class="text-danger">{{ form.email.errors }}</div>{% endif %}
+                            <div class="form-text">Utile pour vous recontacter après examen de votre dossier.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="text-primary mb-3 mt-3"><i class="fas fa-ambulance"></i> Contacts d'urgence</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.num_urgence1.id_for_label }}" class="form-label">Numéro d'urgence</label>
+                            {{ form.num_urgence1 }}
+                            {% if form.num_urgence1.errors %}<div class="text-danger">{{ form.num_urgence1.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.num_urgence2.id_for_label }}" class="form-label">Numéro d'urgence (2)</label>
+                            {{ form.num_urgence2 }}
+                            {% if form.num_urgence2.errors %}<div class="text-danger">{{ form.num_urgence2.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="text-primary mb-3 mt-3"><i class="fas fa-map-marker-alt"></i> Localisation</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.commune.id_for_label }}" class="form-label">Commune <span class="text-danger">*</span></label>
+                            {{ form.commune }}
+                            {% if form.commune.errors %}<div class="text-danger">{{ form.commune.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.quartier.id_for_label }}" class="form-label">Quartier <span class="text-danger">*</span></label>
+                            {{ form.quartier }}
+                            {% if form.quartier.errors %}<div class="text-danger">{{ form.quartier.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.secteur.id_for_label }}" class="form-label">Secteur <span class="text-danger">*</span></label>
+                            {{ form.secteur }}
+                            {% if form.secteur.errors %}<div class="text-danger">{{ form.secteur.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="text-primary mb-3 mt-3"><i class="fas fa-briefcase"></i> Profil complémentaire</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.langues.id_for_label }}" class="form-label">Langues parlées</label>
+                            {{ form.langues }}
+                            {% if form.langues.errors %}<div class="text-danger">{{ form.langues.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="{{ form.formation_pro.id_for_label }}" class="form-label">Formation professionnelle</label>
+                            {{ form.formation_pro }}
+                            {% if form.formation_pro.errors %}<div class="text-danger">{{ form.formation_pro.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="{{ form.distinction.id_for_label }}" class="form-label">Distinctions</label>
+                            {{ form.distinction }}
+                            {% if form.distinction.errors %}<div class="text-danger">{{ form.distinction.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label">Centres d'intérêt <span class="text-muted">(optionnel)</span></label>
+                            <div class="row">{{ form.centres_interet }}</div>
+                            {% if form.centres_interet.errors %}<div class="text-danger">{{ form.centres_interet.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Photo de profil <span class="text-muted">(optionnel)</span></label>
+                    {{ form.profile_picture }}
+                    {% if form.profile_picture.errors %}<div class="text-danger">{{ form.profile_picture.errors }}</div>{% endif %}
+                    <div class="form-text">JPEG, PNG ou WebP, 2 Mo maximum. Visible uniquement par l'organisation.</div>
+                </div>
+
+                <h5 class="text-primary mb-3 mt-3"><i class="fas fa-heartbeat"></i> Informations médicales</h5>
+                <div class="mb-3">
+                    <label for="{{ form.medical_info.id_for_label }}" class="form-label">Informations médicales importantes</label>
+                    {{ form.medical_info }}
+                    {% if form.medical_info.errors %}<div class="text-danger">{{ form.medical_info.errors }}</div>{% endif %}
+                    <div class="form-text">Utile en cas d'urgence. Ne renseignez que ce que vous acceptez de partager avec l'organisation.</div>
+                </div>
+                <div class="mb-3 form-check">
+                    {{ form.consent_medical_info }}
+                    <label for="{{ form.consent_medical_info.id_for_label }}" class="form-check-label">
+                        J'autorise cette organisation à conserver ces informations médicales pour mon dossier d'adhérent.
+                    </label>
+                    {% if form.consent_medical_info.errors %}<div class="text-danger">{{ form.consent_medical_info.errors }}</div>{% endif %}
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Envoyer ma demande
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

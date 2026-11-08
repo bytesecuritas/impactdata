@@ -138,30 +138,39 @@
                             </li>
                             
                             <li class="nav-item">
-                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
+                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name and 'registration' not in request.resolver_match.url_name %}active{% endif %}"
                                    href="{% url 'core:adherent_list' %}">
                                     <i class="fas fa-users"></i> Adhérents
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if 'interaction' in request.resolver_match.url_name %}active{% endif %}" 
+                                <a class="nav-link {% if 'registration' in request.resolver_match.url_name %}active{% endif %}"
+                                   href="{% url 'core:adherent_registration_list' %}">
+                                    <i class="fas fa-user-clock"></i> Demandes d'inscription
+                                    {% if pending_registration_count %}
+                                        <span class="badge bg-warning text-dark ms-1">{{ pending_registration_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'interaction' in request.resolver_match.url_name %}active{% endif %}"
                                    href="{% url 'core:interaction_list' %}">
                                     <i class="fas fa-comments"></i> Interactions
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if 'badge' in request.resolver_match.url_name %}active{% endif %}" 
+                                <a class="nav-link {% if 'badge' in request.resolver_match.url_name %}active{% endif %}"
                                    href="{% url 'core:badge_list' %}">
                                     <i class="fas fa-id-card"></i> Badges
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if 'objective' in request.resolver_match.url_name %}active{% endif %}" 
+                                <a class="nav-link {% if 'objective' in request.resolver_match.url_name %}active{% endif %}"
                                    href="{% url 'core:objective_list' %}">
                                     <i class="fas fa-bullseye"></i> Objectifs
                                 </a>
                             </li>
-                            
+
                             <!-- Paramètres de l'application (Admin uniquement) -->
                             <li class="nav-item">
                                 <a class="nav-link {% if 'settings' in request.resolver_match.url_name %}active{% endif %}" 
@@ -197,9 +206,18 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
+                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name and 'registration' not in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:adherent_list' %}">
                                     <i class="fas fa-users"></i> Adhérents
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if 'registration' in request.resolver_match.url_name %}active{% endif %}" 
+                                   href="{% url 'core:adherent_registration_list' %}">
+                                    <i class="fas fa-user-clock"></i> Demandes d'inscription
+                                    {% if pending_registration_count %}
+                                        <span class="badge bg-warning text-dark ms-1">{{ pending_registration_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -235,7 +253,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name %}active{% endif %}" 
+                                <a class="nav-link {% if 'adherent' in request.resolver_match.url_name and 'registration' not in request.resolver_match.url_name %}active{% endif %}" 
                                    href="{% url 'core:adherent_list' %}">
                                     <i class="fas fa-users"></i> Adhérents
                                 </a>

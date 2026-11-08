@@ -25,3 +25,5 @@ myEnv/
 .env
 .env.new
 staticfiles/
+private_media/
+demo_video/

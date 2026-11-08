@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse, FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.db import transaction
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from django.core.paginator import Paginator
@@ -19,16 +20,20 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 import os
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 from datetime import datetime, timedelta
-from .models import User, Adherent, Organization, Category, Interaction, Badge, UserObjective, SupervisorStats, GeneralParameter, ReferenceValue, RolePermission, SystemLog
+from .models import User, Adherent, AdherentRegistrationRequest, Organization, Category, Interaction, Badge, UserObjective, SupervisorStats, GeneralParameter, ReferenceValue, RolePermission, SystemLog
 from .forms import (
-    GeneralParameterForm, ReferenceValueImportForm, SystemLogFilterForm, UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm, 
+    GeneralParameterForm, ReferenceValueImportForm, SystemLogFilterForm, UserProfileForm, CustomPasswordChangeForm, AdherentForm, OrganizationForm,
     CategoryForm, InteractionForm, UserForm, UserRegistrationForm, UserEditForm,
     BadgeForm, ProfileEditForm, AdherentSearchForm, OrganizationSearchForm, UserObjectiveForm,
     InteractionSearchForm, RolePermissionForm, BulkRolePermissionForm, ReferenceValueForm,
-    ParameterBackupForm
+    ParameterBackupForm, PublicAdherentRegistrationForm
 )
 from .services import EmailService
+from .uploads import rate_limited, register_submission
 import calendar
 import qrcode
 from io import BytesIO
@@ -992,6 +997,204 @@ def adherent_create_with_phone(request, phone):
         'phone_verified': True,
         'verified_phone': phone
     })
+
+# ==================== INSCRIPTION PUBLIQUE DES ADHÉRENTS ====================
+# Lien externe partageable, sans authentification : un adhérent remplit
+# lui-même ses informations, qui restent "en attente" jusqu'à validation
+# par un superviseur/admin (voir dashboard & liste ci-dessous).
+
+def public_adherent_register(request, organization_id):
+    """Formulaire public d'inscription (pas de login_required)."""
+    organisation = get_object_or_404(Organization, id=organization_id)
+
+    if request.method == 'POST':
+        # Garde-fou anti-abus : quota de soumissions par IP (photo incluse)
+        if rate_limited(request):
+            return HttpResponse(
+                "Trop de tentatives. Veuillez réessayer plus tard.",
+                status=429,
+            )
+        register_submission(request)
+        form = PublicAdherentRegistrationForm(request.POST, request.FILES)
+        if form.is_valid():
+            registration_request = form.save(commit=False)
+            registration_request.organisation = organisation
+            registration_request.save()
+            form.save_m2m()
+            return render(request, 'core/public/register_success.html', {
+                'organisation': organisation,
+            })
+    else:
+        form = PublicAdherentRegistrationForm()
+
+    return render(request, 'core/public/register.html', {
+        'form': form,
+        'organisation': organisation,
+    })
+
+
+def _pending_registration_requests_queryset(request):
+    """Superviseurs/admins voient toutes les demandes ; pas de notion de
+    tenant dans impactdata, contrairement à un filtrage par organisation."""
+    return AdherentRegistrationRequest.objects.select_related('organisation')
+
+
+@login_required
+@require_permission('adherent_create')
+def adherent_registration_list(request):
+    """Liste des demandes d'inscription, avec filtre statut + recherche."""
+    status_filter = request.GET.get('status', 'pending')
+    search = request.GET.get('q', '').strip()
+
+    requests_qs = _pending_registration_requests_queryset(request)
+    if status_filter in ('pending', 'approved', 'rejected'):
+        requests_qs = requests_qs.filter(status=status_filter)
+    if search:
+        requests_qs = requests_qs.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search) |
+            Q(phone1__icontains=search)
+        )
+
+    paginator = Paginator(requests_qs.order_by('-created_at'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    pending_count = AdherentRegistrationRequest.objects.filter(status='pending').count()
+
+    return render(request, 'core/adherents/registration_request_list.html', {
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'search': search,
+        'pending_count': pending_count,
+    })
+
+
+@login_required
+@require_permission('adherent_create')
+def adherent_registration_detail(request, request_id):
+    """Détail d'une demande, avec les informations étendues (infos
+    médicales, contacts d'urgence...) réservées à cette vue protégée."""
+    registration_request = get_object_or_404(AdherentRegistrationRequest, id=request_id)
+    return render(request, 'core/adherents/registration_request_detail.html', {
+        'registration_request': registration_request,
+    })
+
+
+@login_required
+@require_permission('adherent_create')
+def adherent_registration_approve(request, request_id):
+    """Approuve la demande : crée le véritable Adherent (même règles de
+    validation que AdherentForm) et marque la demande comme traitée."""
+    registration_request = get_object_or_404(AdherentRegistrationRequest, id=request_id)
+
+    if registration_request.status != 'pending':
+        messages.error(request, 'Cette demande a déjà été traitée.')
+        return redirect('core:adherent_registration_detail', request_id=request_id)
+
+    if request.method == 'POST':
+        # Les téléphones sont uniques : vérifier avant de créer, pour un
+        # message clair plutôt qu'une erreur SQL brute.
+        if Adherent.objects.filter(phone1=registration_request.phone1).exists():
+            messages.error(
+                request,
+                "Un adhérent avec ce numéro de téléphone existe déjà : "
+                "rejetez cette demande (doublon) ou corrigez le dossier existant.",
+            )
+            return redirect('core:adherent_registration_detail', request_id=request_id)
+
+        try:
+            with transaction.atomic():
+                adherent = Adherent.objects.create(
+                    first_name=registration_request.first_name,
+                    last_name=registration_request.last_name,
+                    birth_date=registration_request.birth_date,
+                    type_adherent=registration_request.type_adherent,
+                    commune=registration_request.commune,
+                    quartier=registration_request.quartier,
+                    secteur=registration_request.secteur,
+                    phone1=registration_request.phone1,
+                    phone2=registration_request.phone2,
+                    num_urgence1=registration_request.num_urgence1,
+                    num_urgence2=registration_request.num_urgence2,
+                    email=registration_request.email,
+                    medical_info=registration_request.medical_info,
+                    formation_pro=registration_request.formation_pro,
+                    distinction=registration_request.distinction,
+                    langues=registration_request.langues,
+                    join_date=timezone.now().date(),
+                    organisation=registration_request.organisation,
+                    created_by=request.user,
+                )
+                adherent.centres_interet.set(registration_request.centres_interet.all())
+
+                # Copie de la photo (stockage privé -> media) seulement à l'approbation
+                if registration_request.profile_picture:
+                    with registration_request.profile_picture.open('rb') as photo_file:
+                        adherent.profile_picture.save(
+                            os.path.basename(registration_request.profile_picture.name),
+                            File(photo_file),
+                            save=True,
+                        )
+
+                registration_request.status = 'approved'
+                registration_request.reviewed_by = request.user
+                registration_request.reviewed_at = timezone.now()
+                registration_request.adherent = adherent
+                registration_request.save()
+
+                messages.success(request, f"Demande approuvée : {adherent.full_name} a été ajouté comme adhérent.")
+                return redirect('core:adherent_detail', adherent_id=adherent.id)
+        except Exception as e:
+            logger.exception("Approbation demande %s", request_id)
+            messages.error(request, "Erreur lors de l'approbation de la demande. Aucune modification n'a été enregistrée.")
+
+    return redirect('core:adherent_registration_detail', request_id=request_id)
+
+
+@login_required
+@require_permission('adherent_create')
+def adherent_registration_reject(request, request_id):
+    """Rejette la demande avec un motif obligatoire."""
+    registration_request = get_object_or_404(AdherentRegistrationRequest, id=request_id)
+
+    if registration_request.status != 'pending':
+        messages.error(request, 'Cette demande a déjà été traitée.')
+        return redirect('core:adherent_registration_detail', request_id=request_id)
+
+    if request.method == 'POST':
+        reason = request.POST.get('rejection_reason', '').strip()
+        if not reason:
+            messages.error(request, 'Veuillez indiquer le motif du refus.')
+            return redirect('core:adherent_registration_detail', request_id=request_id)
+
+        # La photo d'une demande rejetée n'est pas conservée
+        if registration_request.profile_picture:
+            registration_request.profile_picture.delete(save=False)
+
+        registration_request.status = 'rejected'
+        registration_request.rejection_reason = reason
+        registration_request.reviewed_by = request.user
+        registration_request.reviewed_at = timezone.now()
+        registration_request.save()
+
+        messages.success(request, 'Demande rejetée.')
+
+    return redirect('core:adherent_registration_detail', request_id=request_id)
+
+
+@login_required
+@require_permission('adherent_create')
+def adherent_registration_photo(request, request_id):
+    """Sert la photo d'une demande (stockage privé) aux seuls utilisateurs autorisés."""
+    registration_request = get_object_or_404(AdherentRegistrationRequest, id=request_id)
+    if not registration_request.profile_picture:
+        raise Http404("Aucune photo")
+    response = FileResponse(registration_request.profile_picture.open('rb'), content_type='image/jpeg')
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Cache-Control'] = 'private, no-store'
+    return response
+
 
 @login_required
 @require_permission('adherent_edit')

@@ -91,6 +91,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.pending_registration_count',
             ],
         },
     },
@@ -172,6 +173,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [BASE_DIR / "core/static"]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Stockage privé (jamais servi par MEDIA_URL) : photos des demandes d'inscription
+PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, "private_media")
 
 # Cookie settings
 SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS

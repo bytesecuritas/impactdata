@@ -1,0 +1,123 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Demande d'inscription - {{ registration_request.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="fas fa-user-clock"></i> {{ registration_request.full_name }}</h4>
+        <a href="{% url 'core:adherent_registration_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header"><i class="fas fa-user"></i> Identité et contact</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2"><strong>Nom complet :</strong> {{ registration_request.full_name }}</div>
+                        <div class="col-md-6 mb-2"><strong>Type d'adhérent :</strong> {{ registration_request.get_type_adherent_display }}</div>
+                        <div class="col-md-6 mb-2"><strong>Date de naissance :</strong> {{ registration_request.birth_date|default:"—" }}</div>
+                        <div class="col-md-6 mb-2"><strong>Organisation :</strong> {{ registration_request.organisation.name }}</div>
+                        <div class="col-md-6 mb-2"><strong>Téléphone :</strong> {{ registration_request.phone1 }}{% if registration_request.phone2 %} / {{ registration_request.phone2 }}{% endif %}</div>
+                        <div class="col-md-6 mb-2"><strong>Email :</strong> {{ registration_request.email|default:"—" }}</div>
+                        <div class="col-md-6 mb-2"><strong>Numéro d'urgence :</strong> {{ registration_request.num_urgence1|default:"—" }}</div>
+                        <div class="col-md-6 mb-2"><strong>Numéro d'urgence (2) :</strong> {{ registration_request.num_urgence2|default:"—" }}</div>
+                        <div class="col-md-4 mb-2"><strong>Commune :</strong> {{ registration_request.commune }}</div>
+                        <div class="col-md-4 mb-2"><strong>Quartier :</strong> {{ registration_request.quartier }}</div>
+                        <div class="col-md-4 mb-2"><strong>Secteur :</strong> {{ registration_request.secteur }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header"><i class="fas fa-briefcase"></i> Profil complémentaire</div>
+                <div class="card-body">
+                    {% if registration_request.profile_picture %}<div class="mb-3"><img src="{% url 'core:adherent_registration_photo' registration_request.id %}" alt="Photo de profil" class="rounded" style="max-width:160px"></div>{% endif %}
+                    <div class="mb-2"><strong>Langues parlées :</strong> {{ registration_request.langues|default:"—" }}</div>
+                    <div class="mb-2">
+                        <strong>Centres d'intérêt :</strong>
+                        {% with interests=registration_request.centres_interet.all %}
+                            {% if interests %}
+                                {% for interest in interests %}{{ interest.label }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            {% else %}—{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="mb-2"><strong>Formation professionnelle :</strong> {{ registration_request.formation_pro|default:"—" }}</div>
+                    <div class="mb-0"><strong>Distinctions :</strong> {{ registration_request.distinction|default:"—" }}</div>
+                </div>
+            </div>
+
+            {% if registration_request.medical_info %}
+            <div class="card mb-3 border-warning">
+                <div class="card-header bg-warning-subtle"><i class="fas fa-heartbeat"></i> Informations médicales</div>
+                <div class="card-body">
+                    <p class="mb-1" style="white-space: pre-wrap;">{{ registration_request.medical_info }}</p>
+                    <div class="text-muted small">
+                        Consentement donné :
+                        {% if registration_request.consent_medical_info %}<span class="text-success">Oui</span>{% else %}<span class="text-danger">Non</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-clipboard-check"></i> Statut</div>
+                <div class="card-body">
+                    {% if registration_request.status == 'pending' %}
+                        <span class="badge bg-warning text-dark mb-3">En attente</span>
+
+                        <form method="post" action="{% url 'core:adherent_registration_approve' request_id=registration_request.id %}" class="mb-3">
+                            {% csrf_token %}
+                            <p class="small text-muted">
+                                L'adhérent sera créé avec les informations ci-contre, et rattaché à
+                                <strong>{{ registration_request.organisation.name }}</strong>.
+                            </p>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check"></i> Approuver
+                            </button>
+                        </form>
+
+                        <form method="post" action="{% url 'core:adherent_registration_reject' request_id=registration_request.id %}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label class="form-label">Motif du refus <span class="text-danger">*</span></label>
+                                <textarea name="rejection_reason" class="form-control" rows="3" placeholder="Expliquez pourquoi la demande est rejetée…" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-times"></i> Rejeter
+                            </button>
+                        </form>
+                    {% elif registration_request.status == 'approved' %}
+                        <span class="badge bg-success mb-3">Approuvée</span>
+                        {% if registration_request.adherent %}
+                            <p>
+                                <a href="{% url 'core:adherent_detail' adherent_id=registration_request.adherent.id %}">
+                                    Voir la fiche adhérent <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </p>
+                        {% endif %}
+                        <p class="text-muted small mb-0">
+                            Examinée le {{ registration_request.reviewed_at|date:"d M Y à H:i" }}
+                            {% if registration_request.reviewed_by %}par {{ registration_request.reviewed_by.get_full_name }}{% endif %}
+                        </p>
+                    {% else %}
+                        <span class="badge bg-secondary mb-3">Rejetée</span>
+                        {% if registration_request.rejection_reason %}
+                            <p><strong>Motif :</strong> {{ registration_request.rejection_reason }}</p>
+                        {% endif %}
+                        <p class="text-muted small mb-0">
+                            Examinée le {{ registration_request.reviewed_at|date:"d M Y à H:i" }}
+                            {% if registration_request.reviewed_by %}par {{ registration_request.reviewed_by.get_full_name }}{% endif %}
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

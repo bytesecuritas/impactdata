@@ -4,7 +4,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from .models import Adherent, Organization, Category, Interaction, Badge, UserObjective, RolePermission, ReferenceValue, GeneralParameter, SystemLog
+from .models import Adherent, AdherentRegistrationRequest, Organization, Category, Interaction, Badge, UserObjective, RolePermission, ReferenceValue, GeneralParameter, SystemLog
+from .uploads import sanitize_profile_image
 from .widgets import CustomCheckboxSelectMultiple, PersonnelSearchWidget, AdherentSearchWidget, OrganizationSearchWidget, CategorySearchWidget
 
 User = get_user_model()
@@ -129,6 +130,90 @@ class AdherentForm(forms.ModelForm):
             raise forms.ValidationError("Les deux numéros de téléphone ne peuvent pas être identiques.")
         
         return cleaned_data
+
+# Formulaire public d'inscription d'un adhérent (ticket impactdata, issue
+# secaas #309/#311). Organisation fixée par l'URL, pas par le formulaire.
+class PublicAdherentRegistrationForm(forms.ModelForm):
+    class Meta:
+        model = AdherentRegistrationRequest
+        fields = [
+            'first_name', 'last_name', 'birth_date', 'type_adherent',
+            'commune', 'quartier', 'secteur', 'phone1', 'phone2',
+            'num_urgence1', 'num_urgence2', 'email', 'medical_info',
+            'consent_medical_info', 'formation_pro', 'distinction',
+            'centres_interet', 'langues', 'profile_picture',
+        ]
+        widgets = {
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': timezone.now().date()}),
+            'type_adherent': forms.Select(attrs={'class': 'form-select'}),
+            'commune': forms.TextInput(attrs={'class': 'form-control'}),
+            'quartier': forms.TextInput(attrs={'class': 'form-control'}),
+            'secteur': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone1': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone2': forms.TextInput(attrs={'class': 'form-control'}),
+            'num_urgence1': forms.TextInput(attrs={'class': 'form-control'}),
+            'num_urgence2': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'medical_info': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'consent_medical_info': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'formation_pro': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'distinction': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'centres_interet': CustomCheckboxSelectMultiple(),
+            'langues': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        try:
+            type_choices = ReferenceValue.get_choices_for_category('adherent_types')
+            self.fields['type_adherent'].choices = [('', '---------')] + list(type_choices)
+        except Exception:
+            self.fields['type_adherent'].choices = [('', '---------')] + list(Adherent.TYPE_CHOICES)
+
+        try:
+            self.fields['centres_interet'].queryset = ReferenceValue.objects.filter(
+                category='centres_d_interet',
+                is_active=True,
+            ).order_by('sort_order', 'label')
+        except Exception:
+            self.fields['centres_interet'].queryset = ReferenceValue.objects.none()
+
+        self.fields['consent_medical_info'].required = False
+
+    def clean_profile_picture(self):
+        photo = self.cleaned_data.get('profile_picture')
+        if not photo:
+            return photo
+        # Validation stricte + ré-encodage (formulaire public non authentifié)
+        return sanitize_profile_image(photo)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        phone1 = cleaned_data.get('phone1')
+        phone2 = cleaned_data.get('phone2')
+
+        if phone1 and Adherent.objects.filter(phone1=phone1).exists():
+            raise forms.ValidationError(
+                "Ce numéro de téléphone est déjà utilisé par un adhérent existant."
+            )
+        if phone1 and phone2 and phone1 == phone2:
+            raise forms.ValidationError(
+                "Les deux numéros de téléphone ne peuvent pas être identiques."
+            )
+
+        medical_info = cleaned_data.get('medical_info')
+        if medical_info and medical_info.strip() and not cleaned_data.get('consent_medical_info'):
+            self.add_error(
+                'consent_medical_info',
+                "Votre accord est requis pour enregistrer ces informations médicales.",
+            )
+
+        return cleaned_data
+
 
 # Formulaires pour Organisation
 class OrganizationForm(forms.ModelForm):

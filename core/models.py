@@ -8,6 +8,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.utils.crypto import get_random_string
 from django.db.models.signals import post_save, post_delete
+from .uploads import registration_photo_storage
 from django.dispatch import receiver
 import time
 from django.db import transaction
@@ -807,6 +808,137 @@ class Adherent(models.Model):
         if self.badge_validity is None:
             return False
         return self.badge_validity > timezone.now().date()
+
+
+# Demande d'inscription publique d'un adhérent, avant validation par un
+# superviseur/admin. Reprend les mêmes champs qu'Adherent (sauf ceux qui
+# n'ont pas de sens avant l'approbation : identifiant, join_date,
+# activity_name, badge_validity, created_by).
+class AdherentRegistrationRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'En attente'),
+        ('approved', 'Approuvée'),
+        ('rejected', 'Rejetée'),
+    )
+
+    first_name = models.CharField(max_length=100, verbose_name="Prénom")
+    last_name = models.CharField(max_length=100, verbose_name="Nom")
+    birth_date = models.DateField(null=True, blank=True, verbose_name="Date de naissance")
+    type_adherent = models.CharField(
+        max_length=20,
+        choices=Adherent.TYPE_CHOICES,
+        verbose_name="Type d'adhérent",
+    )
+
+    commune = models.TextField(verbose_name="Commune")
+    quartier = models.TextField(verbose_name="Quartier")
+    secteur = models.TextField(verbose_name="Secteur")
+
+    phone1 = models.CharField(
+        max_length=15,
+        validators=[User.phone_validator],
+        verbose_name="Téléphone principal",
+    )
+    phone2 = models.CharField(
+        max_length=15,
+        blank=True,
+        validators=[User.phone_validator],
+        verbose_name="Téléphone secondaire",
+    )
+    num_urgence1 = models.CharField(
+        max_length=15,
+        blank=True,
+        validators=[User.phone_validator],
+        verbose_name="Numéro d'urgence",
+    )
+    num_urgence2 = models.CharField(
+        max_length=15,
+        blank=True,
+        validators=[User.phone_validator],
+        verbose_name="Numéro d'urgence 2",
+    )
+    email = models.EmailField(max_length=100, blank=True, verbose_name="Email")
+
+    medical_info = models.TextField(
+        blank=True,
+        verbose_name="Informations médicales",
+        help_text="Informations médicales importantes pour l'adhérent",
+    )
+    # Donnée de santé au sens RGPD : exigé dans le formulaire public dès que
+    # medical_info est rempli (voir PublicAdherentRegistrationForm.clean()).
+    consent_medical_info = models.BooleanField(
+        default=False,
+        verbose_name="Consentement informations médicales",
+    )
+    formation_pro = models.TextField(blank=True, verbose_name="Formation professionnelle")
+    distinction = models.TextField(blank=True, verbose_name="Distinction")
+    centres_interet = models.ManyToManyField(
+        'ReferenceValue',
+        blank=True,
+        related_name='registration_requests_centres_interet',
+        verbose_name="Centres d'intérêt",
+    )
+    langues = models.TextField(blank=True, verbose_name="Langues parlées")
+
+    organisation = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='registration_requests',
+        verbose_name="Organisation",
+    )
+
+    # Photo : stockage privé, image validée et ré-encodée (core/uploads.py).
+    # Copiée vers Adherent.profile_picture à l'approbation seulement.
+    profile_picture = models.ImageField(
+        upload_to='registration_photos/',
+        storage=registration_photo_storage,
+        null=True,
+        blank=True,
+        verbose_name="Photo de profil",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name="Statut",
+    )
+    rejection_reason = models.TextField(blank=True, verbose_name="Motif du rejet")
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_registration_requests',
+        verbose_name="Examinée par",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name="Examinée le")
+    adherent = models.OneToOneField(
+        Adherent,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='registration_request',
+        verbose_name="Adhérent créé",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Demande d'inscription d'adhérent"
+        verbose_name_plural = "Demandes d'inscription d'adhérent"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['organisation', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.get_status_display()})"
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 # Updated Interaction Model

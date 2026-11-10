@@ -68,7 +68,15 @@ urlpatterns = [
     path('adherents/<int:adherent_id>/delete/', views.adherent_delete, name='adherent_delete'),
     path('adherents/check-phone/', views.check_phone_availability, name='check_phone_availability'),
 
-    
+    # Inscription publique des adhérents (lien externe, sans authentification)
+    path('inscription/<int:organization_id>/', views.public_adherent_register, name='public_adherent_register'),
+    path('adherents/demandes/', views.adherent_registration_list, name='adherent_registration_list'),
+    path('adherents/demandes/<int:request_id>/', views.adherent_registration_detail, name='adherent_registration_detail'),
+    path('adherents/demandes/<int:request_id>/photo/', views.adherent_registration_photo, name='adherent_registration_photo'),
+    path('adherents/demandes/<int:request_id>/approuver/', views.adherent_registration_approve, name='adherent_registration_approve'),
+    path('adherents/demandes/<int:request_id>/rejeter/', views.adherent_registration_reject, name='adherent_registration_reject'),
+
+
     # CRUD Organisations (agents et admins)
     path('organizations/', views.organization_list, name='organization_list'),
     path('organizations/create/', views.organization_create, name='organization_create'),

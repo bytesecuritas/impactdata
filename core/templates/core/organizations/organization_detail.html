@@ -37,6 +37,37 @@
         </div>
     </div>
 
+    <!-- Carte Lien d'inscription publique -->
+    <div class="card shadow-sm mb-4 border-primary">
+        <div class="card-body p-3">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-2 mb-lg-0">
+                    <h5 class="card-title text-primary mb-1">
+                        <i class="fas fa-link"></i> Lien d'inscription publique des adhérents
+                    </h5>
+                    <p class="card-text text-muted mb-0 small">
+                        Partagez ce lien sécurisé pour permettre l'inscription en ligne sans connexion.
+                    </p>
+                </div>
+                <div class="col-lg-6">
+                    <div class="input-group">
+                        <input type="text" id="publicRegistrationLink" class="form-control" 
+                               value="{{ registration_url }}" readonly>
+                        <button class="btn btn-primary" type="button" id="copyRegistrationBtn" onclick="copyRegistrationLink()">
+                            <i class="fas fa-copy"></i> Copier
+                        </button>
+                        <a href="{{ registration_url }}" target="_blank" class="btn btn-outline-secondary" title="Ouvrir le formulaire dans un nouvel onglet">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                    <small id="copySuccessMsg" class="text-success mt-1 d-none font-weight-bold">
+                        <i class="fas fa-check"></i> Lien copié dans le presse-papier !
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Informations principales -->
         <div class="col-lg-8">
@@ -319,4 +350,26 @@
         </a>
     </div>
 </div>
-{% endblock %} 
+
+<script>
+function copyRegistrationLink() {
+    const input = document.getElementById('publicRegistrationLink');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(function() {
+        const msg = document.getElementById('copySuccessMsg');
+        const btn = document.getElementById('copyRegistrationBtn');
+        msg.classList.remove('d-none');
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        setTimeout(function() {
+            msg.classList.add('d-none');
+            btn.innerHTML = '<i class="fas fa-copy"></i> Copier';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 3000);
+    });
+}
+</script>
+{% endblock %}

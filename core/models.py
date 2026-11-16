@@ -14,6 +14,7 @@ import time
 from django.db import transaction
 from .services import EmailService
 import logging
+import uuid
 
 
 # Custom User Manager
@@ -503,6 +504,13 @@ class Organization(models.Model):
         verbose_name="Identifiant de l'organisation",
         editable=False
     )
+    registration_token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+        verbose_name="Jeton d'inscription publique"
+    )
     name = models.CharField(max_length=150, verbose_name="Nom de l'organisation")
     monthly_revenue = models.DecimalField(
         max_digits=15, 
@@ -569,7 +577,17 @@ class Organization(models.Model):
         if not self.identifiant:
             last = Organization.objects.order_by('-identifiant').first()
             self.identifiant = (last.identifiant + 1) if last and last.identifiant >= 100 else 100
+        if not self.registration_token:
+            self.registration_token = uuid.uuid4()
         super().save(*args, **kwargs)
+
+    def get_registration_url(self, request=None):
+        """Retourne l'URL publique d'inscription pour cette organisation."""
+        from django.urls import reverse
+        rel_url = reverse('core:public_adherent_register', kwargs={'token': str(self.registration_token)})
+        if request:
+            return request.build_absolute_uri(rel_url)
+        return rel_url
     
     def __str__(self):
         return f"{self.name} ({self.identifiant})"

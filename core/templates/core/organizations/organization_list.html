@@ -93,6 +93,13 @@
                                            class="btn btn-sm btn-outline-primary" title="Voir détails">
                                             <i class="fas fa-eye"></i>
                                         </a>
+                                        <button type="button" 
+                                           class="btn btn-sm btn-outline-info" 
+                                           title="Copier le lien d'inscription publique"
+                                           data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'core:public_adherent_register' organization.registration_token %}"
+                                           onclick="copyOrgLink(this)">
+                                            <i class="fas fa-link"></i>
+                                        </button>
                                         <a href="{% url 'core:organization_update' organization.id %}" 
                                            class="btn btn-sm btn-outline-warning" title="Modifier">
                                             <i class="fas fa-edit"></i>
@@ -173,4 +180,21 @@
         </div>
     </div>
 </div>
+
+<script>
+function copyOrgLink(btn) {
+    const url = btn.getAttribute('data-url');
+    navigator.clipboard.writeText(url).then(function() {
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.classList.remove('btn-outline-info');
+        btn.classList.add('btn-success');
+        setTimeout(function() {
+            btn.innerHTML = oldHtml;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-info');
+        }, 2000);
+    });
+}
+</script>
 {% endblock %}

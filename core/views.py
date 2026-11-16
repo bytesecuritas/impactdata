@@ -729,6 +729,7 @@ def organization_detail(request, organization_id):
     
     context = {
         'organization': organization,
+        'registration_url': organization.get_registration_url(request),
         'adherents': adherents,
         'can_edit': has_permission(request.user, 'organization_edit'),
         'can_delete': has_permission(request.user, 'organization_delete'),
@@ -1003,9 +1004,10 @@ def adherent_create_with_phone(request, phone):
 # lui-même ses informations, qui restent "en attente" jusqu'à validation
 # par un superviseur/admin (voir dashboard & liste ci-dessous).
 
-def public_adherent_register(request, organization_id):
-    """Formulaire public d'inscription (pas de login_required)."""
-    organisation = get_object_or_404(Organization, id=organization_id)
+def public_adherent_register(request, token):
+    """Formulaire public d'inscription (pas de login_required).
+    Sécurisé par jeton unique non devinable (protection contre IDOR)."""
+    organisation = get_object_or_404(Organization, registration_token=token)
 
     if request.method == 'POST':
         # Garde-fou anti-abus : quota de soumissions par IP (photo incluse)

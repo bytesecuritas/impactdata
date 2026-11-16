@@ -69,7 +69,7 @@ urlpatterns = [
     path('adherents/check-phone/', views.check_phone_availability, name='check_phone_availability'),
 
     # Inscription publique des adhérents (lien externe, sans authentification)
-    path('inscription/<int:organization_id>/', views.public_adherent_register, name='public_adherent_register'),
+    path('inscription/<uuid:token>/', views.public_adherent_register, name='public_adherent_register'),
     path('adherents/demandes/', views.adherent_registration_list, name='adherent_registration_list'),
     path('adherents/demandes/<int:request_id>/', views.adherent_registration_detail, name='adherent_registration_detail'),
     path('adherents/demandes/<int:request_id>/photo/', views.adherent_registration_photo, name='adherent_registration_photo'),

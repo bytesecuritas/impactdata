@@ -5,9 +5,8 @@ from django.db import migrations, models
 def gen_uuid(apps, schema_editor):
     Organization = apps.get_model('core', 'Organization')
     for org in Organization.objects.all():
-        if not org.registration_token:
-            org.registration_token = uuid.uuid4()
-            org.save(update_fields=['registration_token'])
+        org.registration_token = uuid.uuid4()
+        org.save(update_fields=['registration_token'])
 
 
 class Migration(migrations.Migration):
